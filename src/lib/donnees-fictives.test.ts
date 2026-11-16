@@ -1,13 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  bienFictif,
   contactFictif,
   insererDonneesFictives,
+  NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
   personneFictive,
   personnesFictives,
   telephoneFictif,
   type JeuFictif,
 } from './donnees-fictives'
+import { bienEssai } from '../features/biens/bien-essai'
+import { brouillonBienDepuis, preparerBien, TYPES_BIEN } from '../features/biens/biens'
 import { fauxClient } from './faux-client'
 
 describe('personnes fictives', () => {
@@ -126,7 +130,34 @@ describe('contacts fictifs', () => {
   it('font partie des lots insérés sur le projet de test', async () => {
     const { client, appels } = fauxClient({ data: { id: 'x' }, error: null })
     const bilan = await insererDonneesFictives(client, 'test')
-    expect(bilan).toEqual({ ok: true, lignes: NOMBRE_CONTACTS_FICTIFS })
-    expect(appels.filter((appel) => appel[0] === 'insert')).toHaveLength(NOMBRE_CONTACTS_FICTIFS)
+    const attendues = NOMBRE_CONTACTS_FICTIFS + NOMBRE_BIENS_FICTIFS
+    expect(bilan).toEqual({ ok: true, lignes: attendues })
+    expect(appels.filter((appel) => appel[0] === 'insert')).toHaveLength(attendues)
+  })
+})
+
+describe('biens fictifs', () => {
+  const biens = Array.from({ length: NOMBRE_BIENS_FICTIFS }, (_, rang) => bienFictif(rang))
+
+  it('sont clairement faux : ville inexistante, description qui le dit', () => {
+    for (const bien of biens) {
+      expect(bien.ville).toBe('Villefictive')
+      expect(bien.code_postal).toBe('00000')
+      expect(bien.description).toContain('fictif')
+    }
+  })
+
+  it('couvrent tous les types de bien', () => {
+    expect(new Set(biens.map((bien) => bien.type))).toEqual(
+      new Set(TYPES_BIEN.map((type) => type.valeur)),
+    )
+  })
+
+  it('ne remplissent que les champs de leur type', () => {
+    for (const bien of biens) {
+      const brouillon = brouillonBienDepuis(bienEssai(bien))
+      const preparation = preparerBien(brouillon)
+      expect(preparation).toMatchObject({ ok: true, valeurs: bien })
+    }
   })
 })

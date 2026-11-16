@@ -95,7 +95,7 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | Fonction | Effet |
 | --- | --- |
 | `lister(client, table, options)` | Lit les lignes ; écarte les archivées sauf `archives: 'avec'` ou `'seulement'` ; tri et limite facultatifs |
-| `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir |
+| `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir. Filtres possibles : `egal`, `contient`, `comprend` (tableau), `parmi` (liste de valeurs), `min` et `max` (nombres) |
 | `lire(client, table, id)` | Lit une ligne |
 | `creer(client, table, valeurs)` | Crée une ligne et la renvoie complète |
 | `modifier(client, table, id, valeurs)` | Modifie une ligne et la renvoie à jour |
@@ -134,7 +134,28 @@ Ces fonctions s'exécutent avec les droits du compte connecté : les règles d'a
 
 Conséquence à connaître : avec les règles d'accès par ligne, la base ne peut pas s'appuyer sur un index pour une recherche « contient ». Elle lit les fiches du compte une à une (20 ms pour 30 000 fiches, mesures dans `docs/avancement.md`). Inutile donc de créer ce type d'index.
 
-**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
+**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord` et `biens_proprietaires`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
+
+### Biens, propriétaires et historique des prix
+
+Un bien est un logement, un local ou un terrain (table `biens`). Son **type** (`ancien`, `neuf`, `viager`, `commerce`, `terrain`) décide des champs utilisés.
+
+| Élément | Rôle |
+| --- | --- |
+| Colonnes communes | Adresse (`adresse`, `complement`, `code_postal`, `ville`), `type`, `statut`, `prix` (euros, sans centimes), `description` |
+| Colonnes d'un bâtiment (tout sauf un terrain) | `etage` (0 = rez-de-chaussée), `surface`, `pieces`, `annee_construction`, `etat`, DPE et GES (`classe`, `valeur`, `date`) ; `chambres` sauf pour un commerce |
+| Colonnes propres à un type | Ancien : `copropriete`, `charges_annuelles`, `taxe_fonciere`. Neuf : `programme`, `lot`, `date_livraison`. Viager : `viager_bouquet`, `viager_rente` (par mois), `viager_occupation`, `viager_ages`. Commerce : `commerce_nature`, `commerce_bail`, `commerce_loyer` (par an), `commerce_activite`. Terrain : `surface_terrain`, `constructible`, `viabilise` |
+| Colonne `recherche` | Adresse, complément, code postal, ville et programme, sans accent ni majuscule ; calculée par un déclencheur, jamais envoyée par l'application |
+| Table `biens_proprietaires` | Un lien par propriétaire (contact), avec sa `quote_part` facultative. Un seul lien actif par bien et par contact |
+| Table `biens_prix` | Une ligne par prix affiché, datée par `created_at`. Remplie par un déclencheur à la création d'un bien qui a un prix, puis à chaque changement : l'application n'y écrit jamais |
+
+**Champs par type.** La règle est dans `CHAMPS_PAR_TYPE` (`src/features/biens/biens.ts`) : le formulaire et la fiche n'affichent que les champs du type ; à l'enregistrement, `preparerBien` vide les autres. La base, elle, accepte tous les champs quel que soit le type : c'est l'application qui fait le tri. Ajouter un champ propre à un type, c'est une colonne dans une migration, une entrée dans `CHAMPS_PAR_TYPE`, un champ dans `FormulaireBien` et une ligne sur la fiche.
+
+**Liste.** Les biens sont lus 50 à la fois, les plus récemment créés d'abord, avec la recherche par morceau d'adresse et les filtres (type, statut, fourchette de prix) faits par la base (`src/features/biens/filtres.ts`). Avec une borne de prix, les biens sans prix ne sont pas listés.
+
+**Propriétaires.** Retirer un propriétaire archive le lien ; ni le contact ni le bien ne changent. Lors d'une fusion de contacts, les biens de la fiche absorbée passent à la fiche gardée (si les deux possédaient le même bien, le lien en double est archivé). La suppression définitive d'un contact emporte ses liens, pas les biens : le bien reste dans la base, sans ce propriétaire. Les biens d'une personne figurent dans son export.
+
+**Historique des prix.** Un prix effacé ne crée pas de ligne ; un prix remis à la même valeur non plus. L'âge des crédirentiers d'un viager est celui noté le jour de la saisie : il ne se met pas à jour tout seul.
 
 ### Consentement et RGPD des contacts
 

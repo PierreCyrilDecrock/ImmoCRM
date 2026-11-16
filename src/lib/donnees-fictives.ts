@@ -164,8 +164,103 @@ const JEU_CONTACTS: JeuFictif = {
   },
 }
 
+/** Ce qui change d'un bien fictif à l'autre : un exemple de chaque type, à des statuts variés. */
+const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
+  {
+    type: 'ancien',
+    statut: 'en_mandat',
+    prix: 285000,
+    etage: 2,
+    surface: 72.5,
+    pieces: 3,
+    chambres: 2,
+    annee_construction: 1974,
+    etat: 'bon',
+    dpe_classe: 'D',
+    dpe_valeur: 210,
+    dpe_date: '2026-03-12',
+    ges_classe: 'D',
+    ges_valeur: 42,
+    ges_date: '2026-03-12',
+    copropriete: true,
+    charges_annuelles: 1800,
+    taxe_fonciere: 950,
+  },
+  {
+    type: 'neuf',
+    statut: 'en_veille',
+    prix: 340000,
+    surface: 64,
+    pieces: 3,
+    chambres: 2,
+    programme: 'Résidence fictive Les Essais',
+    lot: 'B204',
+    date_livraison: '2027-09-30',
+  },
+  {
+    type: 'viager',
+    statut: 'en_estimation',
+    prix: 120000,
+    surface: 95,
+    pieces: 4,
+    chambres: 3,
+    annee_construction: 1962,
+    etat: 'a_rafraichir',
+    viager_bouquet: 60000,
+    viager_rente: 750,
+    viager_occupation: 'occupe',
+    viager_ages: [82, 79],
+  },
+  {
+    type: 'commerce',
+    statut: 'repere',
+    prix: 195000,
+    etage: 0,
+    surface: 110,
+    commerce_nature: 'murs_et_fonds',
+    commerce_bail: 'Bail commercial fictif 3-6-9, échéance en 2029',
+    commerce_loyer: 14400,
+    commerce_activite: 'Boulangerie de démonstration',
+  },
+  {
+    type: 'terrain',
+    statut: 'sous_offre',
+    prix: 89000,
+    surface_terrain: 640,
+    constructible: true,
+    viabilise: false,
+  },
+  { type: 'ancien', statut: 'vendu', prix: 410000, surface: 128, pieces: 6, chambres: 4 },
+]
+
+/** Nombre de biens du lot fictif : au moins un de chaque type. */
+export const NOMBRE_BIENS_FICTIFS = MODELES_BIENS.length
+
+/** Fabrique un bien fictif, prêt à être enregistré : adresse inventée, ville inexistante. */
+export function bienFictif(rang: number): Creation<'biens'> {
+  return {
+    adresse: `${(rang % 98) + 1} ${choisir(VOIES, rang)}`,
+    code_postal: CODE_POSTAL_FICTIF,
+    ville: VILLE_FICTIVE,
+    description: 'Bien fictif, créé pour les essais.',
+    type: 'ancien',
+    ...MODELES_BIENS[rang % MODELES_BIENS.length],
+  }
+}
+
+const JEU_BIENS: JeuFictif = {
+  libelle: 'Biens',
+  async inserer(client) {
+    for (let rang = 0; rang < NOMBRE_BIENS_FICTIFS; rang += 1) {
+      const resultat = await creer(client, 'biens', bienFictif(rang))
+      if (!resultat.ok) return resultat
+    }
+    return { ok: true, donnees: NOMBRE_BIENS_FICTIFS }
+  },
+}
+
 /** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
-export const JEUX_FICTIFS: readonly JeuFictif[] = [JEU_CONTACTS]
+export const JEUX_FICTIFS: readonly JeuFictif[] = [JEU_CONTACTS, JEU_BIENS]
 
 export type BilanFictif = { ok: true; lignes: number } | { ok: false; message: string }
 

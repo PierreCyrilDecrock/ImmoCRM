@@ -19,6 +19,7 @@ import { controlerAccesAnonyme, type BilanAccesAnonyme } from '../lib/controle-a
 import { TABLES } from '../lib/donnees'
 import {
   insererDonneesFictives,
+  NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
   personnesFictives,
 } from '../lib/donnees-fictives'
@@ -186,8 +187,8 @@ function CarteDonneesFictives() {
           ))}
         </Liste>
         <p className="text-sm text-encre-douce">
-          Chaque appui ajoute {NOMBRE_CONTACTS_FICTIFS} contacts fictifs, même s'ils existent déjà :
-          pratique pour essayer les doublons, à éviter sinon.
+          Chaque appui ajoute {NOMBRE_CONTACTS_FICTIFS} contacts et {NOMBRE_BIENS_FICTIFS} biens
+          fictifs, même s'ils existent déjà : pratique pour essayer les doublons, à éviter sinon.
         </p>
         <div className="md:self-start">
           <Bouton
@@ -196,7 +197,7 @@ function CarteDonneesFictives() {
             disabled={envoi}
             onClick={() => void ajouter()}
           >
-            {envoi ? 'Ajout en cours…' : `Ajouter ${NOMBRE_CONTACTS_FICTIFS} contacts fictifs`}
+            {envoi ? 'Ajout en cours…' : 'Ajouter des données fictives'}
           </Bouton>
         </div>
       </div>

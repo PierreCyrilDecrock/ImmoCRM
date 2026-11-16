@@ -5,10 +5,18 @@ import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
 import Etiquette, { type GenreEtiquette } from '../components/Etiquette'
 import FenetreModale from '../components/FenetreModale'
+import Information from '../components/Information'
 import LienAction from '../components/LienAction'
+import LigneListe from '../components/LigneListe'
 import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
+import { genreStatut, libelleStatut, resumeBien } from '../features/biens/biens'
+import {
+  formaterQuotePart,
+  listerBiensDuContact,
+  type BienDuContact,
+} from '../features/biens/proprietaires'
 import {
   adresseComplete,
   archiverContact,
@@ -52,6 +60,8 @@ type Etat =
       fusionneDans: Contact | null
       /** Les appels passés sans accord, les plus récents d'abord. */
       appels: AppelSansAccord[]
+      /** Les biens dont le contact est propriétaire. */
+      biens: BienDuContact[]
     }
 
 const RETOUR = { vers: '/contacts', libelle: 'Contacts' }
@@ -65,16 +75,6 @@ const GENRE_TEMPERATURE: Record<string, GenreEtiquette> = {
 
 const CLASSES_LIEN =
   'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
-
-/** Une information de la fiche : son nom à gauche (au-dessus sur téléphone), sa valeur. */
-function Information({ nom, children }: { nom: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 py-2 md:flex-row md:gap-4">
-      <dt className="text-sm text-encre-douce md:w-36 md:shrink-0 md:pt-0.5">{nom}</dt>
-      <dd className="min-w-0 text-base break-words text-encre">{children}</dd>
-    </div>
-  )
-}
 
 /** Emplacement d'une rubrique qui arrivera à une étape suivante. */
 function Emplacement({ titre, children }: { titre: string; children: string }) {
@@ -121,7 +121,10 @@ export default function FicheContact() {
       // L'historique des appels sans accord : son absence n'empêche pas d'afficher la fiche.
       const historique = await listerAppelsSansAccord(client, contact.id)
       const appels = historique.ok ? historique.donnees : []
-      return { phase: 'pret', contact, recommandePar, fusionneDans, appels } as const
+      // Ses biens : leur absence n'empêche pas non plus d'afficher la fiche.
+      const possedes = await listerBiensDuContact(client, contact.id)
+      const biens = possedes.ok ? possedes.donnees : []
+      return { phase: 'pret', contact, recommandePar, fusionneDans, appels, biens } as const
     }
     void charger().then((suivant) => {
       if (actif) setEtat(suivant)
@@ -148,7 +151,7 @@ export default function FicheContact() {
     )
   }
 
-  const { contact, recommandePar, fusionneDans, appels } = etat
+  const { contact, recommandePar, fusionneDans, appels, biens } = etat
   const droit = droitAppel(contact)
   const appelPermis = droit.autorise || appelLibere !== null
   const archive = contact.archived_at !== null
@@ -175,7 +178,14 @@ export default function FicheContact() {
       notifier('erreur', `L'action a échoué. ${resultat.erreur.message}`)
       return
     }
-    setEtat({ phase: 'pret', contact: resultat.donnees, recommandePar, fusionneDans, appels })
+    setEtat({
+      phase: 'pret',
+      contact: resultat.donnees,
+      recommandePar,
+      fusionneDans,
+      appels,
+      biens,
+    })
     notifier('succes', archive ? 'Contact restauré' : 'Contact archivé')
   }
 
@@ -189,6 +199,7 @@ export default function FicheContact() {
       recommandePar,
       fusionneDans,
       appels: [appel, ...appels],
+      biens,
     })
   }
 
@@ -425,7 +436,39 @@ export default function FicheContact() {
         <Emplacement titre="Projets">
           Les projets de vente et de recherche de ce contact s'afficheront ici.
         </Emplacement>
-        <Emplacement titre="Biens">Les biens liés à ce contact s'afficheront ici.</Emplacement>
+        {/* `min-w-0` : une adresse longue est coupée au lieu d'élargir la page. */}
+        <div className="min-w-0">
+          <Carte titre="Biens">
+            {biens.length === 0 ? (
+              <p className="text-sm text-encre-douce">
+                Les biens dont ce contact est propriétaire s'afficheront ici. Le lien se fait depuis
+                la fiche du bien, rubrique « Propriétaires ».
+              </p>
+            ) : (
+              <ul className="-mx-4 -mb-2 divide-y divide-bord">
+                {biens.map(({ lien, bien }) => (
+                  <LigneListe
+                    key={lien.id}
+                    titre={bien.adresse}
+                    detail={[
+                      resumeBien(bien),
+                      lien.quote_part === null ? null : formaterQuotePart(lien.quote_part),
+                      bien.archived_at !== null ? 'archivé' : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                    fin={
+                      <Etiquette genre={genreStatut(bien.statut)}>
+                        {libelleStatut(bien.statut)}
+                      </Etiquette>
+                    }
+                    vers={`/biens/${bien.id}`}
+                  />
+                ))}
+              </ul>
+            )}
+          </Carte>
+        </div>
         <Emplacement titre="Tâches">
           Les relances et les rendez-vous à venir s'afficheront ici.
         </Emplacement>

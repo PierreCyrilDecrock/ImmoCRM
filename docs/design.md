@@ -69,6 +69,8 @@ Tous sont dans `src/components`, un par fichier.
 | `Page` | Gabarit de **toute** page : titre, lien de retour, actions, contenu. Met aussi à jour le titre de l'onglet. | `titre`, `retour?` (`{ vers, libelle }`), `actions?` |
 | `Carte` | Bloc de contenu sur fond `surface`. | `titre?` |
 | `Liste` + `LigneListe` | Liste de lignes séparées par un filet. Une ligne ouvre une page (`vers`), lance une action (`onAction`) ou reste inerte. | `titre`, `detail?`, `icone?`, `fin?`, `vers?`, `onAction?` |
+| `Information` | Une information d'une fiche : son nom, sa valeur. À placer dans une liste `<dl className="divide-y divide-bord">`. | `nom`, valeur en contenu |
+| `SuiteListe` | Bas d'une liste lue page par page : charge la suite à l'approche du bas de l'écran, avec un bouton de secours. Se branche sur `useListePaginee` (`src/lib/liste-paginee.ts`). | `resteALire`, `suiteEnCours`, `erreurSuite`, `chargerSuite` |
 | `CadreConnexion` | Cadre des écrans hors session (connexion, mot de passe). | `titre` |
 
 Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="…">`, puis déclarer sa route dans `App.tsx`, sous `MiseEnPage`. Une sous-page (`/plus/reglages`) garde l'entrée parente allumée dans la navigation et reçoit un `retour`.
@@ -93,6 +95,8 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
 | `ChampEtiquettes` | Étiquettes libres : on écrit, on valide par « Entrée », une virgule ou « Ajouter » ; on touche une étiquette pour la retirer. | `libelle`, `etiquettes`, `onChange`, `ajouter` (règle de nettoyage et de doublon), `aide?` |
 | `LienAction` | Grosse touche qui ouvre une autre application du téléphone (`tel:`, `sms:`, `mailto:`). Sans `href`, elle reste visible mais grisée. | `libelle`, `icone`, `href?` |
+
+Une `LigneListe` coupe un texte trop long : placée dans une grille, son conteneur doit porter `min-w-0`, sinon la page s'élargit sur téléphone.
 
 Un formulaire long (la modification d'un contact) est découpé en `Carte`, une par thème ; à l'envoi, le premier champ en erreur est amené à l'écran.
 
