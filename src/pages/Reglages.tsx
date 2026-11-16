@@ -17,7 +17,11 @@ import {
 } from '../features/reglages/reglages'
 import { controlerAccesAnonyme, type BilanAccesAnonyme } from '../lib/controle-acces-anonyme'
 import { TABLES } from '../lib/donnees'
-import { JEUX_FICTIFS, personnesFictives } from '../lib/donnees-fictives'
+import {
+  insererDonneesFictives,
+  NOMBRE_CONTACTS_FICTIFS,
+  personnesFictives,
+} from '../lib/donnees-fictives'
 import { creerClientAnonyme, environnement, exigerSupabase } from '../lib/supabase'
 
 /** Dit, de façon impossible à manquer, sur quel projet Supabase l'application est branchée. */
@@ -148,8 +152,20 @@ function CarteSecurite() {
   )
 }
 
-/** Visible uniquement sur le projet de test : aperçu des données fictives. */
+/** Visible uniquement sur le projet de test : aperçu et ajout des données fictives. */
 function CarteDonneesFictives() {
+  const { notifier } = useNotifications()
+  const [envoi, setEnvoi] = useState(false)
+
+  async function ajouter() {
+    if (environnement === null) return
+    setEnvoi(true)
+    const bilan = await insererDonneesFictives(exigerSupabase(), environnement)
+    setEnvoi(false)
+    if (bilan.ok) notifier('succes', `${bilan.lignes} fiches fictives ajoutées`)
+    else notifier('erreur', `L'ajout a échoué. ${bilan.message}`)
+  }
+
   return (
     <Carte titre="Données fictives">
       <div className="flex flex-col gap-4">
@@ -157,7 +173,7 @@ function CarteDonneesFictives() {
           <Etiquette genre="alerte">Projet de test uniquement</Etiquette>
         </div>
         <p className="text-sm text-encre-douce">
-          Des personnes inventées serviront à remplir le projet de test : noms factices, ville
+          Des personnes inventées servent à remplir le projet de test : noms factices, ville
           inexistante, numéros de téléphone réservés aux fictions. En voici trois.
         </p>
         <Liste>
@@ -169,11 +185,20 @@ function CarteDonneesFictives() {
             />
           ))}
         </Liste>
-        {JEUX_FICTIFS.length === 0 && (
-          <Message genre="info">
-            Rien à remplir pour l'instant : le bouton d'ajout arrivera avec les contacts.
-          </Message>
-        )}
+        <p className="text-sm text-encre-douce">
+          Chaque appui ajoute {NOMBRE_CONTACTS_FICTIFS} contacts fictifs, même s'ils existent déjà :
+          pratique pour essayer les doublons, à éviter sinon.
+        </p>
+        <div className="md:self-start">
+          <Bouton
+            variante="secondaire"
+            pleineLargeur
+            disabled={envoi}
+            onClick={() => void ajouter()}
+          >
+            {envoi ? 'Ajout en cours…' : `Ajouter ${NOMBRE_CONTACTS_FICTIFS} contacts fictifs`}
+          </Bouton>
+        </div>
       </div>
     </Carte>
   )
