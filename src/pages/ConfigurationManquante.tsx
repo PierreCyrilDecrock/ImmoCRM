@@ -6,8 +6,8 @@ type Props = { message: string }
 export default function ConfigurationManquante({ message }: Props) {
   return (
     <CadreConnexion titre="Configuration à terminer">
-      <div className="flex flex-col gap-3 text-sm text-slate-700">
-        <p role="alert" className="font-medium text-red-800">
+      <div className="flex flex-col gap-3 text-sm text-encre">
+        <p role="alert" className="font-medium text-danger">
           {message}
         </p>
         <p>

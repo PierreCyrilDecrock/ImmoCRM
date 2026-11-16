@@ -9,6 +9,7 @@ Application web statique (GitHub Pages) connectée à Supabase.
 - [Analyse des besoins et cadrage](docs/cadrage.md)
 - [Plan de développement, prompts étape par étape](docs/plan-developpement.md)
 - [Avancement, étape par étape](docs/avancement.md)
+- [Système de design : composants d'interface disponibles](docs/design.md)
 - [Consignes du projet pour Claude Code](CLAUDE.md)
 
 ## Lancer le projet en local

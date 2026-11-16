@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import BoutonPrincipal from '../components/BoutonPrincipal'
+import Bouton from '../components/Bouton'
 import CadreConnexion from '../components/CadreConnexion'
 import ChampSaisie from '../components/ChampSaisie'
-import MessageFormulaire from '../components/MessageFormulaire'
+import Message from '../components/Message'
 import { messageErreurConnexion } from '../features/connexion/messages-erreur'
 import { erreurLienCourriel, exigerSupabase } from '../lib/supabase'
 
@@ -52,13 +52,13 @@ export default function Connexion() {
           value={motDePasse}
           onChange={(e) => setMotDePasse(e.target.value)}
         />
-        {erreur !== null && <MessageFormulaire genre="erreur">{erreur}</MessageFormulaire>}
-        <BoutonPrincipal type="submit" disabled={envoi}>
+        {erreur !== null && <Message genre="erreur">{erreur}</Message>}
+        <Bouton pleineLargeur type="submit" disabled={envoi}>
           {envoi ? 'Connexion…' : 'Se connecter'}
-        </BoutonPrincipal>
+        </Bouton>
         <Link
           to="/mot-de-passe-oublie"
-          className="flex min-h-11 items-center justify-center text-sm text-sky-700 underline"
+          className="flex min-h-11 items-center justify-center text-sm text-accent underline"
         >
           Mot de passe oublié ?
         </Link>

@@ -11,6 +11,7 @@ Documents de référence :
 - [docs/cadrage.md](docs/cadrage.md) — ce que l'outil doit faire (référence fonctionnelle).
 - [docs/plan-developpement.md](docs/plan-developpement.md) — les 45 étapes de construction et leurs prompts.
 - [docs/avancement.md](docs/avancement.md) — où en est le projet, étape par étape.
+- [docs/design.md](docs/design.md) — les composants d'interface disponibles, à réutiliser dans chaque écran.
 
 ## Les trois règles du dépôt public
 
@@ -79,7 +80,7 @@ Principes qui en découlent :
 - **Composants.** Fonctions React, un composant par fichier, fichier en `PascalCase.tsx`. Les autres fichiers sont en `kebab-case.ts`.
 - **Logique séparée de l'affichage.** Les calculs (dates, relances, scores, validations) sont des fonctions pures dans `src/lib` ou `src/features/<domaine>`, chacune accompagnée de tests.
 - **Tests.** Fichier `nom.test.ts` placé à côté du fichier testé. Toute règle métier calculée a son test.
-- **Styles.** Classes Tailwind dans les composants ; pas de feuille de style séparée, sauf nécessité.
+- **Styles.** Classes Tailwind dans les composants ; pas de feuille de style séparée, sauf nécessité. Couleurs par leur nom (`bg-surface`, `text-encre`…), jamais en dur : voir `docs/design.md`.
 - **Mise en forme.** Prettier décide (sans point-virgule, guillemets simples, 100 caractères). Ne pas en débattre : lancer `npm run format`.
 - **Version.** Le numéro affiché par l'application vient de `package.json`.
 - **Commits.** Messages en français, à l'impératif ou au présent, qui disent ce que le changement apporte.

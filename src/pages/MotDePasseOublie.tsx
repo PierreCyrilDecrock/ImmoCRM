@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import BoutonPrincipal from '../components/BoutonPrincipal'
+import Bouton from '../components/Bouton'
 import CadreConnexion from '../components/CadreConnexion'
 import ChampSaisie from '../components/ChampSaisie'
-import MessageFormulaire from '../components/MessageFormulaire'
+import Message from '../components/Message'
 import { messageErreurConnexion } from '../features/connexion/messages-erreur'
 import { adresseDeRetour } from '../features/connexion/retour-courriel'
 import { exigerSupabase } from '../lib/supabase'
@@ -31,15 +31,15 @@ export default function MotDePasseOublie() {
     <CadreConnexion titre="Mot de passe oublié">
       {envoye ? (
         <div className="flex flex-col gap-4">
-          <MessageFormulaire genre="succes">
+          <Message genre="succes">
             Si un compte existe pour cette adresse, un courriel vient de lui être envoyé. Ouvrez-le
             et suivez le lien pour choisir un nouveau mot de passe. Pensez à regarder dans les
             courriers indésirables.
-          </MessageFormulaire>
+          </Message>
         </div>
       ) : (
         <form onSubmit={(evenement) => void demander(evenement)} className="flex flex-col gap-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-encre-douce">
             Saisissez votre courriel : vous recevrez un lien pour choisir un nouveau mot de passe.
           </p>
           <ChampSaisie
@@ -53,15 +53,15 @@ export default function MotDePasseOublie() {
             value={courriel}
             onChange={(e) => setCourriel(e.target.value)}
           />
-          {erreur !== null && <MessageFormulaire genre="erreur">{erreur}</MessageFormulaire>}
-          <BoutonPrincipal type="submit" disabled={envoi}>
+          {erreur !== null && <Message genre="erreur">{erreur}</Message>}
+          <Bouton pleineLargeur type="submit" disabled={envoi}>
             {envoi ? 'Envoi…' : 'Recevoir le lien'}
-          </BoutonPrincipal>
+          </Bouton>
         </form>
       )}
       <Link
         to="/"
-        className="mt-2 flex min-h-11 items-center justify-center text-sm text-sky-700 underline"
+        className="mt-2 flex min-h-11 items-center justify-center text-sm text-accent underline"
       >
         Retour à la connexion
       </Link>

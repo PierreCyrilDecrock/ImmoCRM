@@ -1,20 +1,27 @@
 import { useId, type InputHTMLAttributes } from 'react'
+import { CLASSES_CHAMP, descriptionChamp } from './champ-commun'
+import EnveloppeChamp from './EnveloppeChamp'
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'className'> & { libelle: string }
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'className'> & {
+  libelle: string
+  /** Précision affichée sous le champ. */
+  aide?: string
+  /** Message d'erreur : le champ passe alors en rouge. */
+  erreur?: string
+}
 
-/** Champ de formulaire avec son libellé, assez haut pour être touché du doigt. */
-export default function ChampSaisie({ libelle, ...champ }: Props) {
+/** Champ de saisie sur une ligne (texte, courriel, téléphone, date, nombre…) avec son libellé. */
+export default function ChampSaisie({ libelle, aide, erreur, ...champ }: Props) {
   const id = useId()
   return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
-        {libelle}
-      </label>
+    <EnveloppeChamp id={id} libelle={libelle} aide={aide} erreur={erreur}>
       <input
         id={id}
-        className="mt-1 block min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-900 focus:border-sky-600 focus:ring-2 focus:ring-sky-200 focus:outline-none"
+        className={CLASSES_CHAMP}
+        aria-invalid={erreur !== undefined || undefined}
+        aria-describedby={descriptionChamp(id, aide, erreur)}
         {...champ}
       />
-    </div>
+    </EnveloppeChamp>
   )
 }

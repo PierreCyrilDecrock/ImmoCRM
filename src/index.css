@@ -1,1 +1,84 @@
 @import 'tailwindcss';
+
+/*
+ * Couleurs du système de design (voir docs/design.md).
+ * Chaque couleur a une valeur claire et une valeur sombre ; le thème suit le réglage de l'appareil.
+ * Dans les composants, on utilise les noms (bg-fond, text-encre, border-bord…), jamais une couleur en dur.
+ */
+:root {
+  color-scheme: light dark;
+
+  --fond: #f8fafc;
+  --surface: #ffffff;
+  --creux: #f1f5f9;
+  --bord: #e2e8f0;
+  --bord-fort: #94a3b8;
+  --encre: #0f172a;
+  --encre-douce: #475569;
+  --accent: #0369a1;
+  --accent-fort: #075985;
+  --accent-doux: #e0f2fe;
+  --sur-plein: #ffffff;
+  --danger: #b91c1c;
+  --danger-doux: #fef2f2;
+  --succes: #047857;
+  --succes-doux: #ecfdf5;
+  --alerte: #92400e;
+  --alerte-doux: #fef3c7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #020617;
+    --surface: #0f172a;
+    --creux: #1e293b;
+    --bord: #1e293b;
+    --bord-fort: #64748b;
+    --encre: #f1f5f9;
+    --encre-douce: #94a3b8;
+    --accent: #38bdf8;
+    --accent-fort: #7dd3fc;
+    --accent-doux: #0c4a6e;
+    --sur-plein: #020617;
+    --danger: #f87171;
+    --danger-doux: #450a0a;
+    --succes: #34d399;
+    --succes-doux: #022c22;
+    --alerte: #fcd34d;
+    --alerte-doux: #451a03;
+  }
+}
+
+@theme inline {
+  --color-fond: var(--fond);
+  --color-surface: var(--surface);
+  --color-creux: var(--creux);
+  --color-bord: var(--bord);
+  --color-bord-fort: var(--bord-fort);
+  --color-encre: var(--encre);
+  --color-encre-douce: var(--encre-douce);
+  --color-accent: var(--accent);
+  --color-accent-fort: var(--accent-fort);
+  --color-accent-doux: var(--accent-doux);
+  --color-sur-plein: var(--sur-plein);
+  --color-danger: var(--danger);
+  --color-danger-doux: var(--danger-doux);
+  --color-succes: var(--succes);
+  --color-succes-doux: var(--succes-doux);
+  --color-alerte: var(--alerte);
+  --color-alerte-doux: var(--alerte-doux);
+}
+
+/* L'application occupe exactement l'écran : seule la zone de contenu défile. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--fond);
+  color: var(--encre);
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
