@@ -51,7 +51,8 @@ Principes qui en découlent :
 | `npm run dev` | Lance le site en local, avec rechargement automatique |
 | `npm run lint` | Vérifie la qualité du code (ESLint) et sa mise en forme (Prettier) |
 | `npm run test` | Lance les tests automatiques (Vitest) |
-| `npm run build` | Vérifie les types puis construit le site dans `dist/` |
+| `npm run build` | Vérifie les types puis construit le site dans `dist/`, pour le chemin `/ImmoCRM/` de GitHub Pages (`BASE_PATH=/ npm run build` pour un autre chemin) |
+| `npm run preview` | Montre en local le site construit, tel qu'il sera publié |
 | `npm run format` | Remet en forme le code automatiquement |
 
 ## Organisation des dossiers
@@ -62,7 +63,8 @@ Principes qui en découlent :
 | `src/components` | Composants d'interface réutilisables, sans logique métier |
 | `src/lib` | Outils transverses : accès aux données, dates, formatage |
 | `src/features/<domaine>` | Tout ce qui est propre à un domaine métier (`contacts`, `biens`, `taches`…) |
-| `supabase/migrations` | Fichiers SQL numérotés, appliqués à la main dans l'éditeur SQL de Supabase |
+| `supabase/migrations` | Fichiers SQL numérotés, appliqués par Claude Code via le connecteur Supabase |
+| `.claude/skills` | Procédures que Claude Code suit (par exemple pour agir sur Supabase) |
 | `docs` | Cadrage, plan, avancement et guides |
 
 ## Conventions de code
@@ -88,4 +90,12 @@ Principes qui en découlent :
 5. Ouvrir une pull request vers `main`, qui résume ce qui a été fait.
 6. Terminer la réponse par **la liste des vérifications que l'utilisateur doit faire lui-même** (la rubrique « À tester » de l'étape, plus toute action manuelle dans GitHub ou Supabase), en termes simples.
 
-Rappels : une étape = une session = une pull request. Les migrations SQL sont appliquées par l'utilisateur, jamais par Claude Code.
+Rappel : une étape = une session = une pull request.
+
+## Actions sur Supabase
+
+Claude Code agit sur Supabase par le connecteur Supabase, en suivant la procédure de [.claude/skills/supabase/SKILL.md](.claude/skills/supabase/SKILL.md), à lire avant toute action.
+
+- **Projet de test** : Claude Code applique lui-même les migrations et vérifie le résultat.
+- **Projet réel** : Claude Code n'applique une migration qu'après un accord explicite de l'utilisateur, redonné à chaque fois, une fois l'étape validée sur le test. Il n'y lit jamais le contenu des fiches.
+- Si le connecteur n'est pas disponible dans la session, l'utilisateur colle le SQL à la main dans l'éditeur SQL de Supabase.

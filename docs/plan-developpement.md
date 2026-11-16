@@ -12,7 +12,7 @@ Ce plan découpe la construction d'ImmoCRM en 45 étapes, de la fondation techni
 Règles valables pour toutes les étapes :
 
 - **Une étape = une session = une pull request.** Ne lancez pas l'étape suivante tant que la précédente n'est pas fusionnée et vérifiée.
-- **Les migrations de base de données sont appliquées par vous.** Quand une étape crée un fichier dans `supabase/migrations/`, copiez son contenu dans l'éditeur SQL de Supabase, d'abord sur le projet de test, puis sur le projet réel une fois l'étape validée.
+- **Les migrations de base de données sont appliquées par Claude Code**, via le connecteur Supabase. Quand une étape crée un fichier dans `supabase/migrations/`, il l'applique lui-même sur le projet de test. Sur le projet réel, il ne l'applique qu'une fois l'étape validée et après votre accord explicite, à redonner à chaque fois. Si le connecteur n'est pas disponible, copiez le contenu du fichier dans l'éditeur SQL de Supabase.
 - **Si un test échoue**, restez dans la même session et décrivez ce que vous observez. Ne passez pas à la suite.
 - **Le dépôt est public** : jamais de donnée réelle de client ni de clé d'administration Supabase dans le code, les captures d'écran ou les prompts.
 
@@ -156,14 +156,14 @@ Lis CLAUDE.md, docs/cadrage.md et docs/avancement.md avant de commencer.
 
 ÉTAPE EN COURS — 0.5 Conventions de données et sécurité
 Prépare le cadre dans lequel toutes les tables seront créées.
-- Définis dans docs/donnees.md les conventions : fichiers SQL numérotés dans supabase/migrations/, que j'applique moi-même dans l'éditeur SQL de Supabase ; chaque table a id (uuid), user_id (propriétaire, par défaut l'utilisateur connecté), created_at, updated_at ; règles d'accès par ligne activées sur chaque table, n'autorisant que le propriétaire ; suppression logique (archived_at) plutôt que suppression définitive, sauf demande RGPD.
+- Définis dans docs/donnees.md les conventions : fichiers SQL numérotés dans supabase/migrations/, que tu appliques via le connecteur Supabase (projet de test directement, projet réel seulement avec mon accord) ; chaque table a id (uuid), user_id (propriétaire, par défaut l'utilisateur connecté), created_at, updated_at ; règles d'accès par ligne activées sur chaque table, n'autorisant que le propriétaire ; suppression logique (archived_at) plutôt que suppression définitive, sauf demande RGPD.
 - Écris la première migration : fonctions utilitaires (mise à jour automatique de updated_at) et une table « reglages » (une ligne par utilisateur) avec ses règles d'accès.
 - Crée une couche d'accès aux données dans src/lib (lecture, création, modification, archivage, gestion d'erreur en français) que tous les domaines réutiliseront, avec génération des types TypeScript à partir du schéma.
 - Crée un script de données fictives (noms, adresses et téléphones inventés, clairement faux) activable uniquement sur le projet de test, et une page « Plus → Réglages » qui affiche sur quel projet l'application est connectée (TEST bien visible, ou réel).
 - Écris un test de sécurité documenté : comment vérifier dans Supabase qu'une requête sans session ne renvoie aucune ligne.
 
 À TESTER
-- J'applique la migration sur le projet de test sans erreur.
+- La migration est appliquée sur le projet de test sans erreur.
 - La page Réglages lit et enregistre un réglage, et indique clairement TEST.
 - Le test de sécurité confirme qu'une requête anonyme ne voit rien.
 
@@ -811,7 +811,7 @@ Aucune nouvelle fonction.
 
 À TESTER
 - Déroulez le dossier complet sur le projet de test, sur téléphone.
-- Appliquez toutes les migrations sur le projet réel.
+- Donnez votre accord pour appliquer toutes les migrations sur le projet réel.
 - Critère du cadrage à suivre ensuite : aucune échéance manquée sur un trimestre.
 
 ÉTAPE SUIVANTE
@@ -1007,7 +1007,7 @@ Aucune nouvelle fonction.
 
 À TESTER
 - Faites une vraie revue du vendredi entièrement dans le CRM : c'est le critère de réussite du cadrage.
-- Appliquez toutes les migrations sur le projet réel.
+- Donnez votre accord pour appliquer toutes les migrations sur le projet réel.
 
 ÉTAPE SUIVANTE
 4.1 : notes vocales, début de la version 4.
