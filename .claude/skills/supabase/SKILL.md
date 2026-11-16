@@ -25,9 +25,12 @@ Avant chaque action, vérifier l'identifiant du projet visé. Si `list_projects`
 3. Appliquer sur le projet de test avec `apply_migration`, en reprenant le nom et le contenu exacts du fichier.
 4. Vérifier :
    - `list_tables` : les tables attendues existent et les règles d'accès par ligne sont activées sur chacune ;
-   - `get_advisors` (sécurité) : aucune alerte nouvelle. Une table sans règle d'accès est une erreur à corriger, pas un avertissement à signaler.
-5. Si la couche d'accès aux données utilise des types générés, les régénérer (`generate_typescript_types`) et les enregistrer dans le dépôt.
+   - `get_advisors` (sécurité) : aucune alerte nouvelle. Une table sans règle d'accès est une erreur à corriger, pas un avertissement à signaler ;
+   - le test de sécurité `supabase/tests/securite-acces.sql`, lancé avec `execute_sql` : « OK » sur chaque table.
+5. Régénérer les types (`generate_typescript_types`), les enregistrer dans `src/lib/types-base.ts` en gardant l'en-tête du fichier, lancer `npm run format`, puis déclarer toute nouvelle table dans `TABLES` (`src/lib/donnees.ts`).
 6. Dire dans la réponse finale ce qui a été appliqué, et sur quel projet.
+
+Les conventions que toute table respecte sont dans `docs/donnees.md`.
 
 Une migration déjà appliquée ne se modifie pas : toute correction passe par un nouveau fichier numéroté.
 

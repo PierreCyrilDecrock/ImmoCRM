@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { analyserRetourCourriel } from '../features/connexion/retour-courriel'
 import { lireConfigSupabase } from './config-supabase'
+import { environnementDepuisUrl, type Environnement } from './environnement'
 
 /**
  * Accès à Supabase depuis le navigateur.
@@ -46,4 +47,25 @@ export const supabase: SupabaseClient | null = lecture.ok
 export function exigerSupabase(): SupabaseClient {
   if (supabase === null) throw new Error(erreurConfigSupabase ?? 'Supabase non configuré')
   return supabase
+}
+
+/** Projet sur lequel l'application est branchée : `test` ou `reel` (`null` sans configuration). */
+export const environnement: Environnement | null = lecture.ok
+  ? environnementDepuisUrl(lecture.config.url)
+  : null
+
+/**
+ * Client sans session, pour le contrôle de sécurité : il voit la base comme un inconnu qui
+ * n'aurait que la clé publique. Il ne lit ni n'écrit la session conservée par le navigateur.
+ */
+export function creerClientAnonyme(): SupabaseClient {
+  if (!lecture.ok) throw new Error(lecture.message)
+  return createClient(lecture.config.url, lecture.config.clePublique, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: 'immocrm-controle-anonyme',
+    },
+  })
 }

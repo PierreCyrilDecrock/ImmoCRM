@@ -6,6 +6,7 @@ import ChampSaisie from '../components/ChampSaisie'
 import ChampTexteLong from '../components/ChampTexteLong'
 import EtatChargement from '../components/EtatChargement'
 import EtatVide from '../components/EtatVide'
+import Etiquette from '../components/Etiquette'
 import FenetreModale from '../components/FenetreModale'
 import LigneListe from '../components/LigneListe'
 import Liste from '../components/Liste'
@@ -108,6 +109,16 @@ export default function Composants() {
               Erreur passagère
             </Bouton>
           </div>
+        </div>
+      </Carte>
+
+      <Carte titre="Étiquettes">
+        <div className="flex flex-wrap gap-2">
+          <Etiquette>Neutre</Etiquette>
+          <Etiquette genre="info">Information</Etiquette>
+          <Etiquette genre="succes">Succès</Etiquette>
+          <Etiquette genre="alerte">Alerte</Etiquette>
+          <Etiquette genre="danger">Danger</Etiquette>
         </div>
       </Carte>
 

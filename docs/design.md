@@ -123,6 +123,10 @@ Un formulaire est une colonne `flex flex-col gap-4` ; sur grand écran, une gril
 
 Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant (« L'enregistrement a échoué. Vérifiez votre connexion, puis réessayez. »), jamais un code technique.
 
+### Étiquettes
+
+`<Etiquette genre="neutre | info | succes | alerte | danger">` : petite pastille de texte qui qualifie un élément (un état, une catégorie, « Projet de test uniquement »). Jamais cliquable : pour une action, utiliser un `Bouton`.
+
 ### États
 
 | Composant | Quand | Propriétés |
