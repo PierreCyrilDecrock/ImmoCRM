@@ -39,6 +39,7 @@ export type TableArchivable = {
 export const TABLES: Record<NomTable, { archivable: boolean }> = {
   appels_sans_accord: { archivable: true },
   biens: { archivable: true },
+  biens_photos: { archivable: false },
   biens_prix: { archivable: true },
   biens_proprietaires: { archivable: true },
   contacts: { archivable: true },
@@ -195,6 +196,24 @@ export function appeler<F extends NomFonction>(
   parametres?: FonctionsBase[F]['Args'],
 ): Promise<Resultat<FonctionsBase[F]['Returns']>> {
   return executer<FonctionsBase[F]['Returns']>(client.rpc(fonction, parametres ?? {}), false)
+}
+
+/**
+ * Tables dont une ligne peut être supprimée pour de bon. Exception à la règle « rien ne se
+ * supprime » : une photo libère ainsi la place qu'elle occupe (voir docs/donnees.md).
+ */
+export type TableSupprimable = 'biens_photos'
+
+/** Supprime définitivement une ligne. Réservé aux tables de `TableSupprimable`. */
+export function supprimer<T extends TableSupprimable>(
+  client: SupabaseClient,
+  table: T,
+  id: string,
+): Promise<Resultat<{ id: string }>> {
+  return executer<{ id: string }>(
+    client.from(table).delete().eq('id', id).select('id').maybeSingle(),
+    true,
+  )
 }
 
 /** Lit une ligne par son identifiant (archivée ou non). */

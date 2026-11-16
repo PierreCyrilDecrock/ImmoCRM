@@ -27,6 +27,8 @@ export function fauxClient(reponse: ReponseSimulee) {
               ? Promise.reject(new TypeError('Failed to fetch')).then(suite, echec)
               : Promise.resolve(reponse).then(suite, echec)
         }
+        // `client.storage` est un objet, pas une fonction : la chaîne continue.
+        if (nom === 'storage') return chaine
         return (...arguments_: unknown[]) => {
           appels.push([String(nom), ...arguments_])
           return chaine

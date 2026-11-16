@@ -42,3 +42,12 @@ export function lireNombre(saisie: string, decimales = 0): number | null | 'inva
   if (!forme.test(texte) || texte.replace(/[.,]\d*$/, '').length > 12) return 'invalide'
   return Number(texte.replace(',', '.'))
 }
+
+/** Écrit un poids de fichier : « 245 Ko », « 3,4 Mo », « 1 Go » (1 Ko = 1 000 octets). */
+export function formaterPoids(octets: number): string {
+  if (octets < 1000) return `${formaterNombre(octets)} octet${octets > 1 ? 's' : ''}`
+  if (octets < 999_500) return `${formaterNombre(Math.round(octets / 1000))} Ko`
+  const UN_CHIFFRE = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
+  if (octets < 999_950_000) return `${UN_CHIFFRE.format(octets / 1_000_000)} Mo`
+  return `${formaterDecimal(octets / 1_000_000_000)} Go`
+}

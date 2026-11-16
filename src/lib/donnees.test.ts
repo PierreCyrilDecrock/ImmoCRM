@@ -9,6 +9,7 @@ import {
   listerPage,
   modifier,
   restaurer,
+  supprimer,
   TABLES,
 } from './donnees'
 import { fauxClient } from './faux-client'
@@ -228,5 +229,29 @@ describe('appeler', () => {
     const { client } = fauxClient({ data: null, error: { code: '22023' }, status: 400 })
     const resultat = await appeler(client, 'etiquettes_contacts')
     expect(resultat).toMatchObject({ ok: false, erreur: { genre: 'invalide' } })
+  })
+})
+
+describe('supprimer', () => {
+  it('supprime la ligne demandée, et elle seule', async () => {
+    const { client, appels } = fauxClient({ data: { id: 'p1' }, error: null })
+    expect(await supprimer(client, 'biens_photos', 'p1')).toEqual({
+      ok: true,
+      donnees: { id: 'p1' },
+    })
+    expect(appels).toEqual([
+      ['from', 'biens_photos'],
+      ['delete'],
+      ['eq', 'id', 'p1'],
+      ['select', 'id'],
+      ['maybeSingle'],
+    ])
+  })
+
+  it('signale une ligne introuvable', async () => {
+    const { client } = fauxClient({ data: null, error: null })
+    const resultat = await supprimer(client, 'biens_photos', 'p1')
+    expect(resultat.ok).toBe(false)
+    if (!resultat.ok) expect(resultat.erreur.genre).toBe('introuvable')
   })
 })

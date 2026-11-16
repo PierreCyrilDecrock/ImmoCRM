@@ -29,6 +29,7 @@ import {
   type ChampSelonType,
   type PrixBien,
 } from '../features/biens/biens'
+import PhotosBien from '../features/biens/PhotosBien'
 import ProprietairesBien from '../features/biens/ProprietairesBien'
 import { formaterDate } from '../lib/dates'
 import { formaterNombre, formaterPrix, formaterSurface } from '../lib/nombres'
@@ -314,9 +315,9 @@ export default function FicheBien() {
           </div>
         )}
 
-        <Carte titre="Photos">
-          <p className="text-sm text-encre-douce">Les photos du bien s'afficheront ici.</p>
-        </Carte>
+        <div className="lg:col-span-2">
+          <PhotosBien bienId={bien.id} />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

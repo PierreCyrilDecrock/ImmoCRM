@@ -10,6 +10,12 @@ import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
 import {
+  ESPACE_GRATUIT,
+  lireEspacePhotos,
+  usageEspace,
+  type NiveauEspace,
+} from '../features/biens/photos'
+import {
   enregistrerReglages,
   lireReglages,
   LONGUEUR_MAX_NOM_AFFICHE,
@@ -23,6 +29,7 @@ import {
   NOMBRE_CONTACTS_FICTIFS,
   personnesFictives,
 } from '../lib/donnees-fictives'
+import { accorder, formaterPoids } from '../lib/nombres'
 import { creerClientAnonyme, environnement, exigerSupabase } from '../lib/supabase'
 
 /** Dit, de façon impossible à manquer, sur quel projet Supabase l'application est branchée. */
@@ -113,6 +120,90 @@ function CartePreferences() {
           </div>
         </form>
       )}
+    </Carte>
+  )
+}
+
+const COULEUR_JAUGE: Record<NiveauEspace, string> = {
+  normal: 'bg-accent',
+  alerte: 'bg-alerte',
+  danger: 'bg-danger',
+}
+
+const POURCENTAGE = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
+
+/** Place occupée par les photos dans le stockage gratuit de Supabase. */
+function CarteStockage() {
+  const [etat, setEtat] = useState<
+    | { phase: 'chargement' }
+    | { phase: 'erreur'; message: string }
+    | { phase: 'pret'; photos: number; octets: number }
+  >({ phase: 'chargement' })
+
+  useEffect(() => {
+    let actif = true
+    void lireEspacePhotos(exigerSupabase()).then((resultat) => {
+      if (!actif) return
+      setEtat(
+        resultat.ok
+          ? { phase: 'pret', ...resultat.donnees }
+          : { phase: 'erreur', message: resultat.erreur.message },
+      )
+    })
+    return () => {
+      actif = false
+    }
+  }, [])
+
+  if (etat.phase === 'chargement') {
+    return (
+      <Carte titre="Stockage des photos">
+        <EtatChargement />
+      </Carte>
+    )
+  }
+  if (etat.phase === 'erreur') {
+    return (
+      <Carte titre="Stockage des photos">
+        <Message genre="erreur">L'espace utilisé n'a pas pu être lu. {etat.message}</Message>
+      </Carte>
+    )
+  }
+
+  const { pourcentage, niveau } = usageEspace(etat.octets)
+  return (
+    <Carte titre="Stockage des photos">
+      <div className="flex flex-col gap-3">
+        <p className="text-base text-encre">
+          <span className="font-semibold">{formaterPoids(etat.octets)}</span> utilisés sur{' '}
+          {formaterPoids(ESPACE_GRATUIT)}, soit {POURCENTAGE.format(pourcentage)} %
+        </p>
+        <div
+          role="progressbar"
+          aria-label="Espace de stockage utilisé"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(pourcentage)}
+          className="h-3 overflow-hidden rounded-full bg-creux ring-1 ring-bord ring-inset"
+        >
+          <div
+            className={`h-full rounded-full ${COULEUR_JAUGE[niveau]}`}
+            // Un trait reste visible dès la première photo.
+            style={{ width: `${etat.octets > 0 ? Math.max(pourcentage, 1) : 0}%` }}
+          />
+        </div>
+        <p className="text-sm text-encre-douce">
+          {accorder(etat.photos, 'photo enregistrée', 'photos enregistrées')}, vignettes comprises
+          dans le poids. Chaque photo est ramenée sous 300 Ko avant l'envoi.
+        </p>
+        {niveau !== 'normal' && (
+          <Message genre={niveau === 'danger' ? 'erreur' : 'info'}>
+            {niveau === 'danger'
+              ? "L'espace gratuit est presque plein : supprimez des photos de biens vendus ou retirés, ou passez à l'offre payante de Supabase."
+              : "L'espace gratuit se remplit : pensez à supprimer les photos des biens vendus ou retirés."}
+          </Message>
+        )}
+      </div>
     </Carte>
   )
 }
@@ -211,6 +302,7 @@ export default function Reglages() {
     <Page titre="Réglages" retour={{ vers: '/plus', libelle: 'Plus' }}>
       <CarteProjet />
       <CartePreferences />
+      <CarteStockage />
       <CarteSecurite />
       {environnement === 'test' && <CarteDonneesFictives />}
     </Page>

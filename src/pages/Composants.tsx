@@ -83,6 +83,12 @@ export default function Composants() {
             detail="Appartement · 3 pièces"
             onAction={() => notifier('succes', 'Ligne touchée.')}
           />
+          <LigneListe
+            icone="biens"
+            vignette={null}
+            titre="Ligne avec emplacement de photo"
+            detail="Sans photo : le dessin tient la place"
+          />
           <LigneListe titre="Ligne simple, sans action" fin="Info" />
         </Liste>
       </section>

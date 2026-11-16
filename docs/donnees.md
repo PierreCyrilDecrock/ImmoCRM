@@ -34,7 +34,7 @@ La procédure pas à pas est dans `.claude/skills/supabase/SKILL.md`.
 
 L'application n'envoie jamais ces cinq colonnes : la base les remplit. `archived_at` ne change que par les fonctions `archiver` et `restaurer`.
 
-Exception : une table qui n'a qu'une ligne par utilisateur et ne s'archive pas (`reglages`) n'a pas de colonne `archived_at`.
+Exceptions : une table qui n'a qu'une ligne par utilisateur et ne s'archive pas (`reglages`) n'a pas de colonne `archived_at` ; les photos (`biens_photos`) non plus, car elles se suppriment vraiment pour libérer la place.
 
 Nommage : tables et colonnes en français, sans accent, en minuscules avec des tirets bas (`projets_vendeurs`, `date_naissance`). Tables au pluriel. Les cinq colonnes communes gardent leur nom anglais, par habitude de l'outil.
 
@@ -86,6 +86,8 @@ Une table liée à une autre (un bien et son propriétaire) porte elle aussi son
 - **Archiver** inscrit la date dans `archived_at`. La fiche disparaît des listes, reste consultable et peut être restaurée.
 - **Supprimer définitivement** n'existe pas par défaut : aucune table ne donne le droit de suppression. Seule exception, pour le droit à l'effacement : la table `contacts` a un droit et une règle de suppression réservés au propriétaire (migration 0005), utilisés uniquement par la fonction `supprimer_contact_definitivement`, après une double confirmation dans l'application.
 
+Seconde exception, pour la place : la table `biens_photos` (migration 0008) donne un droit de suppression au propriétaire, et n'autorise à modifier que le rang d'une photo.
+
 Règle pour toute table liée aux contacts : sa clé étrangère vers `contacts` porte `on delete cascade`, pour que la suppression définitive d'une fiche emporte tout ce qui lui est lié sans donner de droit de suppression sur la table elle-même. Voir « Consentement et RGPD » plus bas.
 
 ## Accès depuis l'application
@@ -100,6 +102,7 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | `creer(client, table, valeurs)` | Crée une ligne et la renvoie complète |
 | `modifier(client, table, id, valeurs)` | Modifie une ligne et la renvoie à jour |
 | `archiver` / `restaurer(client, table, id)` | Archive une ligne, ou annule l'archivage |
+| `supprimer(client, table, id)` | Supprime une ligne pour de bon. Réservé aux photos (`biens_photos`) : voir « Photos des biens » |
 | `enregistrerUnique(client, table, valeurs, colonne)` | Crée ou met à jour la ligne unique (réglages) |
 | `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive) |
 
@@ -156,6 +159,30 @@ Un bien est un logement, un local ou un terrain (table `biens`). Son **type** (`
 **Propriétaires.** Retirer un propriétaire archive le lien ; ni le contact ni le bien ne changent. Lors d'une fusion de contacts, les biens de la fiche absorbée passent à la fiche gardée (si les deux possédaient le même bien, le lien en double est archivé). La suppression définitive d'un contact emporte ses liens, pas les biens : le bien reste dans la base, sans ce propriétaire. Les biens d'une personne figurent dans son export.
 
 **Historique des prix.** Un prix effacé ne crée pas de ligne ; un prix remis à la même valeur non plus. L'âge des crédirentiers d'un viager est celui noté le jour de la saisie : il ne se met pas à jour tout seul.
+
+### Photos des biens
+
+L'offre gratuite de Supabase limite la place réservée aux fichiers (1 Go, chiffre à vérifier) : chaque photo est allégée dans le navigateur avant l'envoi, et leur nombre est plafonné.
+
+| Élément | Rôle |
+| --- | --- |
+| Espace de stockage `photos-biens` | **Privé** : aucun fichier n'est lisible par son adresse seule. N'accepte que des JPEG de 500 Ko au plus (limite posée par Supabase, pas par le site) |
+| Emplacement d'un fichier | `<identifiant du compte>/<identifiant du bien>/<nom>.jpg`, et `<nom>-vignette.jpg` pour la vignette |
+| Règles d'accès du stockage | Lire, envoyer, supprimer : seulement dans le dossier de son propre compte, et seulement pour un bien qui existe. Pas de modification : un fichier ne se remplace pas |
+| Table `biens_photos` | Une ligne par photo : `bien_id`, `chemin`, `chemin_vignette`, `rang`, `taille` (octets). Pas de colonne `archived_at` |
+| Colonne `rang` | Place de la photo, à partir de 0, sans trou. **La photo de rang 0 est la photo principale.** Tenue par la base : placée à la fin à l'ajout, resserrée après une suppression |
+| Fonction `ordonner_photos_bien(bien, ids)` | Range toutes les photos d'un bien dans l'ordre donné, en une seule opération |
+| Fonction `espace_photos()` | Nombre de photos et poids réel des fichiers du compte, pour la page Réglages |
+
+**Compression.** `src/lib/image.ts` ramène chaque photo à 1 600 px au plus sur son grand côté, en JPEG de moins de 300 Ko : la qualité baisse d'abord, puis la taille si cela ne suffit pas. Une vignette de 400 px (quelques Ko) est fabriquée en même temps : c'est elle qu'affichent la liste des biens et la grille de la fiche, pour ne pas télécharger les grandes photos.
+
+**Plafond.** 20 photos par bien. L'application l'annonce, la base le vérifie (déclencheur à l'ajout).
+
+**Affichage.** Par adresses signées, valables 15 minutes (`DUREE_ADRESSE_PHOTO`), demandées à l'ouverture de l'écran ; la grande photo en redemande une à chaque ouverture. Passé ce délai, l'adresse ne donne plus rien : seul le compte connecté peut en obtenir une nouvelle.
+
+**Suppression.** Une photo se supprime pour de bon, après confirmation : les deux fichiers d'abord, puis la ligne. Si la seconde étape échoue, la photo reste dans la liste et la suppression peut être relancée. Archiver un bien ne supprime pas ses photos.
+
+**Accès.** Les fichiers passent par `src/lib/stockage.ts` (`envoyerFichier`, `supprimerFichiers`, `signerAdresses`), bâti comme `donnees.ts` : un `Resultat`, jamais d'erreur levée. Les fonctions du domaine sont dans `src/features/biens/photos.ts`.
 
 ### Consentement et RGPD des contacts
 
@@ -225,12 +252,14 @@ Cette protection est un garde-fou contre une fausse manœuvre, pas une barrière
 | Colonne | Valeur attendue |
 | --- | --- |
 | `regles_activees` | `true` |
-| `nb_regles` | 3 ou plus (4 pour `contacts`, qui a une règle de suppression) |
+| `nb_regles` | 3 ou plus (4 pour `contacts` et `biens_photos`, qui ont une règle de suppression) |
 | `vues_sans_session` | `refus` (ou `0`) |
 | `vues_par_un_autre_compte` | `0` |
 | `verdict` | `OK` |
 
 Le test se met tour à tour à la place d'un visiteur sans session, puis d'un compte connecté qui n'est pas le vôtre, et compte ce que chacun parvient à lire. Il ne modifie rien et n'affiche le contenu d'aucune fiche. Si une table est vide, le verdict le précise : refaire le test après y avoir enregistré une ligne, sinon « aucune ligne visible » ne prouve rien.
+
+Les espaces de stockage passent la même épreuve : leurs lignes s'appellent « stockage : photos-biens ». Le test y vérifie en plus que l'espace est bien privé.
 
 Tout verdict commençant par `ÉCHEC` est une faille : ne plus rien enregistrer dans la table concernée tant qu'une migration ne l'a pas corrigée.
 
@@ -238,4 +267,4 @@ Tout verdict commençant par `ÉCHEC` est une faille : ne plus rien enregistrer 
 
 **Plus → Réglages → Sécurité → « Vérifier l'accès sans connexion »**. L'application interroge chaque table sans votre session, avec la seule clé publique, exactement comme le ferait un inconnu depuis Internet. Réponse attendue : « Sans connexion, aucune ligne n'est visible ».
 
-Ce contrôle confirme le premier point seulement (le visiteur sans session) ; le test dans Supabase reste la référence.
+Ce contrôle confirme le premier point seulement (le visiteur sans session), et ne porte que sur les tables, pas sur les fichiers ; le test dans Supabase reste la référence.

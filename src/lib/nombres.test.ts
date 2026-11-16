@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { accorder, formaterNombre, formaterPrix, formaterSurface, lireNombre } from './nombres'
+import {
+  accorder,
+  formaterNombre,
+  formaterPoids,
+  formaterPrix,
+  formaterSurface,
+  lireNombre,
+} from './nombres'
 
 // Le séparateur de milliers français est une espace insécable : on la ramène à une espace.
 const lisible = (texte: string) => texte.replace(/\s/g, ' ')
@@ -51,5 +58,20 @@ describe('lireNombre', () => {
     expect(lireNombre('€')).toBe('invalide')
     expect(lireNombre('cher')).toBe('invalide')
     expect(lireNombre('-5')).toBe('invalide')
+  })
+})
+
+describe('formaterPoids', () => {
+  it('choisit l’unité selon la taille', () => {
+    expect(formaterPoids(0)).toBe('0 octet')
+    expect(formaterPoids(512)).toBe('512 octets')
+    expect(lisible(formaterPoids(245_300))).toBe('245 Ko')
+    expect(lisible(formaterPoids(3_420_000))).toBe('3,4 Mo')
+    expect(lisible(formaterPoids(1_000_000_000))).toBe('1 Go')
+    expect(lisible(formaterPoids(1_250_000_000))).toBe('1,25 Go')
+  })
+
+  it('ne montre jamais « 1 000 Ko »', () => {
+    expect(lisible(formaterPoids(999_800))).toBe('1 Mo')
   })
 })

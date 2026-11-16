@@ -36,6 +36,7 @@ import {
 } from '../features/biens/filtres'
 import FormulaireBien from '../features/biens/FormulaireBien'
 import { useListeBiens } from '../features/biens/liste-biens'
+import { useVignettesBiens } from '../features/biens/vignettes-biens'
 import { accorder } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
 
@@ -107,6 +108,7 @@ export default function Biens() {
   )
   const [creation, setCreation] = useState(false)
   const liste = useListeBiens(filtres, archives)
+  const vignettes = useVignettesBiens(liste.lignes.map((bien) => bien.id))
   const restreinte = listeBiensRestreinte(filtres)
   const nbFiltres = nombreFiltresBiens(filtres)
   const filtresSaisis = nbFiltres > 0 || filtres.prixMin !== '' || filtres.prixMax !== ''
@@ -273,6 +275,8 @@ export default function Biens() {
             {liste.lignes.map((bien) => (
               <LigneListe
                 key={bien.id}
+                icone="biens"
+                vignette={vignettes.get(bien.id) ?? null}
                 titre={bien.adresse}
                 detail={resumeBien(bien)}
                 fin={
