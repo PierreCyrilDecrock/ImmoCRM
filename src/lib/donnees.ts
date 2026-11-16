@@ -38,6 +38,9 @@ export type TableArchivable = {
  */
 export const TABLES: Record<NomTable, { archivable: boolean }> = {
   appels_sans_accord: { archivable: true },
+  biens: { archivable: true },
+  biens_prix: { archivable: true },
+  biens_proprietaires: { archivable: true },
   contacts: { archivable: true },
   reglages: { archivable: false },
 }
@@ -61,6 +64,11 @@ export type Filtre<T extends NomTable> = { colonne: keyof Ligne<T> & string } & 
   | { genre: 'contient'; valeur: string }
   /** La colonne, un tableau, comprend toutes ces valeurs. */
   | { genre: 'comprend'; valeur: string[] }
+  /** La colonne vaut l'une de ces valeurs (liste d'identifiants, par exemple). */
+  | { genre: 'parmi'; valeur: string[] }
+  /** La colonne, un nombre, vaut au moins / au plus cette valeur. */
+  | { genre: 'min'; valeur: number }
+  | { genre: 'max'; valeur: number }
 )
 
 export type OptionsPage<T extends NomTable> = {
@@ -151,6 +159,9 @@ export async function listerPage<T extends NomTable>(
     const colonne: string = filtre.colonne
     if (filtre.genre === 'egal') requete = requete.eq(colonne, filtre.valeur)
     if (filtre.genre === 'contient') requete = requete.like(colonne, `%${filtre.valeur}%`)
+    if (filtre.genre === 'parmi') requete = requete.in(colonne, filtre.valeur)
+    if (filtre.genre === 'min') requete = requete.gte(colonne, filtre.valeur)
+    if (filtre.genre === 'max') requete = requete.lte(colonne, filtre.valeur)
     if (filtre.genre === 'comprend') {
       // Entre guillemets : une valeur peut contenir une espace ou une virgule (étiquette libre).
       const valeurs = filtre.valeur.map((valeur) => `"${valeur.replace(/(["\\])/g, '\\$1')}"`)

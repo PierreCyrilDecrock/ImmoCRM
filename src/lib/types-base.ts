@@ -56,6 +56,230 @@ export type Database = {
           },
         ]
       }
+      biens: {
+        Row: {
+          adresse: string
+          annee_construction: number | null
+          archived_at: string | null
+          chambres: number | null
+          charges_annuelles: number | null
+          code_postal: string
+          commerce_activite: string
+          commerce_bail: string
+          commerce_loyer: number | null
+          commerce_nature: string | null
+          complement: string
+          constructible: boolean | null
+          copropriete: boolean | null
+          created_at: string
+          date_livraison: string | null
+          description: string
+          dpe_classe: string | null
+          dpe_date: string | null
+          dpe_valeur: number | null
+          etage: number | null
+          etat: string | null
+          ges_classe: string | null
+          ges_date: string | null
+          ges_valeur: number | null
+          id: string
+          lot: string
+          pieces: number | null
+          prix: number | null
+          programme: string
+          recherche: string
+          statut: string
+          surface: number | null
+          surface_terrain: number | null
+          taxe_fonciere: number | null
+          type: string
+          updated_at: string
+          user_id: string
+          viabilise: boolean | null
+          viager_ages: number[]
+          viager_bouquet: number | null
+          viager_occupation: string | null
+          viager_rente: number | null
+          ville: string
+        }
+        Insert: {
+          adresse: string
+          annee_construction?: number | null
+          archived_at?: string | null
+          chambres?: number | null
+          charges_annuelles?: number | null
+          code_postal?: string
+          commerce_activite?: string
+          commerce_bail?: string
+          commerce_loyer?: number | null
+          commerce_nature?: string | null
+          complement?: string
+          constructible?: boolean | null
+          copropriete?: boolean | null
+          created_at?: string
+          date_livraison?: string | null
+          description?: string
+          dpe_classe?: string | null
+          dpe_date?: string | null
+          dpe_valeur?: number | null
+          etage?: number | null
+          etat?: string | null
+          ges_classe?: string | null
+          ges_date?: string | null
+          ges_valeur?: number | null
+          id?: string
+          lot?: string
+          pieces?: number | null
+          prix?: number | null
+          programme?: string
+          recherche?: string
+          statut?: string
+          surface?: number | null
+          surface_terrain?: number | null
+          taxe_fonciere?: number | null
+          type: string
+          updated_at?: string
+          user_id?: string
+          viabilise?: boolean | null
+          viager_ages?: number[]
+          viager_bouquet?: number | null
+          viager_occupation?: string | null
+          viager_rente?: number | null
+          ville?: string
+        }
+        Update: {
+          adresse?: string
+          annee_construction?: number | null
+          archived_at?: string | null
+          chambres?: number | null
+          charges_annuelles?: number | null
+          code_postal?: string
+          commerce_activite?: string
+          commerce_bail?: string
+          commerce_loyer?: number | null
+          commerce_nature?: string | null
+          complement?: string
+          constructible?: boolean | null
+          copropriete?: boolean | null
+          created_at?: string
+          date_livraison?: string | null
+          description?: string
+          dpe_classe?: string | null
+          dpe_date?: string | null
+          dpe_valeur?: number | null
+          etage?: number | null
+          etat?: string | null
+          ges_classe?: string | null
+          ges_date?: string | null
+          ges_valeur?: number | null
+          id?: string
+          lot?: string
+          pieces?: number | null
+          prix?: number | null
+          programme?: string
+          recherche?: string
+          statut?: string
+          surface?: number | null
+          surface_terrain?: number | null
+          taxe_fonciere?: number | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+          viabilise?: boolean | null
+          viager_ages?: number[]
+          viager_bouquet?: number | null
+          viager_occupation?: string | null
+          viager_rente?: number | null
+          ville?: string
+        }
+        Relationships: []
+      }
+      biens_prix: {
+        Row: {
+          archived_at: string | null
+          bien_id: string
+          created_at: string
+          id: string
+          prix: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          bien_id: string
+          created_at?: string
+          id?: string
+          prix: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          bien_id?: string
+          created_at?: string
+          id?: string
+          prix?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'biens_prix_bien_fk'
+            columns: ['user_id', 'bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
+      biens_proprietaires: {
+        Row: {
+          archived_at: string | null
+          bien_id: string
+          contact_id: string
+          created_at: string
+          id: string
+          quote_part: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          bien_id: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          quote_part?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          bien_id?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          quote_part?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'biens_proprietaires_bien_fk'
+            columns: ['user_id', 'bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'biens_proprietaires_contact_fk'
+            columns: ['user_id', 'contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
       contacts: {
         Row: {
           accord_appel: string

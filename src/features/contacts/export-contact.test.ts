@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { bienEssai } from '../biens/bien-essai'
 import { contactEssai } from './contact-essai'
 import {
   COLONNES_NON_EXPORTEES,
@@ -38,7 +39,10 @@ describe('texteExportContact', () => {
   })
 
   it('écrit les données en clair, rubrique par rubrique', () => {
-    const texte = texteExportContact({ contact, fichesFusionnees: [], appels: [] }, '2026-11-16')
+    const texte = texteExportContact(
+      { contact, fichesFusionnees: [], appels: [], biens: [] },
+      '2026-11-16',
+    )
     expect(texte).toContain('DONNÉES PERSONNELLES — Camille Fictif')
     expect(texte).toContain('Document établi le 16 novembre 2026')
     expect(texte).toContain('Civilité : Mme')
@@ -57,7 +61,12 @@ describe('texteExportContact', () => {
   })
 
   it('écrit « non renseigné » pour une valeur absente', () => {
-    const texte = texteExportContact({ contact: contactEssai(), fichesFusionnees: [], appels: [] })
+    const texte = texteExportContact({
+      contact: contactEssai(),
+      fichesFusionnees: [],
+      appels: [],
+      biens: [],
+    })
     expect(texte).toContain('Adresse : non renseigné')
     expect(texte).toContain('Recommandé par : non renseigné')
   })
@@ -67,6 +76,7 @@ describe('texteExportContact', () => {
       contact: contactEssai({ recommande_par_id: '00000000-0000-4000-8000-000000000009' }),
       fichesFusionnees: [],
       appels: [],
+      biens: [],
     })
     expect(texte).toContain('Recommandé par : un autre contact du fichier')
     expect(texte).not.toContain('00000000-0000-4000-8000-000000000009')
@@ -89,7 +99,23 @@ describe('texteExportContact', () => {
           telephone: '+33639980001',
         },
       ],
+      biens: [
+        {
+          lien: {
+            id: 'l1',
+            user_id: 'u',
+            created_at: '2026-11-10T10:00:00Z',
+            updated_at: '2026-11-10T10:00:00Z',
+            archived_at: null,
+            bien_id: 'b1',
+            contact_id: contact.id,
+            quote_part: 50,
+          },
+          bien: bienEssai({ adresse: '3 impasse Fictive', ville: 'Villefictive' }),
+        },
+      ],
     })
+    expect(texte).toContain('- 3 impasse Fictive, Villefictive — Ancien — quote-part : 50 %')
     expect(texte).toContain(
       '- 10 novembre 2026 — 06 39 98 00 01 — motif : Appel entrant — Rappel demandé',
     )

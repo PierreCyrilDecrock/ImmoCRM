@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { listerPage, type Resultat } from '../../lib/donnees'
 import { dateDuJour, formaterDate } from '../../lib/dates'
+import { adresseBien, libelleType } from '../biens/biens'
+import { formaterQuotePart, listerBiensDuContact, type BienDuContact } from '../biens/proprietaires'
 import {
   libelleMotifAppel,
   listerAppelsSansAccord,
@@ -31,6 +33,8 @@ export type DonneesContact = {
   fichesFusionnees: Contact[]
   /** Les appels passés sans accord, toutes fiches confondues, les plus récents d'abord. */
   appels: AppelSansAccord[]
+  /** Les biens dont la personne est ou a été notée propriétaire, toutes fiches confondues. */
+  biens: BienDuContact[]
 }
 
 const ouiNon = (valeur: boolean) => (valeur ? 'Oui' : 'Non')
@@ -206,7 +210,7 @@ function lignesFiche(contact: Contact): string[] {
 
 /** Le contenu du fichier d'export, en clair. `date` : le jour de l'export (`2026-11-16`). */
 export function texteExportContact(donnees: DonneesContact, date: string = dateDuJour()): string {
-  const { contact, fichesFusionnees, appels } = donnees
+  const { contact, fichesFusionnees, appels, biens } = donnees
   const lignes = [
     `DONNÉES PERSONNELLES — ${nomComplet(contact)}`,
     `Document établi le ${formaterDate(date)} à partir du fichier de contacts ImmoCRM.`,
@@ -221,6 +225,17 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
       appel.telephone === '' ? null : formaterTelephone(appel.telephone),
       `motif : ${libelleMotifAppel(appel.motif)}`,
       appel.detail === '' ? null : appel.detail,
+    ]
+    lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
+  }
+  lignes.push(...titre('Biens dont la personne est notée propriétaire'))
+  if (biens.length === 0) lignes.push('Aucun.')
+  for (const { lien, bien } of biens) {
+    const morceaux = [
+      adresseBien(bien),
+      libelleType(bien.type),
+      lien.quote_part === null ? null : `quote-part : ${formaterQuotePart(lien.quote_part)}`,
+      lien.archived_at === null ? null : `lien retiré le ${formaterDate(lien.archived_at)}`,
     ]
     lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
   }
@@ -250,7 +265,8 @@ export function nomFichierExport(contact: Contact, date: string = dateDuJour()):
 
 /**
  * Lit tout ce que la base contient sur une personne : sa fiche, les fiches fusionnées dans
- * celle-ci (y compris les fusions successives) et les appels sans accord de chacune.
+ * celle-ci (y compris les fusions successives), les appels sans accord de chacune et les
+ * biens dont elle est notée propriétaire (liens retirés compris).
  * Chaque table liée aux contacts, créée à une étape suivante, viendra s'ajouter ici.
  */
 export async function rassemblerDonneesContact(
@@ -284,12 +300,16 @@ export async function rassemblerDonneesContact(
   }
 
   const appels: AppelSansAccord[] = []
+  const biens: BienDuContact[] = []
   for (const idFiche of [id, ...fichesFusionnees.map((f) => f.id)]) {
     const resultat = await listerAppelsSansAccord(client, idFiche)
     if (!resultat.ok) return resultat
     appels.push(...resultat.donnees)
+    const possedes = await listerBiensDuContact(client, idFiche, 'avec')
+    if (!possedes.ok) return possedes
+    biens.push(...possedes.donnees)
   }
   appels.sort((a, b) => b.created_at.localeCompare(a.created_at))
 
-  return { ok: true, donnees: { contact: fiche.donnees, fichesFusionnees, appels } }
+  return { ok: true, donnees: { contact: fiche.donnees, fichesFusionnees, appels, biens } }
 }

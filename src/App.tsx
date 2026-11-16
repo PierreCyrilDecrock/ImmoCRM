@@ -13,8 +13,10 @@ import Composants from './pages/Composants'
 import ConfigurationManquante from './pages/ConfigurationManquante'
 import Connexion from './pages/Connexion'
 import Contacts from './pages/Contacts'
+import FicheBien from './pages/FicheBien'
 import FicheContact from './pages/FicheContact'
 import FusionContacts from './pages/FusionContacts'
+import ModifierBien from './pages/ModifierBien'
 import ModifierContact from './pages/ModifierContact'
 import MotDePasseOublie from './pages/MotDePasseOublie'
 import NouveauMotDePasse from './pages/NouveauMotDePasse'
@@ -58,6 +60,8 @@ function Pages() {
           <Route path="/contacts/:id/modifier" element={<ModifierContact />} />
           <Route path="/contacts/:id/fusionner/:autreId" element={<FusionContacts />} />
           <Route path="/biens" element={<Biens />} />
+          <Route path="/biens/:id" element={<FicheBien />} />
+          <Route path="/biens/:id/modifier" element={<ModifierBien />} />
           <Route path="/pipelines" element={<Pipelines />} />
           <Route path="/taches" element={<Taches />} />
           <Route path="/plus" element={<Plus />} />

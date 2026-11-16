@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Bouton from '../components/Bouton'
 import ChampChoix from '../components/ChampChoix'
@@ -11,6 +11,7 @@ import Liste from '../components/Liste'
 import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
+import SuiteListe from '../components/SuiteListe'
 import {
   brouillonVide,
   creerContact,
@@ -149,24 +150,6 @@ function NouveauContact({ ouverte, onFermer }: { ouverte: boolean; onFermer: () 
       </form>
     </FenetreModale>
   )
-}
-
-/** Élément invisible en bas de liste : dès qu'il approche de l'écran, la suite est demandée. */
-function Sentinelle({ onVisible }: { onVisible: () => void }) {
-  const repere = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const element = repere.current
-    if (element === null || !('IntersectionObserver' in window)) return
-    const observateur = new IntersectionObserver(
-      (entrees) => {
-        if (entrees.some((entree) => entree.isIntersecting)) onVisible()
-      },
-      { root: element.closest('main'), rootMargin: '600px 0px' },
-    )
-    observateur.observe(element)
-    return () => observateur.disconnect()
-  }, [onVisible])
-  return <div ref={repere} aria-hidden="true" />
 }
 
 /**
@@ -368,28 +351,12 @@ export default function Contacts() {
               />
             ))}
           </Liste>
-          {liste.erreurSuite !== null && (
-            <Message genre="erreur">La suite n'a pas pu être lue. {liste.erreurSuite}</Message>
-          )}
-          {liste.resteALire && (
-            <>
-              {/* Après un échec, on attend un geste plutôt que de réessayer en boucle. */}
-              {liste.erreurSuite === null && <Sentinelle onVisible={liste.chargerSuite} />}
-              <div className="self-center">
-                <Bouton
-                  variante="secondaire"
-                  disabled={liste.suiteEnCours}
-                  onClick={liste.chargerSuite}
-                >
-                  {liste.suiteEnCours
-                    ? 'Chargement…'
-                    : liste.erreurSuite !== null
-                      ? 'Réessayer'
-                      : 'Afficher la suite'}
-                </Bouton>
-              </div>
-            </>
-          )}
+          <SuiteListe
+            resteALire={liste.resteALire}
+            suiteEnCours={liste.suiteEnCours}
+            erreurSuite={liste.erreurSuite}
+            chargerSuite={liste.chargerSuite}
+          />
         </div>
       )}
 
