@@ -96,6 +96,27 @@ const ETIQUETTES_FICTIVES = [
   ['primo-accédant'],
 ]
 
+/**
+ * Situations de consentement, pour essayer le blocage de l'appel : accord inconnu (appel
+ * bloqué), accord prouvé, client existant sans accord, refus, opposition au démarchage.
+ */
+const CONSENTEMENTS_FICTIFS: readonly Partial<Creation<'contacts'>>[] = [
+  {},
+  {
+    accord_appel: 'oui',
+    accord_appel_date: '2026-09-15',
+    accord_appel_preuve: 'Accord fictif, donné de vive voix lors d’une estimation inventée',
+  },
+  { client_existant: true },
+  { accord_appel: 'non', accord_appel_date: '2026-10-01' },
+  {
+    accord_appel: 'oui',
+    accord_appel_date: '2026-06-20',
+    accord_appel_preuve: 'Case fictive cochée sur un formulaire de démonstration',
+  },
+  { opposition_demarchage: true, opposition_demarchage_date: '2026-10-20' },
+]
+
 /** Nombre de contacts du lot fictif. */
 export const NOMBRE_CONTACTS_FICTIFS = 12
 
@@ -125,6 +146,10 @@ export function contactFictif(rang: number): Creation<'contacts'> {
     source: origine?.source ?? null,
     source_detail: origine?.detail ?? '',
     temperature: TEMPERATURES_FICTIVES[rang % TEMPERATURES_FICTIVES.length] ?? null,
+    collecte_origine: 'Coordonnées fictives, inventées pour les essais',
+    collecte_date: '2026-05-04',
+    // Décalé d'un cran par rapport aux sociétés, pour que chaque situation tombe sur une personne.
+    ...CONSENTEMENTS_FICTIFS[(rang + Math.floor(rang / 6)) % CONSENTEMENTS_FICTIFS.length],
   }
 }
 

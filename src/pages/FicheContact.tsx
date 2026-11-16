@@ -22,15 +22,37 @@ import {
   restaurerContact,
   type Contact,
 } from '../features/contacts/contacts'
+import AvertissementAppel from '../features/contacts/AvertissementAppel'
+import {
+  droitAppel,
+  libelleMotifAppel,
+  listerAppelsSansAccord,
+  resumeAccord,
+  type AppelSansAccord,
+} from '../features/contacts/consentement'
+import {
+  nomFichierExport,
+  rassemblerDonneesContact,
+  texteExportContact,
+} from '../features/contacts/export-contact'
 import SelecteurContact from '../features/contacts/SelecteurContact'
+import SuppressionContact from '../features/contacts/SuppressionContact'
 import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
 import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
+import { telechargerTexte } from '../lib/telechargement'
 
 type Etat =
   | { phase: 'chargement' }
   | { phase: 'erreur'; message: string }
-  | { phase: 'pret'; contact: Contact; recommandePar: Contact | null; fusionneDans: Contact | null }
+  | {
+      phase: 'pret'
+      contact: Contact
+      recommandePar: Contact | null
+      fusionneDans: Contact | null
+      /** Les appels passés sans accord, les plus récents d'abord. */
+      appels: AppelSansAccord[]
+    }
 
 const RETOUR = { vers: '/contacts', libelle: 'Contacts' }
 
@@ -71,6 +93,10 @@ export default function FicheContact() {
   const [confirmation, setConfirmation] = useState(false)
   const [envoi, setEnvoi] = useState(false)
   const [choixFusion, setChoixFusion] = useState(false)
+  const [suppression, setSuppression] = useState(false)
+  const [exportEnCours, setExportEnCours] = useState(false)
+  // Numéro pour lequel un motif vient d'être enregistré : l'appel est rétabli pour cette visite.
+  const [appelLibere, setAppelLibere] = useState<string | null>(null)
   const naviguer = useNavigate()
 
   useEffect(() => {
@@ -92,7 +118,10 @@ export default function FicheContact() {
           ? null
           : await lireContact(client, contact.fusionne_dans_id)
       const fusionneDans = reprise !== null && reprise.ok ? reprise.donnees : null
-      return { phase: 'pret', contact, recommandePar, fusionneDans } as const
+      // L'historique des appels sans accord : son absence n'empêche pas d'afficher la fiche.
+      const historique = await listerAppelsSansAccord(client, contact.id)
+      const appels = historique.ok ? historique.donnees : []
+      return { phase: 'pret', contact, recommandePar, fusionneDans, appels } as const
     }
     void charger().then((suivant) => {
       if (actif) setEtat(suivant)
@@ -100,6 +129,7 @@ export default function FicheContact() {
     return () => {
       actif = false
       setEtat({ phase: 'chargement' })
+      setAppelLibere(null)
     }
   }, [id])
 
@@ -118,7 +148,9 @@ export default function FicheContact() {
     )
   }
 
-  const { contact, recommandePar, fusionneDans } = etat
+  const { contact, recommandePar, fusionneDans, appels } = etat
+  const droit = droitAppel(contact)
+  const appelPermis = droit.autorise || appelLibere !== null
   const archive = contact.archived_at !== null
   const fusionnee = contact.fusionne_dans_id !== null
   const telephone = contact.telephones[0]
@@ -143,8 +175,34 @@ export default function FicheContact() {
       notifier('erreur', `L'action a échoué. ${resultat.erreur.message}`)
       return
     }
-    setEtat({ phase: 'pret', contact: resultat.donnees, recommandePar, fusionneDans })
+    setEtat({ phase: 'pret', contact: resultat.donnees, recommandePar, fusionneDans, appels })
     notifier('succes', archive ? 'Contact restauré' : 'Contact archivé')
+  }
+
+  /** Un motif vient d'être enregistré : l'appel est rétabli et la fiche relue (dernier contact). */
+  async function noterAppel(appel: AppelSansAccord) {
+    setAppelLibere(appel.telephone)
+    const relue = await lireContact(exigerSupabase(), contact.id)
+    setEtat({
+      phase: 'pret',
+      contact: relue.ok ? relue.donnees : contact,
+      recommandePar,
+      fusionneDans,
+      appels: [appel, ...appels],
+    })
+  }
+
+  /** Droit d'accès : fabrique le fichier qui contient tout ce que la base sait de la personne. */
+  async function exporter() {
+    setExportEnCours(true)
+    const resultat = await rassemblerDonneesContact(exigerSupabase(), contact.id)
+    setExportEnCours(false)
+    if (!resultat.ok) {
+      notifier('erreur', `L'export a échoué. ${resultat.erreur.message}`)
+      return
+    }
+    telechargerTexte(nomFichierExport(contact), texteExportContact(resultat.donnees))
+    notifier('succes', 'Fichier enregistré dans vos téléchargements')
   }
 
   return (
@@ -202,11 +260,23 @@ export default function FicheContact() {
         </div>
       )}
 
+      {telephone !== undefined && !droit.autorise && (
+        <AvertissementAppel
+          contact={contact}
+          raison={droit.raison}
+          onEnregistre={(appel) => void noterAppel(appel)}
+        />
+      )}
+
       <div className="flex gap-2 md:max-w-md">
         <LienAction
           libelle="Appeler"
           icone="telephone"
-          href={telephone === undefined ? undefined : lienAppel(telephone)}
+          href={
+            telephone === undefined || !appelPermis
+              ? undefined
+              : lienAppel(appelLibere !== null && appelLibere !== '' ? appelLibere : telephone)
+          }
         />
         <LienAction
           libelle="SMS"
@@ -233,9 +303,13 @@ export default function FicheContact() {
               {joindre !== '' && <Information nom="Personne à joindre">{joindre}</Information>}
               {contact.telephones.map((numero, rang) => (
                 <Information key={numero} nom={rang === 0 ? 'Téléphone' : `Téléphone ${rang + 1}`}>
-                  <a href={lienAppel(numero)} className={CLASSES_LIEN}>
-                    {formaterTelephone(numero)}
-                  </a>
+                  {appelPermis ? (
+                    <a href={lienAppel(numero)} className={CLASSES_LIEN}>
+                      {formaterTelephone(numero)}
+                    </a>
+                  ) : (
+                    formaterTelephone(numero)
+                  )}
                 </Information>
               ))}
               {contact.courriels.map((adresseCourriel, rang) => (
@@ -272,6 +346,71 @@ export default function FicheContact() {
             </dl>
           )}
         </Carte>
+
+        <div className="lg:col-span-2">
+          <Carte titre="Consentement et données personnelles">
+            <dl className="divide-y divide-bord">
+              <Information nom="Accord pour être appelé">
+                {resumeAccord(contact)}
+                {contact.accord_appel_preuve !== '' && (
+                  <span className="block text-sm text-encre-douce">
+                    {contact.accord_appel_preuve}
+                  </span>
+                )}
+              </Information>
+              {contact.client_existant && <Information nom="Client existant">Oui</Information>}
+              {contact.opposition_demarchage && (
+                <Information nom="Démarchage">
+                  S'y oppose
+                  {contact.opposition_demarchage_date !== null &&
+                    ` depuis le ${formaterDate(contact.opposition_demarchage_date)}`}
+                </Information>
+              )}
+              <Information nom="Données collectées">
+                Le {formaterDate(contact.collecte_date)}
+                {contact.collecte_origine !== '' && (
+                  <span className="block text-sm text-encre-douce">{contact.collecte_origine}</span>
+                )}
+              </Information>
+              <Information nom="Dernier contact">
+                Le {formaterDate(contact.dernier_contact_le)}
+              </Information>
+              {appels.length > 0 && (
+                <Information nom="Appels sans accord">
+                  <ul className="flex flex-col gap-1">
+                    {appels.map((appel) => (
+                      <li key={appel.id}>
+                        {formaterDate(appel.created_at)} — {libelleMotifAppel(appel.motif)}
+                        {appel.detail !== '' && (
+                          <span className="block text-sm text-encre-douce">{appel.detail}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </Information>
+              )}
+            </dl>
+            <div className="mt-4 flex flex-col gap-2 md:flex-row">
+              <Bouton
+                variante="secondaire"
+                disabled={exportEnCours}
+                onClick={() => void exporter()}
+              >
+                {exportEnCours ? 'Préparation du fichier…' : 'Exporter ses données'}
+              </Bouton>
+              {!fusionnee && (
+                <Bouton variante="danger" onClick={() => setSuppression(true)}>
+                  Supprimer définitivement…
+                </Bouton>
+              )}
+            </div>
+            <p className="mt-2 text-sm text-encre-douce">
+              L'export produit un fichier texte avec tout ce qui est enregistré sur cette personne,
+              à lui remettre si elle demande ses données. La suppression définitive répond à une
+              demande d'effacement.
+            </p>
+          </Carte>
+        </div>
 
         {contact.notes !== '' && (
           <div className="lg:col-span-2">
@@ -336,6 +475,17 @@ export default function FicheContact() {
             />
           </div>
         </FenetreModale>
+      )}
+
+      {suppression && (
+        <SuppressionContact
+          contact={contact}
+          onFermer={() => setSuppression(false)}
+          onSupprime={() => {
+            notifier('succes', 'Contact supprimé définitivement')
+            void naviguer('/contacts', { replace: true })
+          }}
+        />
       )}
 
       <FenetreModale

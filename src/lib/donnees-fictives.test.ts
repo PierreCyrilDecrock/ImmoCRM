@@ -104,6 +104,20 @@ describe('contacts fictifs', () => {
     }
   })
 
+  it('couvrent les situations de consentement, avec une preuve pour chaque accord', () => {
+    const personnes = contacts.filter((contact) => contact.type === 'personne')
+    expect(personnes.some((c) => c.accord_appel === undefined)).toBe(true)
+    expect(personnes.some((c) => c.accord_appel === 'oui')).toBe(true)
+    expect(personnes.some((c) => c.accord_appel === 'non')).toBe(true)
+    expect(personnes.some((c) => c.client_existant === true)).toBe(true)
+    expect(personnes.some((c) => c.opposition_demarchage === true)).toBe(true)
+    for (const contact of contacts) {
+      if (contact.accord_appel !== 'oui') continue
+      expect(contact.accord_appel_date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(contact.accord_appel_preuve).not.toBe('')
+    }
+  })
+
   it('mélangent personnes et sociétés', () => {
     const types = new Set(contacts.map((contact) => contact.type))
     expect(types).toEqual(new Set(['personne', 'societe']))

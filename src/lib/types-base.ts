@@ -12,20 +12,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      appels_sans_accord: {
+        Row: {
+          archived_at: string | null
+          contact_id: string
+          created_at: string
+          detail: string
+          id: string
+          motif: string
+          telephone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          contact_id: string
+          created_at?: string
+          detail?: string
+          id?: string
+          motif: string
+          telephone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          contact_id?: string
+          created_at?: string
+          detail?: string
+          id?: string
+          motif?: string
+          telephone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'appels_sans_accord_contact_fk'
+            columns: ['user_id', 'contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
       contacts: {
         Row: {
+          accord_appel: string
+          accord_appel_date: string | null
+          accord_appel_preuve: string
           adresse: string
           archived_at: string | null
           civilite: string | null
+          client_existant: boolean
           code_postal: string
+          collecte_date: string
+          collecte_origine: string
           courriels: string[]
           created_at: string
+          dernier_contact_le: string
           etiquettes: string[]
           fusionne_dans_id: string | null
           id: string
           nom: string
           nom_tri: string
           notes: string
+          opposition_demarchage: boolean
+          opposition_demarchage_date: string | null
           prenom: string
           raison_sociale: string
           recherche: string
@@ -41,18 +94,27 @@ export type Database = {
           ville: string
         }
         Insert: {
+          accord_appel?: string
+          accord_appel_date?: string | null
+          accord_appel_preuve?: string
           adresse?: string
           archived_at?: string | null
           civilite?: string | null
+          client_existant?: boolean
           code_postal?: string
+          collecte_date?: string
+          collecte_origine?: string
           courriels?: string[]
           created_at?: string
+          dernier_contact_le?: string
           etiquettes?: string[]
           fusionne_dans_id?: string | null
           id?: string
           nom?: string
           nom_tri?: string
           notes?: string
+          opposition_demarchage?: boolean
+          opposition_demarchage_date?: string | null
           prenom?: string
           raison_sociale?: string
           recherche?: string
@@ -68,18 +130,27 @@ export type Database = {
           ville?: string
         }
         Update: {
+          accord_appel?: string
+          accord_appel_date?: string | null
+          accord_appel_preuve?: string
           adresse?: string
           archived_at?: string | null
           civilite?: string | null
+          client_existant?: boolean
           code_postal?: string
+          collecte_date?: string
+          collecte_origine?: string
           courriels?: string[]
           created_at?: string
+          dernier_contact_le?: string
           etiquettes?: string[]
           fusionne_dans_id?: string | null
           id?: string
           nom?: string
           nom_tri?: string
           notes?: string
+          opposition_demarchage?: boolean
+          opposition_demarchage_date?: string | null
           prenom?: string
           raison_sociale?: string
           recherche?: string
@@ -148,18 +219,27 @@ export type Database = {
           p_telephones: string[]
         }
         Returns: {
+          accord_appel: string
+          accord_appel_date: string | null
+          accord_appel_preuve: string
           adresse: string
           archived_at: string | null
           civilite: string | null
+          client_existant: boolean
           code_postal: string
+          collecte_date: string
+          collecte_origine: string
           courriels: string[]
           created_at: string
+          dernier_contact_le: string
           etiquettes: string[]
           fusionne_dans_id: string | null
           id: string
           nom: string
           nom_tri: string
           notes: string
+          opposition_demarchage: boolean
+          opposition_demarchage_date: string | null
           prenom: string
           raison_sociale: string
           recherche: string
@@ -191,18 +271,27 @@ export type Database = {
       fusionner_contacts: {
         Args: { p_absorbe: string; p_garde: string; p_valeurs: Json }
         Returns: {
+          accord_appel: string
+          accord_appel_date: string | null
+          accord_appel_preuve: string
           adresse: string
           archived_at: string | null
           civilite: string | null
+          client_existant: boolean
           code_postal: string
+          collecte_date: string
+          collecte_origine: string
           courriels: string[]
           created_at: string
+          dernier_contact_le: string
           etiquettes: string[]
           fusionne_dans_id: string | null
           id: string
           nom: string
           nom_tri: string
           notes: string
+          opposition_demarchage: boolean
+          opposition_demarchage_date: string | null
           prenom: string
           raison_sociale: string
           recherche: string
@@ -225,6 +314,10 @@ export type Database = {
         }
       }
       normaliser_recherche: { Args: { texte: string }; Returns: string }
+      supprimer_contact_definitivement: {
+        Args: { p_id: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
