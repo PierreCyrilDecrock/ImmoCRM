@@ -12,6 +12,7 @@ Documents de référence :
 - [docs/plan-developpement.md](docs/plan-developpement.md) — les 45 étapes de construction et leurs prompts.
 - [docs/avancement.md](docs/avancement.md) — où en est le projet, étape par étape.
 - [docs/design.md](docs/design.md) — les composants d'interface disponibles, à réutiliser dans chaque écran.
+- [docs/donnees.md](docs/donnees.md) — les conventions des tables, la couche d'accès aux données, les données fictives et le test de sécurité.
 
 ## Les trois règles du dépôt public
 
@@ -70,6 +71,7 @@ Principes qui en découlent :
 | `src/lib` | Outils transverses : accès aux données (`supabase.ts`), dates, formatage |
 | `src/features/<domaine>` | Tout ce qui est propre à un domaine métier (`contacts`, `biens`, `taches`…) |
 | `supabase/migrations` | Fichiers SQL numérotés, appliqués par Claude Code via le connecteur Supabase |
+| `supabase/tests` | Test de sécurité à lancer dans Supabase après chaque migration |
 | `.claude/skills` | Procédures que Claude Code suit (par exemple pour agir sur Supabase) |
 | `docs` | Cadrage, plan, avancement et guides |
 
@@ -79,6 +81,7 @@ Principes qui en découlent :
 - **TypeScript strict.** Pas de `any` ; les cas « valeur absente » sont traités explicitement.
 - **Composants.** Fonctions React, un composant par fichier, fichier en `PascalCase.tsx`. Les autres fichiers sont en `kebab-case.ts`.
 - **Logique séparée de l'affichage.** Les calculs (dates, relances, scores, validations) sont des fonctions pures dans `src/lib` ou `src/features/<domaine>`, chacune accompagnée de tests.
+- **Données.** Toute table suit `docs/donnees.md` ; tout accès passe par `src/lib/donnees.ts`, jamais par un appel direct à Supabase dans une page.
 - **Tests.** Fichier `nom.test.ts` placé à côté du fichier testé. Toute règle métier calculée a son test.
 - **Styles.** Classes Tailwind dans les composants ; pas de feuille de style séparée, sauf nécessité. Couleurs par leur nom (`bg-surface`, `text-encre`…), jamais en dur : voir `docs/design.md`.
 - **Mise en forme.** Prettier décide (sans point-virgule, guillemets simples, 100 caractères). Ne pas en débattre : lancer `npm run format`.

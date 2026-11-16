@@ -8,7 +8,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 
 | Phase | Étapes terminées | État |
 | --- | --- | --- |
-| Phase 0 — Fondations | 4 sur 5 | en cours |
+| Phase 0 — Fondations | 5 sur 5 | terminée |
 | Version 1 — Le quotidien | 0 sur 14 | à faire |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
@@ -22,7 +22,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 | 0.2 | Déploiement sur GitHub Pages | terminée | 16/11/2026 | Vérification automatique de chaque pull request ; publication sur GitHub Pages à chaque fusion dans `main` ; chemin de base `/ImmoCRM/`, modifiable par la variable `BASE_PATH`. |
 | 0.3 | Supabase et connexion | terminée | 16/11/2026 | Connexion par courriel et mot de passe, déconnexion, session conservée, mot de passe oublié ; toutes les pages protégées ; configuration par variables (`.env.local` pour le test, variables GitHub pour le réel). |
 | 0.4 | Coquille de l'application | terminée | 16/11/2026 | Navigation en bas (téléphone) ou à gauche (tablette, ordinateur), six pages vides, système de design décrit dans `docs/design.md`, thème clair et sombre, installation sur l'écran d'accueil, bandeau « Connexion perdue ». |
-| 0.5 | Conventions de données et sécurité | à faire | | |
+| 0.5 | Conventions de données et sécurité | terminée | 16/11/2026 | Conventions dans `docs/donnees.md` ; première migration (table `reglages`) appliquée sur le projet de test, pas encore sur le projet réel ; couche d'accès aux données commune ; page Réglages (projet TEST ou RÉEL, nom affiché, contrôle d'accès sans connexion) ; test de sécurité `supabase/tests/securite-acces.sql`. |
 
 ## Version 1 — Le quotidien
 
@@ -88,5 +88,8 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 
 - Les règles juridiques et les chiffres de l'offre gratuite de Supabase cités dans le cadrage sont à vérifier (voir cadrage, sections Conformité et Architecture technique).
 - Depuis l'environnement de Claude Code, Supabase n'est pas joignable par le réseau : la connexion a été vérifiée avec des réponses simulées, pas avec un vrai compte. La vérification réelle se fait sur le site publié.
+- La migration `0001_fondations_reglages` n'est appliquée que sur le projet de test. Tant qu'elle ne l'est pas sur le projet réel (accord explicite requis), la page Réglages du site branché sur le projet réel ne peut ni lire ni enregistrer.
+- Supabase signale, sur le projet de test, que la protection contre les mots de passe compromis est désactivée (réglage d'Auth, hors migrations). À activer si l'offre le permet.
+- Aucun lot de données fictives n'existe encore : le premier arrive avec les contacts (étape 1.1).
 - `npm audit` signale 7 alertes de niveau modéré dans des outils de développement (chaîne ESLint). Elles ne concernent pas le site publié ; à revoir lors d'une mise à jour des dépendances.
 - L'installation sur l'écran d'accueil ne met rien en réserve dans l'appareil : sans réseau, l'application installée ne s'ouvre pas (choix du cadrage : pas de mode hors réseau).
