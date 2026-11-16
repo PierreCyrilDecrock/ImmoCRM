@@ -51,7 +51,8 @@ Principes qui en découlent :
 | `npm run dev` | Lance le site en local, avec rechargement automatique |
 | `npm run lint` | Vérifie la qualité du code (ESLint) et sa mise en forme (Prettier) |
 | `npm run test` | Lance les tests automatiques (Vitest) |
-| `npm run build` | Vérifie les types puis construit le site dans `dist/` |
+| `npm run build` | Vérifie les types puis construit le site dans `dist/`, pour le chemin `/ImmoCRM/` de GitHub Pages (`BASE_PATH=/ npm run build` pour un autre chemin) |
+| `npm run preview` | Montre en local le site construit, tel qu'il sera publié |
 | `npm run format` | Remet en forme le code automatiquement |
 
 ## Organisation des dossiers

@@ -8,7 +8,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 
 | Phase | Étapes terminées | État |
 | --- | --- | --- |
-| Phase 0 — Fondations | 1 sur 5 | en cours |
+| Phase 0 — Fondations | 2 sur 5 | en cours |
 | Version 1 — Le quotidien | 0 sur 14 | à faire |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
@@ -19,7 +19,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 | Étape | Intitulé | État | Date | Notes |
 | --- | --- | --- | --- | --- |
 | 0.1 | Socle du projet | terminée | 16/11/2026 | Squelette Vite, React, TypeScript, Tailwind ; page d'accueil provisoire en version 0.1.0 ; lint, tests et build en place. |
-| 0.2 | Déploiement sur GitHub Pages | à faire | | |
+| 0.2 | Déploiement sur GitHub Pages | terminée | 16/11/2026 | Vérification automatique de chaque pull request ; publication sur GitHub Pages à chaque fusion dans `main` ; chemin de base `/ImmoCRM/`, modifiable par la variable `BASE_PATH`. |
 | 0.3 | Supabase et connexion | à faire | | |
 | 0.4 | Coquille de l'application | à faire | | |
 | 0.5 | Conventions de données et sécurité | à faire | | |
