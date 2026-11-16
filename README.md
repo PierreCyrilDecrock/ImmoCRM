@@ -7,6 +7,7 @@ Application web statique (GitHub Pages) connectée à Supabase.
 ## Documents
 
 - [Analyse des besoins et cadrage](docs/cadrage.md)
+- [Plan de développement, prompts étape par étape](docs/plan-developpement.md)
 
 ## Règles du dépôt (public)
 
