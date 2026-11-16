@@ -12,6 +12,8 @@ import Composants from './pages/Composants'
 import ConfigurationManquante from './pages/ConfigurationManquante'
 import Connexion from './pages/Connexion'
 import Contacts from './pages/Contacts'
+import FicheContact from './pages/FicheContact'
+import ModifierContact from './pages/ModifierContact'
 import MotDePasseOublie from './pages/MotDePasseOublie'
 import NouveauMotDePasse from './pages/NouveauMotDePasse'
 import Pipelines from './pages/Pipelines'
@@ -50,6 +52,8 @@ function Pages() {
         <Route element={<MiseEnPage />}>
           <Route path="/" element={<Aujourdhui />} />
           <Route path="/contacts" element={<Contacts />} />
+          <Route path="/contacts/:id" element={<FicheContact />} />
+          <Route path="/contacts/:id/modifier" element={<ModifierContact />} />
           <Route path="/biens" element={<Biens />} />
           <Route path="/pipelines" element={<Pipelines />} />
           <Route path="/taches" element={<Taches />} />

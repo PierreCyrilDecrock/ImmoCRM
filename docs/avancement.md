@@ -9,7 +9,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 | Phase | Étapes terminées | État |
 | --- | --- | --- |
 | Phase 0 — Fondations | 5 sur 5 | terminée |
-| Version 1 — Le quotidien | 0 sur 14 | à faire |
+| Version 1 — Le quotidien | 1 sur 14 | en cours |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
 | Version 4 — Le confort | 0 sur 7 | à faire |
@@ -28,7 +28,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 
 | Étape | Intitulé | État | Date | Notes |
 | --- | --- | --- | --- | --- |
-| 1.1 | Contacts : fiche et liste | à faire | | |
+| 1.1 | Contacts : fiche et liste | terminée | 16/11/2026 | Migration `0002_contacts` appliquée sur le projet de test (pas encore sur le réel) ; liste triée par nom, création rapide, fiche avec Appeler, SMS et Courriel, modification, archivage et restauration ; rôles multiples et étiquettes libres ; validation et formatage des téléphones français ; premier lot de 12 contacts fictifs. |
 | 1.2 | Contacts : recherche, filtres, doublons | à faire | | |
 | 1.3 | Contacts : consentement et RGPD | à faire | | |
 | 1.4 | Biens : fiche et liste | à faire | | |
@@ -89,6 +89,8 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 - Les règles juridiques et les chiffres de l'offre gratuite de Supabase cités dans le cadrage sont à vérifier (voir cadrage, sections Conformité et Architecture technique).
 - Depuis l'environnement de Claude Code, Supabase n'est pas joignable par le réseau : la connexion a été vérifiée avec des réponses simulées, pas avec un vrai compte. La vérification réelle se fait sur le site publié.
 - Supabase signale, sur le projet de test, que la protection contre les mots de passe compromis est désactivée (réglage d'Auth, hors migrations). À activer si l'offre le permet.
-- Aucun lot de données fictives n'existe encore : le premier arrive avec les contacts (étape 1.1).
+- La migration `0002_contacts` reste à appliquer sur le projet réel, après validation de l'étape 1.1 sur le test et avec votre accord.
+- La liste des contacts lit au plus 1 000 fiches (limite de Supabase par lecture) : à traiter avec la recherche de l'étape 1.2.
+- Un contact se crée avec un nom seul : le téléphone est conseillé, pas obligatoire (un notaire peut n'avoir qu'un courriel).
 - `npm audit` signale 7 alertes de niveau modéré dans des outils de développement (chaîne ESLint). Elles ne concernent pas le site publié ; à revoir lors d'une mise à jour des dépendances.
 - L'installation sur l'écran d'accueil ne met rien en réserve dans l'appareil : sans réseau, l'application installée ne s'ouvre pas (choix du cadrage : pas de mode hors réseau).

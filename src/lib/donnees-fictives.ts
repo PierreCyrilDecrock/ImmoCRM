@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Resultat } from './donnees'
+import { creer, type Creation, type Resultat } from './donnees'
 import type { Environnement } from './environnement'
 
 /**
@@ -79,8 +79,68 @@ export type JeuFictif = {
   inserer: (client: SupabaseClient) => Promise<Resultat<number>>
 }
 
-/** Les lots disponibles. Vide tant qu'aucune table métier n'existe (premier lot : étape 1.1). */
-export const JEUX_FICTIFS: readonly JeuFictif[] = []
+const ROLES_FICTIFS = [['vendeur'], ['acquereur'], ['vendeur', 'acquereur'], ['prescripteur'], []]
+const SOURCES_FICTIVES = [
+  { source: 'pige', detail: 'Annonce fictive, maison 4 pièces' },
+  { source: 'porte_a_porte', detail: "Rencontre fictive, rue de l'Exemple" },
+  { source: 'boitage', detail: 'Retour fictif du boitage de printemps' },
+  { source: 'demande_entrante', detail: 'Demande fictive depuis un portail' },
+  { source: 'reseaux_sociaux_site', detail: 'Message fictif après une publication' },
+  { source: 'sphere_personnelle', detail: 'Ancien client fictif' },
+]
+const TEMPERATURES_FICTIVES = ['chaud', 'tiede', 'froid', 'veille']
+const ETIQUETTES_FICTIVES = [
+  ['investisseur'],
+  [],
+  ['résidence secondaire', 'retraité'],
+  ['primo-accédant'],
+]
+
+/** Nombre de contacts du lot fictif. */
+export const NOMBRE_CONTACTS_FICTIFS = 12
+
+/**
+ * Fabrique un contact fictif, prêt à être enregistré. Un sur six est une société
+ * (une étude de notaire inventée) ; les autres sont des personnes.
+ */
+export function contactFictif(rang: number): Creation<'contacts'> {
+  const personne = personneFictive(rang)
+  const origine = SOURCES_FICTIVES[rang % SOURCES_FICTIVES.length]
+  const societe = rang % 6 === 5
+  return {
+    type: societe ? 'societe' : 'personne',
+    civilite: rang % 2 === 0 ? 'mme' : 'm',
+    prenom: personne.prenom,
+    nom: personne.nom,
+    raison_sociale: societe ? `Étude ${personne.nom} et associés` : '',
+    // Format d'enregistrement : international, sans espace.
+    telephones: [`+33${personne.telephone.replace(/\s/g, '').slice(1)}`],
+    courriels: [personne.courriel],
+    adresse: personne.adresse,
+    code_postal: personne.codePostal,
+    ville: personne.ville,
+    notes: 'Fiche fictive, créée pour les essais.',
+    roles: societe ? ['notaire'] : (ROLES_FICTIFS[rang % ROLES_FICTIFS.length] ?? []),
+    etiquettes: ['fictif', ...(ETIQUETTES_FICTIVES[rang % ETIQUETTES_FICTIVES.length] ?? [])],
+    source: origine?.source ?? null,
+    source_detail: origine?.detail ?? '',
+    temperature: TEMPERATURES_FICTIVES[rang % TEMPERATURES_FICTIVES.length] ?? null,
+  }
+}
+
+const JEU_CONTACTS: JeuFictif = {
+  libelle: 'Contacts',
+  async inserer(client) {
+    for (let rang = 0; rang < NOMBRE_CONTACTS_FICTIFS; rang += 1) {
+      const resultat = await creer(client, 'contacts', contactFictif(rang))
+      if (!resultat.ok) return resultat
+    }
+    return { ok: true, donnees: NOMBRE_CONTACTS_FICTIFS }
+  },
+}
+
+/** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
+export const JEUX_FICTIFS: readonly JeuFictif[] = [JEU_CONTACTS]
 
 export type BilanFictif = { ok: true; lignes: number } | { ok: false; message: string }
 

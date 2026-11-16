@@ -12,6 +12,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      contacts: {
+        Row: {
+          adresse: string
+          archived_at: string | null
+          civilite: string | null
+          code_postal: string
+          courriels: string[]
+          created_at: string
+          etiquettes: string[]
+          id: string
+          nom: string
+          notes: string
+          prenom: string
+          raison_sociale: string
+          recommande_par_id: string | null
+          roles: string[]
+          source: string | null
+          source_detail: string
+          telephones: string[]
+          temperature: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          ville: string
+        }
+        Insert: {
+          adresse?: string
+          archived_at?: string | null
+          civilite?: string | null
+          code_postal?: string
+          courriels?: string[]
+          created_at?: string
+          etiquettes?: string[]
+          id?: string
+          nom?: string
+          notes?: string
+          prenom?: string
+          raison_sociale?: string
+          recommande_par_id?: string | null
+          roles?: string[]
+          source?: string | null
+          source_detail?: string
+          telephones?: string[]
+          temperature?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+          ville?: string
+        }
+        Update: {
+          adresse?: string
+          archived_at?: string | null
+          civilite?: string | null
+          code_postal?: string
+          courriels?: string[]
+          created_at?: string
+          etiquettes?: string[]
+          id?: string
+          nom?: string
+          notes?: string
+          prenom?: string
+          raison_sociale?: string
+          recommande_par_id?: string | null
+          roles?: string[]
+          source?: string | null
+          source_detail?: string
+          telephones?: string[]
+          temperature?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+          ville?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contacts_recommande_par_fk'
+            columns: ['user_id', 'recommande_par_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
       reglages: {
         Row: {
           created_at: string

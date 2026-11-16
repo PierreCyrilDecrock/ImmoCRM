@@ -1,0 +1,310 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import Bouton from '../components/Bouton'
+import Carte from '../components/Carte'
+import EtatChargement from '../components/EtatChargement'
+import Etiquette, { type GenreEtiquette } from '../components/Etiquette'
+import FenetreModale from '../components/FenetreModale'
+import LienAction from '../components/LienAction'
+import Message from '../components/Message'
+import { useNotifications } from '../components/notifications-contexte'
+import Page from '../components/Page'
+import {
+  adresseComplete,
+  archiverContact,
+  interlocuteur,
+  libelleRole,
+  libelleSource,
+  libelleTemperature,
+  lireContact,
+  nomAvecCivilite,
+  nomComplet,
+  restaurerContact,
+  type Contact,
+} from '../features/contacts/contacts'
+import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
+import { formaterDate } from '../lib/dates'
+import { exigerSupabase } from '../lib/supabase'
+
+type Etat =
+  | { phase: 'chargement' }
+  | { phase: 'erreur'; message: string }
+  | { phase: 'pret'; contact: Contact; recommandePar: Contact | null }
+
+const RETOUR = { vers: '/contacts', libelle: 'Contacts' }
+
+const GENRE_TEMPERATURE: Record<string, GenreEtiquette> = {
+  chaud: 'danger',
+  tiede: 'alerte',
+  froid: 'info',
+  veille: 'neutre',
+}
+
+const CLASSES_LIEN =
+  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
+
+/** Une information de la fiche : son nom à gauche (au-dessus sur téléphone), sa valeur. */
+function Information({ nom, children }: { nom: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5 py-2 md:flex-row md:gap-4">
+      <dt className="text-sm text-encre-douce md:w-36 md:shrink-0 md:pt-0.5">{nom}</dt>
+      <dd className="min-w-0 text-base break-words text-encre">{children}</dd>
+    </div>
+  )
+}
+
+/** Emplacement d'une rubrique qui arrivera à une étape suivante. */
+function Emplacement({ titre, children }: { titre: string; children: string }) {
+  return (
+    <Carte titre={titre}>
+      <p className="text-sm text-encre-douce">{children}</p>
+    </Carte>
+  )
+}
+
+/** Fiche d'un contact : coordonnées et actions en tête, puis les rubriques liées. */
+export default function FicheContact() {
+  const { id = '' } = useParams()
+  const { notifier } = useNotifications()
+  const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
+  const [confirmation, setConfirmation] = useState(false)
+  const [envoi, setEnvoi] = useState(false)
+
+  useEffect(() => {
+    let actif = true
+    async function charger() {
+      const client = exigerSupabase()
+      const resultat = await lireContact(client, id)
+      if (!resultat.ok) return { phase: 'erreur', message: resultat.erreur.message } as const
+      const contact = resultat.donnees
+      // Le nom de la personne qui a recommandé : son absence n'empêche pas d'afficher la fiche.
+      const origine =
+        contact.recommande_par_id === null
+          ? null
+          : await lireContact(client, contact.recommande_par_id)
+      const recommandePar = origine !== null && origine.ok ? origine.donnees : null
+      return { phase: 'pret', contact, recommandePar } as const
+    }
+    void charger().then((suivant) => {
+      if (actif) setEtat(suivant)
+    })
+    return () => {
+      actif = false
+      setEtat({ phase: 'chargement' })
+    }
+  }, [id])
+
+  if (etat.phase === 'chargement') {
+    return (
+      <Page titre="Contact" retour={RETOUR}>
+        <EtatChargement />
+      </Page>
+    )
+  }
+  if (etat.phase === 'erreur') {
+    return (
+      <Page titre="Contact" retour={RETOUR}>
+        <Message genre="erreur">La fiche n'a pas pu être ouverte. {etat.message}</Message>
+      </Page>
+    )
+  }
+
+  const { contact, recommandePar } = etat
+  const archive = contact.archived_at !== null
+  const telephone = contact.telephones[0]
+  const portable = contact.telephones.find(estPortable) ?? telephone
+  const courriel = contact.courriels[0]
+  const adresse = adresseComplete(contact)
+  const joindre = interlocuteur(contact)
+  const source = libelleSource(contact.source)
+  const temperature = libelleTemperature(contact.temperature)
+  const avecPastilles =
+    archive || temperature !== null || contact.roles.length > 0 || contact.etiquettes.length > 0
+
+  async function changerArchivage() {
+    setEnvoi(true)
+    const client = exigerSupabase()
+    const resultat = archive
+      ? await restaurerContact(client, contact.id)
+      : await archiverContact(client, contact.id)
+    setEnvoi(false)
+    setConfirmation(false)
+    if (!resultat.ok) {
+      notifier('erreur', `L'action a échoué. ${resultat.erreur.message}`)
+      return
+    }
+    setEtat({ phase: 'pret', contact: resultat.donnees, recommandePar })
+    notifier('succes', archive ? 'Contact restauré' : 'Contact archivé')
+  }
+
+  return (
+    <Page
+      titre={nomAvecCivilite(contact)}
+      retour={RETOUR}
+      actions={
+        <Link
+          to={`/contacts/${contact.id}/modifier`}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-surface px-4 text-base font-semibold text-encre ring-1 ring-bord-fort ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          Modifier
+        </Link>
+      }
+    >
+      {archive && (
+        <Message genre="info">
+          Cette fiche est archivée depuis le {formaterDate(contact.archived_at)} : elle n'apparaît
+          plus dans la liste des contacts.
+        </Message>
+      )}
+
+      {avecPastilles && (
+        <div className="flex flex-wrap gap-2">
+          {archive && <Etiquette genre="alerte">Archivé</Etiquette>}
+          {temperature !== null && (
+            <Etiquette genre={GENRE_TEMPERATURE[contact.temperature ?? ''] ?? 'neutre'}>
+              {temperature}
+            </Etiquette>
+          )}
+          {contact.roles.map((role) => (
+            <Etiquette key={role} genre="info">
+              {libelleRole(role)}
+            </Etiquette>
+          ))}
+          {contact.etiquettes.map((etiquette) => (
+            <Etiquette key={etiquette}>{etiquette}</Etiquette>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2 md:max-w-md">
+        <LienAction
+          libelle="Appeler"
+          icone="telephone"
+          href={telephone === undefined ? undefined : lienAppel(telephone)}
+        />
+        <LienAction
+          libelle="SMS"
+          icone="sms"
+          href={portable === undefined ? undefined : lienSms(portable)}
+        />
+        <LienAction
+          libelle="Courriel"
+          icone="courriel"
+          href={courriel === undefined ? undefined : `mailto:${courriel}`}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Carte titre="Coordonnées">
+          {contact.telephones.length + contact.courriels.length === 0 &&
+          adresse === '' &&
+          joindre === '' ? (
+            <p className="text-sm text-encre-douce">
+              Aucune coordonnée pour l'instant. Touchez « Modifier » pour en ajouter.
+            </p>
+          ) : (
+            <dl className="divide-y divide-bord">
+              {joindre !== '' && <Information nom="Personne à joindre">{joindre}</Information>}
+              {contact.telephones.map((numero, rang) => (
+                <Information key={numero} nom={rang === 0 ? 'Téléphone' : `Téléphone ${rang + 1}`}>
+                  <a href={lienAppel(numero)} className={CLASSES_LIEN}>
+                    {formaterTelephone(numero)}
+                  </a>
+                </Information>
+              ))}
+              {contact.courriels.map((adresseCourriel, rang) => (
+                <Information
+                  key={adresseCourriel}
+                  nom={rang === 0 ? 'Courriel' : `Courriel ${rang + 1}`}
+                >
+                  <a href={`mailto:${adresseCourriel}`} className={CLASSES_LIEN}>
+                    {adresseCourriel}
+                  </a>
+                </Information>
+              ))}
+              {adresse !== '' && <Information nom="Adresse">{adresse}</Information>}
+            </dl>
+          )}
+        </Carte>
+
+        <Carte titre="Origine du contact">
+          {source === null ? (
+            <p className="text-sm text-encre-douce">Source non précisée.</p>
+          ) : (
+            <dl className="divide-y divide-bord">
+              <Information nom="Source">{source}</Information>
+              {contact.source_detail !== '' && (
+                <Information nom="Détail">{contact.source_detail}</Information>
+              )}
+              {recommandePar !== null && (
+                <Information nom="Recommandé par">
+                  <Link to={`/contacts/${recommandePar.id}`} className={CLASSES_LIEN}>
+                    {nomComplet(recommandePar)}
+                  </Link>
+                </Information>
+              )}
+            </dl>
+          )}
+        </Carte>
+
+        {contact.notes !== '' && (
+          <div className="lg:col-span-2">
+            <Carte titre="Notes">
+              <p className="text-base break-words whitespace-pre-wrap text-encre">
+                {contact.notes}
+              </p>
+            </Carte>
+          </div>
+        )}
+
+        <Emplacement titre="Projets">
+          Les projets de vente et de recherche de ce contact s'afficheront ici.
+        </Emplacement>
+        <Emplacement titre="Biens">Les biens liés à ce contact s'afficheront ici.</Emplacement>
+        <Emplacement titre="Tâches">
+          Les relances et les rendez-vous à venir s'afficheront ici.
+        </Emplacement>
+        <Emplacement titre="Journal">
+          Les appels, messages, visites et notes passés s'afficheront ici.
+        </Emplacement>
+      </div>
+
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <p className="text-sm text-encre-douce">
+          Fiche créée le {formaterDate(contact.created_at)}, modifiée le{' '}
+          {formaterDate(contact.updated_at)}.
+        </p>
+        {archive ? (
+          <Bouton variante="secondaire" disabled={envoi} onClick={() => void changerArchivage()}>
+            {envoi ? 'Restauration…' : 'Restaurer la fiche'}
+          </Bouton>
+        ) : (
+          <Bouton variante="secondaire" icone="archiver" onClick={() => setConfirmation(true)}>
+            Archiver
+          </Bouton>
+        )}
+      </div>
+
+      <FenetreModale
+        ouverte={confirmation}
+        titre="Archiver ce contact ?"
+        onFermer={() => setConfirmation(false)}
+        pied={
+          <>
+            <Bouton pleineLargeur disabled={envoi} onClick={() => void changerArchivage()}>
+              {envoi ? 'Archivage…' : 'Archiver'}
+            </Bouton>
+            <Bouton variante="secondaire" pleineLargeur onClick={() => setConfirmation(false)}>
+              Annuler
+            </Bouton>
+          </>
+        }
+      >
+        <p className="text-base text-encre">
+          {nomComplet(contact)} quittera la liste des contacts. Rien n'est supprimé : la fiche reste
+          dans « Contacts archivés » et peut être restaurée à tout moment.
+        </p>
+      </FenetreModale>
+    </Page>
+  )
+}

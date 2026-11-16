@@ -2,12 +2,15 @@ import { useState } from 'react'
 import Bouton from '../components/Bouton'
 import Carte from '../components/Carte'
 import ChampChoix from '../components/ChampChoix'
+import ChampEtiquettes from '../components/ChampEtiquettes'
 import ChampSaisie from '../components/ChampSaisie'
 import ChampTexteLong from '../components/ChampTexteLong'
+import ChoixMultiple from '../components/ChoixMultiple'
 import EtatChargement from '../components/EtatChargement'
 import EtatVide from '../components/EtatVide'
 import Etiquette from '../components/Etiquette'
 import FenetreModale from '../components/FenetreModale'
+import LienAction from '../components/LienAction'
 import LigneListe from '../components/LigneListe'
 import Liste from '../components/Liste'
 import Message from '../components/Message'
@@ -21,6 +24,8 @@ import Page from '../components/Page'
 export default function Composants() {
   const { notifier } = useNotifications()
   const [modaleOuverte, setModaleOuverte] = useState(false)
+  const [roles, setRoles] = useState<string[]>(['vendeur'])
+  const [etiquettes, setEtiquettes] = useState(['investisseur'])
 
   return (
     <Page titre="Composants de l'interface" retour={{ vers: '/plus', libelle: 'Plus' }}>
@@ -119,6 +124,36 @@ export default function Composants() {
           <Etiquette genre="succes">Succès</Etiquette>
           <Etiquette genre="alerte">Alerte</Etiquette>
           <Etiquette genre="danger">Danger</Etiquette>
+        </div>
+      </Carte>
+
+      <Carte titre="Choix multiples et étiquettes libres">
+        <div className="flex flex-col gap-4">
+          <ChoixMultiple
+            libelle="Rôles"
+            options={[
+              { valeur: 'vendeur', libelle: 'Vendeur' },
+              { valeur: 'acquereur', libelle: 'Acquéreur' },
+              { valeur: 'notaire', libelle: 'Notaire' },
+            ]}
+            valeurs={roles}
+            onChange={setRoles}
+          />
+          <ChampEtiquettes
+            libelle="Étiquettes"
+            etiquettes={etiquettes}
+            onChange={setEtiquettes}
+            ajouter={(liste, saisie) => [...liste, saisie.trim()]}
+            aide="Validez par « Entrée » ; touchez une étiquette pour la retirer."
+          />
+        </div>
+      </Carte>
+
+      <Carte titre="Liens d'action">
+        <div className="flex gap-2 md:max-w-md">
+          <LienAction libelle="Appeler" icone="telephone" href="tel:+33639980000" />
+          <LienAction libelle="SMS" icone="sms" href="sms:+33639980000" />
+          <LienAction libelle="Courriel" icone="courriel" />
         </div>
       </Carte>
 

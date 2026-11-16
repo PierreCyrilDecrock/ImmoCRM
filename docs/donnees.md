@@ -106,6 +106,10 @@ const resultat = await lister(exigerSupabase(), 'reglages', { limite: 1 })
 if (!resultat.ok) notifier('erreur', resultat.erreur.message)
 ```
 
+Une valeur choisie dans une liste fermée (type, rôle, source, température) est une colonne de texte, bornée par une contrainte dans la migration ; ses libellés français sont dans le code du domaine (`src/features/contacts/contacts.ts`). Un téléphone est enregistré au format international sans espace (`+33612345678`) et affiché à la française (`src/features/contacts/telephone.ts`).
+
+Supabase renvoie au plus 1 000 lignes par lecture : `lister` ne va pas au-delà. Suffisant pour démarrer ; la recherche de l'étape 1.2 devra en tenir compte.
+
 Chaque domaine range ses propres fonctions dans `src/features/<domaine>` (exemple : `src/features/reglages/reglages.ts`), bâties sur cette couche. Pour les tests, `src/lib/faux-client.ts` simule Supabase sans réseau.
 
 ### Types TypeScript
@@ -131,7 +135,7 @@ L'application reconnaît le projet de test à son adresse (`src/lib/environnemen
 | Courriel | Domaine `exemple.invalid`, qui ne peut recevoir aucun message |
 | Adresse | `00000 Villefictive`, rue de l'Exemple, avenue du Test… |
 
-L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Aujourd'hui elle montre un aperçu : il n'y a encore aucune table métier à remplir. Chaque étape qui crée une table (contacts à l'étape 1.1) ajoute son lot à la liste `JEUX_FICTIFS`.
+L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif ») ; chaque appui en ajoute 12 de plus. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
 
 Cette protection est un garde-fou contre une fausse manœuvre, pas une barrière de sécurité : c'est un contrôle fait par le site. Elle évite de mélanger du faux aux vraies fiches.
 
