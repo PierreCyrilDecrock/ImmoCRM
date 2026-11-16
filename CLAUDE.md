@@ -20,7 +20,11 @@ Le dépôt GitHub est public : tout ce qui y entre est visible par tous, pour to
 2. **Aucune clé d'administration Supabase** (clé `service_role`) dans le dépôt. Elle ne doit jamais être demandée ni collée dans une conversation. Les secrets vivent dans les réglages de GitHub ou de Supabase.
 3. **Des données fictives pour les tests**, clairement fausses (noms, adresses et téléphones inventés).
 
-Les fichiers `.env` ne sont jamais suivis par git (voir `.gitignore`).
+**Seule la clé publique de Supabase est utilisée dans le code** (clé `anon` ou `publishable`). Elle est visible par tous dans le site publié, c'est normal : **la sécurité repose sur les règles d'accès par ligne** de chaque table, jamais sur le secret d'une clé ni sur un contrôle fait dans le navigateur. Une table sans règle d'accès est une faille.
+
+L'adresse et la clé publique ne sont pas écrites dans le code : elles viennent des variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_CLE_PUBLIQUE` (fichier `.env.local` en développement pour le projet de test, variables du dépôt GitHub à la publication pour le projet réel ; modèle dans `.env.example`).
+
+Les fichiers `.env` ne sont jamais suivis par git (voir `.gitignore`), à l'exception du modèle `.env.example`, qui ne contient aucune valeur.
 
 ## Choix techniques
 
@@ -33,6 +37,7 @@ Fixés par le plan de développement. Ne pas les changer sans accord explicite.
 | Navigation | Routage par ancre (`HashRouter`, adresses en `#/contacts`) | Fonctionne sur GitHub Pages sans configuration serveur |
 | Données | Supabase (`supabase-js`), règles d'accès par ligne sur chaque table | La sécurité est portée par la base, pas par le site |
 | Environnements | Deux projets Supabase : test (données fictives) et réel | Tester sans toucher aux vraies fiches |
+| Connexion | Courriel et mot de passe (Supabase Auth), un seul compte, aucune inscription | Sans session, seul l'écran de connexion s'affiche |
 | Tests | Vitest pour la logique, vérifications manuelles pour l'interface | Proportionné à un outil personnel |
 | Déploiement | GitHub Actions vers GitHub Pages à chaque fusion dans `main` | Automatique, gratuit |
 
@@ -61,7 +66,7 @@ Principes qui en découlent :
 | --- | --- |
 | `src/pages` | Une page par écran de l'application |
 | `src/components` | Composants d'interface réutilisables, sans logique métier |
-| `src/lib` | Outils transverses : accès aux données, dates, formatage |
+| `src/lib` | Outils transverses : accès aux données (`supabase.ts`), dates, formatage |
 | `src/features/<domaine>` | Tout ce qui est propre à un domaine métier (`contacts`, `biens`, `taches`…) |
 | `supabase/migrations` | Fichiers SQL numérotés, appliqués par Claude Code via le connecteur Supabase |
 | `.claude/skills` | Procédures que Claude Code suit (par exemple pour agir sur Supabase) |

@@ -8,7 +8,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 
 | Phase | Étapes terminées | État |
 | --- | --- | --- |
-| Phase 0 — Fondations | 2 sur 5 | en cours |
+| Phase 0 — Fondations | 3 sur 5 | en cours |
 | Version 1 — Le quotidien | 0 sur 14 | à faire |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
@@ -20,7 +20,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 | --- | --- | --- | --- | --- |
 | 0.1 | Socle du projet | terminée | 16/11/2026 | Squelette Vite, React, TypeScript, Tailwind ; page d'accueil provisoire en version 0.1.0 ; lint, tests et build en place. |
 | 0.2 | Déploiement sur GitHub Pages | terminée | 16/11/2026 | Vérification automatique de chaque pull request ; publication sur GitHub Pages à chaque fusion dans `main` ; chemin de base `/ImmoCRM/`, modifiable par la variable `BASE_PATH`. |
-| 0.3 | Supabase et connexion | à faire | | |
+| 0.3 | Supabase et connexion | terminée | 16/11/2026 | Connexion par courriel et mot de passe, déconnexion, session conservée, mot de passe oublié ; toutes les pages protégées ; configuration par variables (`.env.local` pour le test, variables GitHub pour le réel). |
 | 0.4 | Coquille de l'application | à faire | | |
 | 0.5 | Conventions de données et sécurité | à faire | | |
 
@@ -87,4 +87,5 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 ## Points à garder en tête
 
 - Les règles juridiques et les chiffres de l'offre gratuite de Supabase cités dans le cadrage sont à vérifier (voir cadrage, sections Conformité et Architecture technique).
+- Depuis l'environnement de Claude Code, Supabase n'est pas joignable par le réseau : la connexion a été vérifiée avec des réponses simulées, pas avec un vrai compte. La vérification réelle se fait sur le site publié.
 - `npm audit` signale 7 alertes de niveau modéré dans des outils de développement (chaîne ESLint). Elles ne concernent pas le site publié ; à revoir lors d'une mise à jour des dépendances.

@@ -34,6 +34,10 @@ jobs:
           # Variable facultative du dépôt (Settings → Secrets and variables → Actions → Variables).
           # Absente, le site est construit pour https://<compte>.github.io/ImmoCRM/.
           BASE_PATH: ${{ vars.BASE_PATH }}
+          # Variables obligatoires du dépôt (même endroit) : adresse et clé PUBLIQUE du projet
+          # Supabase réel. Jamais la clé d'administration (service_role).
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_CLE_PUBLIQUE: ${{ vars.VITE_SUPABASE_CLE_PUBLIQUE }}
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

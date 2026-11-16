@@ -11,8 +11,10 @@ Les actions passent par le connecteur Supabase (outils `mcp__Supabase__*`). Si c
 
 | Projet | Nom dans Supabase | Identifiant | Ce que Claude Code peut y faire |
 | --- | --- | --- | --- |
-| Test | Immo CRM | `pikagadwyntsebprgwns` | Tout ce que décrit cette procédure, sans demander |
-| Réel | pas encore créé | — | Uniquement appliquer une migration, après accord explicite |
+| Test | Immo CRM - test | `kgodrynbcaacteolgorr` | Tout ce que décrit cette procédure, sans demander |
+| Réel | Immo CRM | `pikagadwyntsebprgwns` | Uniquement appliquer une migration, après accord explicite |
+
+Attention aux noms, très proches : seul le projet dont le nom finit par « - test » est le projet de test.
 
 Avant chaque action, vérifier l'identifiant du projet visé. Si `list_projects` montre un projet qui n'est pas dans ce tableau, ne pas y toucher : demander à l'utilisateur ce que c'est, puis mettre ce tableau à jour.
 
