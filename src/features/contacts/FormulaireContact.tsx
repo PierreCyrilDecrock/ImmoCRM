@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Bouton from '../../components/Bouton'
 import Carte from '../../components/Carte'
 import ChampChoix from '../../components/ChampChoix'
@@ -13,7 +13,7 @@ import {
   LONGUEURS_MAX,
   MAX_COURRIELS,
   MAX_TELEPHONES,
-  nomDeListe,
+  nomComplet,
   ROLES,
   SOURCES,
   TEMPERATURES,
@@ -22,6 +22,7 @@ import {
   type Contact,
   type ErreursContact,
 } from './contacts'
+import SelecteurContact from './SelecteurContact'
 
 type Props = {
   brouillon: BrouillonContact
@@ -29,8 +30,10 @@ type Props = {
   onChange: (brouillon: BrouillonContact) => void
   /** Version courte, pour la création : type, nom, prénom et un téléphone. */
   court?: boolean
-  /** Les autres contacts, proposés dans « Recommandé par ». */
-  autresContacts?: readonly Contact[]
+  /** La fiche en cours de modification : elle n'est pas proposée dans « Recommandé par ». */
+  idContact?: string
+  /** Le contact déjà inscrit dans « Recommandé par », pour afficher son nom. */
+  recommandePar?: Contact | null
 }
 
 /** Remplace l'élément de rang donné dans une liste de saisies. */
@@ -52,8 +55,11 @@ export default function FormulaireContact({
   erreurs,
   onChange,
   court = false,
-  autresContacts = [],
+  idContact,
+  recommandePar = null,
 }: Props) {
+  // Le contact choisi dans « Recommandé par » : le brouillon n'en garde que l'identifiant.
+  const [prescripteur, setPrescripteur] = useState<Contact | null>(recommandePar)
   const societe = brouillon.type === 'societe'
   const modifierChamp = (valeurs: Partial<BrouillonContact>) =>
     onChange({ ...brouillon, ...valeurs })
@@ -307,19 +313,38 @@ export default function FormulaireContact({
             />
           )}
           {brouillon.source === 'recommandation' && (
-            <ChampChoix
-              libelle="Recommandé par"
-              optionVide={
-                autresContacts.length === 0 ? 'Aucun autre contact' : 'Choisir un contact…'
-              }
-              options={autresContacts.map((contact) => ({
-                valeur: contact.id,
-                libelle: nomDeListe(contact),
-              }))}
-              value={brouillon.recommande_par_id}
-              onChange={(evenement) => modifierChamp({ recommande_par_id: evenement.target.value })}
-              aide="La personne qui vous a adressé ce contact. Elle doit déjà avoir sa fiche."
-            />
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-encre">Recommandé par</p>
+              {brouillon.recommande_par_id !== '' ? (
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="text-base text-encre">
+                    {prescripteur !== null && prescripteur.id === brouillon.recommande_par_id
+                      ? nomComplet(prescripteur)
+                      : 'Un de vos contacts'}
+                  </p>
+                  <Bouton
+                    variante="discret"
+                    onClick={() => modifierChamp({ recommande_par_id: '' })}
+                  >
+                    Changer
+                  </Bouton>
+                </div>
+              ) : (
+                <div className="mt-1 md:max-w-md">
+                  <SelecteurContact
+                    libelle="Chercher le contact qui a recommandé"
+                    sauf={idContact}
+                    onChoisir={(contact) => {
+                      setPrescripteur(contact)
+                      modifierChamp({ recommande_par_id: contact.id })
+                    }}
+                  />
+                  <p className="mt-1 text-sm text-encre-douce">
+                    La personne qui vous a adressé ce contact. Elle doit déjà avoir sa fiche.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </Carte>

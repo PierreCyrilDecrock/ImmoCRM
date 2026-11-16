@@ -8,3 +8,5 @@ Les conventions que chaque table respecte sont dans [docs/donnees.md](../../docs
 | --- | --- |
 | `0001_fondations_reglages.sql` | Fonction `maj_updated_at()` et table `reglages` (une ligne par utilisateur) |
 | `0002_contacts.sql` | Table `contacts` : personne ou société, coordonnées, rôles, étiquettes, source, « recommandé par », température |
+| `0003_contacts_recherche.sql` | Colonnes `recherche`, `nom_tri` et `fusionne_dans_id` tenues par la base ; fonctions `normaliser_recherche`, `etiquettes_contacts`, `doublons_contact` et `fusionner_contacts` |
+| `0004_contacts_recherche_ajustements.sql` | Retire cinq index que les règles d'accès par ligne rendent inutilisables ; accélère `doublons_contact` |

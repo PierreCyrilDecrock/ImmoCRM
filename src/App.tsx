@@ -4,6 +4,7 @@ import MiseEnPage from './components/MiseEnPage'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import FournisseurSession from './features/connexion/FournisseurSession'
 import { useSession } from './features/connexion/session-contexte'
+import BarreRecherche from './features/recherche/BarreRecherche'
 import { erreurConfigSupabase, supabase } from './lib/supabase'
 import Aujourdhui from './pages/Aujourdhui'
 import Biens from './pages/Biens'
@@ -13,6 +14,7 @@ import ConfigurationManquante from './pages/ConfigurationManquante'
 import Connexion from './pages/Connexion'
 import Contacts from './pages/Contacts'
 import FicheContact from './pages/FicheContact'
+import FusionContacts from './pages/FusionContacts'
 import ModifierContact from './pages/ModifierContact'
 import MotDePasseOublie from './pages/MotDePasseOublie'
 import NouveauMotDePasse from './pages/NouveauMotDePasse'
@@ -49,11 +51,12 @@ function Pages() {
   return (
     <HashRouter>
       <Routes>
-        <Route element={<MiseEnPage />}>
+        <Route element={<MiseEnPage enTete={<BarreRecherche />} />}>
           <Route path="/" element={<Aujourdhui />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/contacts/:id" element={<FicheContact />} />
           <Route path="/contacts/:id/modifier" element={<ModifierContact />} />
+          <Route path="/contacts/:id/fusionner/:autreId" element={<FusionContacts />} />
           <Route path="/biens" element={<Biens />} />
           <Route path="/pipelines" element={<Pipelines />} />
           <Route path="/taches" element={<Taches />} />

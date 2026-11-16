@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import Bouton from '../components/Bouton'
 import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
@@ -22,6 +22,7 @@ import {
   restaurerContact,
   type Contact,
 } from '../features/contacts/contacts'
+import SelecteurContact from '../features/contacts/SelecteurContact'
 import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
 import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
@@ -29,7 +30,7 @@ import { exigerSupabase } from '../lib/supabase'
 type Etat =
   | { phase: 'chargement' }
   | { phase: 'erreur'; message: string }
-  | { phase: 'pret'; contact: Contact; recommandePar: Contact | null }
+  | { phase: 'pret'; contact: Contact; recommandePar: Contact | null; fusionneDans: Contact | null }
 
 const RETOUR = { vers: '/contacts', libelle: 'Contacts' }
 
@@ -69,6 +70,8 @@ export default function FicheContact() {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [confirmation, setConfirmation] = useState(false)
   const [envoi, setEnvoi] = useState(false)
+  const [choixFusion, setChoixFusion] = useState(false)
+  const naviguer = useNavigate()
 
   useEffect(() => {
     let actif = true
@@ -83,7 +86,13 @@ export default function FicheContact() {
           ? null
           : await lireContact(client, contact.recommande_par_id)
       const recommandePar = origine !== null && origine.ok ? origine.donnees : null
-      return { phase: 'pret', contact, recommandePar } as const
+      // Fiche fusionnée dans une autre : on affichera le lien vers celle qui a tout repris.
+      const reprise =
+        contact.fusionne_dans_id === null
+          ? null
+          : await lireContact(client, contact.fusionne_dans_id)
+      const fusionneDans = reprise !== null && reprise.ok ? reprise.donnees : null
+      return { phase: 'pret', contact, recommandePar, fusionneDans } as const
     }
     void charger().then((suivant) => {
       if (actif) setEtat(suivant)
@@ -109,8 +118,9 @@ export default function FicheContact() {
     )
   }
 
-  const { contact, recommandePar } = etat
+  const { contact, recommandePar, fusionneDans } = etat
   const archive = contact.archived_at !== null
+  const fusionnee = contact.fusionne_dans_id !== null
   const telephone = contact.telephones[0]
   const portable = contact.telephones.find(estPortable) ?? telephone
   const courriel = contact.courriels[0]
@@ -133,7 +143,7 @@ export default function FicheContact() {
       notifier('erreur', `L'action a échoué. ${resultat.erreur.message}`)
       return
     }
-    setEtat({ phase: 'pret', contact: resultat.donnees, recommandePar })
+    setEtat({ phase: 'pret', contact: resultat.donnees, recommandePar, fusionneDans })
     notifier('succes', archive ? 'Contact restauré' : 'Contact archivé')
   }
 
@@ -150,7 +160,23 @@ export default function FicheContact() {
         </Link>
       }
     >
-      {archive && (
+      {fusionnee && (
+        <Message genre="info">
+          Cette fiche a été fusionnée
+          {fusionneDans !== null && (
+            <>
+              {' '}
+              dans{' '}
+              <Link to={`/contacts/${fusionneDans.id}`} className="underline underline-offset-2">
+                {nomComplet(fusionneDans)}
+              </Link>
+            </>
+          )}
+          , qui a repris toutes ses informations. Elle est conservée ici telle qu'elle était, pour
+          mémoire.
+        </Message>
+      )}
+      {archive && !fusionnee && (
         <Message genre="info">
           Cette fiche est archivée depuis le {formaterDate(contact.archived_at)} : elle n'apparaît
           plus dans la liste des contacts.
@@ -274,16 +300,43 @@ export default function FicheContact() {
           Fiche créée le {formaterDate(contact.created_at)}, modifiée le{' '}
           {formaterDate(contact.updated_at)}.
         </p>
-        {archive ? (
+        {fusionnee ? null : archive ? (
           <Bouton variante="secondaire" disabled={envoi} onClick={() => void changerArchivage()}>
             {envoi ? 'Restauration…' : 'Restaurer la fiche'}
           </Bouton>
         ) : (
-          <Bouton variante="secondaire" icone="archiver" onClick={() => setConfirmation(true)}>
-            Archiver
-          </Bouton>
+          <div className="flex flex-col gap-2 md:flex-row">
+            <Bouton variante="secondaire" icone="fusionner" onClick={() => setChoixFusion(true)}>
+              Fusionner avec une autre fiche
+            </Bouton>
+            <Bouton variante="secondaire" icone="archiver" onClick={() => setConfirmation(true)}>
+              Archiver
+            </Bouton>
+          </div>
         )}
       </div>
+
+      {/* La fenêtre n'existe que le temps du choix : la recherche repart vide à chaque fois. */}
+      {choixFusion && (
+        <FenetreModale
+          ouverte
+          titre="Fusionner avec quelle fiche ?"
+          onFermer={() => setChoixFusion(false)}
+        >
+          <div className="flex flex-col gap-3">
+            <p className="text-base text-encre">
+              Cherchez l'autre fiche de {nomComplet(contact)}. L'écran suivant compare les deux
+              fiches avant de les réunir : rien n'est fait tant que vous n'avez pas confirmé.
+            </p>
+            <SelecteurContact
+              libelle="Chercher la fiche en double"
+              sauf={contact.id}
+              autoFocus
+              onChoisir={(autre) => void naviguer(`/contacts/${contact.id}/fusionner/${autre.id}`)}
+            />
+          </div>
+        </FenetreModale>
+      )}
 
       <FenetreModale
         ouverte={confirmation}

@@ -88,6 +88,7 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | `Bouton` | Bouton d'action. `principal` (un seul par écran), `secondaire`, `discret` (action de faible poids), `danger` (suppression). | `variante?`, `pleineLargeur?`, `icone?`, plus celles d'un bouton HTML |
 | `ChampSaisie` | Champ sur une ligne : texte, courriel, téléphone, date, nombre. | `libelle`, `aide?`, `erreur?`, plus celles d'un champ HTML |
 | `ChampTexteLong` | Champ sur plusieurs lignes : note, compte rendu. | `libelle`, `aide?`, `erreur?`, `rows?` |
+| `ChampRecherche` | Champ de recherche : loupe, saisie, croix pour effacer. Pas de libellé visible. | `libelle` (lu par les lecteurs d'écran), `valeur`, `onChange(valeur)`, plus celles d'un champ HTML |
 | `ChampChoix` | Liste déroulante (sélecteur natif du téléphone). | `libelle`, `options` (`{ valeur, libelle }`), `optionVide?`, `aide?`, `erreur?` |
 | `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
 | `ChampEtiquettes` | Étiquettes libres : on écrit, on valide par « Entrée », une virgule ou « Ajouter » ; on touche une étiquette pour la retirer. | `libelle`, `etiquettes`, `onChange`, `ajouter` (règle de nettoyage et de doublon), `aide?` |
@@ -142,7 +143,7 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Installation sur l'écran d'accueil
 

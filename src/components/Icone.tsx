@@ -112,6 +112,19 @@ const TRACES = {
       <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13.5h4" />
     </>
   ),
+  recherche: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m15.5 15.5 5 5" />
+    </>
+  ),
+  filtrer: <path d="M4 6h16M7 12h10M10 18h4" />,
+  fusionner: (
+    <>
+      <path d="M5 4v3a5 5 0 0 0 5 5h2M5 20v-3a5 5 0 0 1 5-5" />
+      <path d="M12 12h8M16.5 8.5 20 12l-3.5 3.5" />
+    </>
+  ),
   vide: (
     <>
       <path d="M3.5 13 6 5.5A2 2 0 0 1 7.9 4h8.2A2 2 0 0 1 18 5.5L20.5 13" />

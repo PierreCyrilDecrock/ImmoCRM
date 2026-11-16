@@ -21,11 +21,14 @@ export type Database = {
           courriels: string[]
           created_at: string
           etiquettes: string[]
+          fusionne_dans_id: string | null
           id: string
           nom: string
+          nom_tri: string
           notes: string
           prenom: string
           raison_sociale: string
+          recherche: string
           recommande_par_id: string | null
           roles: string[]
           source: string | null
@@ -45,11 +48,14 @@ export type Database = {
           courriels?: string[]
           created_at?: string
           etiquettes?: string[]
+          fusionne_dans_id?: string | null
           id?: string
           nom?: string
+          nom_tri?: string
           notes?: string
           prenom?: string
           raison_sociale?: string
+          recherche?: string
           recommande_par_id?: string | null
           roles?: string[]
           source?: string | null
@@ -69,11 +75,14 @@ export type Database = {
           courriels?: string[]
           created_at?: string
           etiquettes?: string[]
+          fusionne_dans_id?: string | null
           id?: string
           nom?: string
+          nom_tri?: string
           notes?: string
           prenom?: string
           raison_sociale?: string
+          recherche?: string
           recommande_par_id?: string | null
           roles?: string[]
           source?: string | null
@@ -86,6 +95,13 @@ export type Database = {
           ville?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'contacts_fusionne_dans_fk'
+            columns: ['user_id', 'fusionne_dans_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
           {
             foreignKeyName: 'contacts_recommande_par_fk'
             columns: ['user_id', 'recommande_par_id']
@@ -124,7 +140,91 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      doublons_contact: {
+        Args: {
+          p_courriels: string[]
+          p_nom: string
+          p_sauf?: string
+          p_telephones: string[]
+        }
+        Returns: {
+          adresse: string
+          archived_at: string | null
+          civilite: string | null
+          code_postal: string
+          courriels: string[]
+          created_at: string
+          etiquettes: string[]
+          fusionne_dans_id: string | null
+          id: string
+          nom: string
+          nom_tri: string
+          notes: string
+          prenom: string
+          raison_sociale: string
+          recherche: string
+          recommande_par_id: string | null
+          roles: string[]
+          source: string | null
+          source_detail: string
+          telephones: string[]
+          temperature: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          ville: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'contacts'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      etiquettes_contacts: {
+        Args: never
+        Returns: {
+          etiquette: string
+          nombre: number
+        }[]
+      }
+      fusionner_contacts: {
+        Args: { p_absorbe: string; p_garde: string; p_valeurs: Json }
+        Returns: {
+          adresse: string
+          archived_at: string | null
+          civilite: string | null
+          code_postal: string
+          courriels: string[]
+          created_at: string
+          etiquettes: string[]
+          fusionne_dans_id: string | null
+          id: string
+          nom: string
+          nom_tri: string
+          notes: string
+          prenom: string
+          raison_sociale: string
+          recherche: string
+          recommande_par_id: string | null
+          roles: string[]
+          source: string | null
+          source_detail: string
+          telephones: string[]
+          temperature: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          ville: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'contacts'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      normaliser_recherche: { Args: { texte: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
