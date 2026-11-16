@@ -10,3 +10,5 @@ Les conventions que chaque table respecte sont dans [docs/donnees.md](../../docs
 | `0002_contacts.sql` | Table `contacts` : personne ou société, coordonnées, rôles, étiquettes, source, « recommandé par », température |
 | `0003_contacts_recherche.sql` | Colonnes `recherche`, `nom_tri` et `fusionne_dans_id` tenues par la base ; fonctions `normaliser_recherche`, `etiquettes_contacts`, `doublons_contact` et `fusionner_contacts` |
 | `0004_contacts_recherche_ajustements.sql` | Retire cinq index que les règles d'accès par ligne rendent inutilisables ; accélère `doublons_contact` |
+| `0005_contacts_consentement.sql` | Consentement et RGPD : origine et date de collecte, accord pour être appelé (date, preuve), client existant, opposition au démarchage, date du dernier contact ; table `appels_sans_accord` ; droit de suppression sur `contacts` et fonction `supprimer_contact_definitivement` ; fusion complétée |
+| `0006_contacts_consentement_ajustements.sql` | Valeur par défaut (date du jour) pour `collecte_date` et `dernier_contact_le` |

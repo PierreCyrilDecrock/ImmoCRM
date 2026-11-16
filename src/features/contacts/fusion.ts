@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { appeler, type Resultat } from '../../lib/donnees'
 import { formaterDate } from '../../lib/dates'
+import { resumeAccord } from './consentement'
 import {
   adresseComplete,
   libelleSource,
@@ -24,6 +25,8 @@ import { formaterTelephone } from './telephone'
  *   - Là où les deux fiches se contredisent (nom, adresse, source, température),
  *     l'utilisateur choisit ; la valeur écartée est recopiée dans les notes.
  *   - Les notes des deux fiches sont mises bout à bout.
+ *   - Consentement : la réunion ne lève jamais un blocage par accident (voir
+ *     `reunirConsentement`).
  */
 
 /** Les rubriques sur lesquelles deux fiches peuvent se contredire. */
@@ -64,6 +67,89 @@ function reunir(a: readonly string[], b: readonly string[]): string[] {
   return [...a, ...b.filter((valeur) => !a.includes(valeur))]
 }
 
+type Consentement = Pick<
+  ValeursContact,
+  | 'collecte_origine'
+  | 'collecte_date'
+  | 'accord_appel'
+  | 'accord_appel_date'
+  | 'accord_appel_preuve'
+  | 'client_existant'
+  | 'opposition_demarchage'
+  | 'opposition_demarchage_date'
+>
+
+/** La plus ancienne des dates connues (`2026-11-16`), ou `null` s'il n'y en a aucune. */
+function plusAncienne(...dates: (string | null)[]): string | null {
+  const connues = dates.filter((date) => date !== null).sort()
+  return connues[0] ?? null
+}
+
+/**
+ * Réunit le consentement de deux fiches de la même personne, par prudence :
+ *   - accord pour être appelé : la réponse la plus récente l'emporte ; si les dates ne
+ *     départagent pas un « oui » et un « non », c'est le « non » ;
+ *   - une opposition au démarchage ou un « client existant » noté sur l'une vaut pour les deux ;
+ *   - la date de collecte est la plus ancienne.
+ * `ecartes` : ce qui n'est pas retenu, à recopier dans les notes.
+ */
+export function reunirConsentement(
+  garde: Contact,
+  absorbe: Contact,
+): { valeurs: Consentement; ecartes: string[] } {
+  const ecartes: string[] = []
+
+  const exprimes = [garde, absorbe].filter((fiche) => fiche.accord_appel !== 'inconnu')
+  let accord: Contact | null = exprimes[0] ?? null
+  const [a, b] = exprimes
+  if (a !== undefined && b !== undefined) {
+    const dateA = a.accord_appel_date
+    const dateB = b.accord_appel_date
+    if (dateA !== null && dateB !== null && dateA !== dateB) accord = dateA > dateB ? a : b
+    else if (a.accord_appel !== b.accord_appel) accord = a.accord_appel === 'non' ? a : b
+    else accord = dateA === null && dateB !== null ? b : a
+    const ecarte = accord === a ? b : a
+    const memeReponse =
+      ecarte.accord_appel === accord.accord_appel &&
+      ecarte.accord_appel_date === accord.accord_appel_date &&
+      ecarte.accord_appel_preuve === accord.accord_appel_preuve
+    if (!memeReponse) {
+      const preuve = ecarte.accord_appel_preuve === '' ? '' : ` (${ecarte.accord_appel_preuve})`
+      ecartes.push(`Autre réponse sur l'accord pour être appelé : ${resumeAccord(ecarte)}${preuve}`)
+    }
+  }
+
+  const origine = garde.collecte_origine !== '' ? garde : absorbe
+  const autreOrigine = origine === garde ? absorbe : garde
+  if (
+    autreOrigine.collecte_origine !== '' &&
+    autreOrigine.collecte_origine !== origine.collecte_origine
+  ) {
+    ecartes.push(`Autre origine des données : ${autreOrigine.collecte_origine}`)
+  }
+
+  const opposition = garde.opposition_demarchage || absorbe.opposition_demarchage
+  return {
+    ecartes,
+    valeurs: {
+      collecte_origine: origine.collecte_origine,
+      collecte_date:
+        plusAncienne(garde.collecte_date, absorbe.collecte_date) ?? garde.collecte_date,
+      accord_appel: accord?.accord_appel ?? 'inconnu',
+      accord_appel_date: accord?.accord_appel_date ?? null,
+      accord_appel_preuve: accord?.accord_appel_preuve ?? '',
+      client_existant: garde.client_existant || absorbe.client_existant,
+      opposition_demarchage: opposition,
+      opposition_demarchage_date: opposition
+        ? plusAncienne(
+            garde.opposition_demarchage ? garde.opposition_demarchage_date : null,
+            absorbe.opposition_demarchage ? absorbe.opposition_demarchage_date : null,
+          )
+        : null,
+    },
+  }
+}
+
 export type PreparationFusion =
   { ok: true; valeurs: ValeursContact } | { ok: false; message: string }
 
@@ -94,6 +180,8 @@ export function preparerFusion(
   const adresse = retenir('adresse', 'Autre adresse')
   const source = retenir('source', 'Autre source')
   const temperature = retenir('temperature', 'Autre température')
+  const consentement = reunirConsentement(garde, absorbe)
+  ecartes.push(...consentement.ecartes)
 
   const telephones = reunir(garde.telephones, absorbe.telephones)
   const courriels = reunir(garde.courriels, absorbe.courriels)
@@ -168,6 +256,7 @@ export function preparerFusion(
       source_detail: source.source_detail,
       recommande_par_id: recommandePar,
       temperature: temperature.temperature,
+      ...consentement.valeurs,
     },
   }
 }

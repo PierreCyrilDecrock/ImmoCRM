@@ -17,3 +17,22 @@ export function formaterDate(date: string | null | undefined): string {
   if (Number.isNaN(instant.getTime())) return ''
   return JOUR_LONG.format(instant)
 }
+
+const JOUR_ISO = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'Europe/Paris',
+})
+
+/** La date du jour à Paris, au format des champs de date et de la base : `2026-11-16`. */
+export function dateDuJour(maintenant: Date = new Date()): string {
+  return JOUR_ISO.format(maintenant)
+}
+
+/** Vérifie qu'un texte est une date `AAAA-MM-JJ` qui existe (pas de 30 février). */
+export function estDateValide(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false
+  const instant = new Date(`${date}T00:00:00Z`)
+  return !Number.isNaN(instant.getTime()) && instant.toISOString().slice(0, 10) === date
+}

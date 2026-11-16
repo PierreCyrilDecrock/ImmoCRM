@@ -6,7 +6,9 @@ import ChampEtiquettes from '../../components/ChampEtiquettes'
 import ChampSaisie from '../../components/ChampSaisie'
 import ChampTexteLong from '../../components/ChampTexteLong'
 import ChoixMultiple from '../../components/ChoixMultiple'
+import { dateDuJour } from '../../lib/dates'
 import {
+  ACCORDS_APPEL,
   ajouterEtiquette,
   CIVILITES,
   LONGUEUR_MAX_ETIQUETTE,
@@ -157,6 +159,11 @@ export default function FormulaireContact({
   }
 
   const source = SOURCES.find((option) => option.valeur === brouillon.source)
+  const aujourdhui = dateDuJour()
+  const situations = [
+    { valeur: 'client_existant', libelle: 'Client existant' },
+    { valeur: 'opposition_demarchage', libelle: 'S’oppose au démarchage' },
+  ] as const
 
   return (
     <div className="flex flex-col gap-4">
@@ -345,6 +352,109 @@ export default function FormulaireContact({
                 </div>
               )}
             </div>
+          )}
+          <ChampSaisie
+            libelle="Données collectées le"
+            type="date"
+            max={aujourdhui}
+            value={brouillon.collecte_date}
+            onChange={(evenement) => modifierChamp({ collecte_date: evenement.target.value })}
+            erreur={erreurs.collecte_date}
+            aide="Le jour où vous avez obtenu ces coordonnées."
+          />
+          <ChampSaisie
+            libelle="Comment vous les avez obtenues"
+            value={brouillon.collecte_origine}
+            onChange={(evenement) => modifierChamp({ collecte_origine: evenement.target.value })}
+            maxLength={LONGUEURS_MAX.collecte_origine}
+            autoComplete="off"
+            placeholder="Exemple : données par la personne elle-même"
+            aide="Par la personne, une annonce publique, un proche… À laisser vide si la source suffit."
+          />
+        </div>
+      </Carte>
+
+      <Carte titre="Appels et démarchage">
+        <div className="grid gap-4 md:grid-cols-2">
+          <ChampChoix
+            libelle="Accord pour être appelé"
+            options={ACCORDS_APPEL}
+            value={brouillon.accord_appel}
+            onChange={(evenement) =>
+              modifierChamp({
+                accord_appel: choisir(ACCORDS_APPEL, evenement.target.value) || 'inconnu',
+                // Une réponse que l'on note maintenant est, par défaut, datée d'aujourd'hui.
+                accord_appel_date:
+                  evenement.target.value !== 'inconnu' && brouillon.accord_appel_date === ''
+                    ? aujourdhui
+                    : brouillon.accord_appel_date,
+              })
+            }
+            aide="Sans « Oui », le bouton Appeler de la fiche est remplacé par un avertissement."
+          />
+          {brouillon.accord_appel !== 'inconnu' && (
+            <>
+              <ChampSaisie
+                libelle={brouillon.accord_appel === 'oui' ? 'Accord donné le' : 'Refus exprimé le'}
+                type="date"
+                max={aujourdhui}
+                value={brouillon.accord_appel_date}
+                onChange={(evenement) =>
+                  modifierChamp({ accord_appel_date: evenement.target.value })
+                }
+                erreur={erreurs.accord_appel_date}
+              />
+              <div className="md:col-span-2">
+                <ChampTexteLong
+                  libelle={
+                    brouillon.accord_appel === 'oui'
+                      ? "Preuve : comment l'accord a été obtenu"
+                      : 'Précision (facultatif)'
+                  }
+                  rows={2}
+                  value={brouillon.accord_appel_preuve}
+                  onChange={(evenement) =>
+                    modifierChamp({ accord_appel_preuve: evenement.target.value })
+                  }
+                  erreur={erreurs.accord_appel_preuve}
+                  maxLength={LONGUEURS_MAX.accord_appel_preuve}
+                  placeholder={
+                    brouillon.accord_appel === 'oui'
+                      ? 'Exemple : case cochée sur le formulaire du site, ou accord donné de vive voix lors de la visite'
+                      : undefined
+                  }
+                />
+              </div>
+            </>
+          )}
+          <div className="md:col-span-2">
+            <ChoixMultiple
+              libelle="Situation"
+              options={situations}
+              valeurs={situations
+                .map((situation) => situation.valeur)
+                .filter((valeur) => brouillon[valeur])}
+              onChange={(valeurs) =>
+                modifierChamp({
+                  client_existant: valeurs.includes('client_existant'),
+                  opposition_demarchage: valeurs.includes('opposition_demarchage'),
+                })
+              }
+              aide="Client existant : un contrat est en cours avec cette personne (mandat, vente). S'oppose au démarchage : elle ne veut plus être sollicitée, par aucun moyen."
+            />
+          </div>
+          {brouillon.opposition_demarchage && (
+            <ChampSaisie
+              libelle="Opposition exprimée le"
+              type="date"
+              max={aujourdhui}
+              value={brouillon.opposition_demarchage_date}
+              onChange={(evenement) =>
+                modifierChamp({ opposition_demarchage_date: evenement.target.value })
+              }
+              erreur={erreurs.opposition_demarchage_date}
+              aide="Laissée vide : la date du jour."
+            />
           )}
         </div>
       </Carte>

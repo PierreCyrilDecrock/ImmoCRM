@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { fauxClient } from '../../lib/faux-client'
 import { contactEssai } from './contact-essai'
-import { conflitsFusion, fusionnerContacts, preparerFusion, valeurBloc } from './fusion'
+import {
+  conflitsFusion,
+  fusionnerContacts,
+  preparerFusion,
+  reunirConsentement,
+  valeurBloc,
+} from './fusion'
 
 const ID_GARDE = '00000000-0000-4000-8000-000000000001'
 const ID_ABSORBE = '00000000-0000-4000-8000-000000000002'
@@ -176,6 +182,57 @@ describe('preparerFusion', () => {
     const preparation = preparerFusion(garde, absorbe, {}, DATE)
     expect(preparation.ok).toBe(false)
     expect(!preparation.ok && preparation.message).toContain('5000 caractères')
+  })
+})
+
+describe('reunirConsentement', () => {
+  const OUI = {
+    accord_appel: 'oui',
+    accord_appel_date: '2026-09-15',
+    accord_appel_preuve: 'Accord fictif de vive voix',
+  }
+
+  it('garde l’accord connu quand l’autre fiche ne sait rien', () => {
+    const { valeurs, ecartes } = reunirConsentement(contactEssai(), contactEssai(OUI))
+    expect(valeurs).toMatchObject(OUI)
+    expect(ecartes).toEqual([])
+  })
+
+  it('retient la réponse la plus récente et note l’autre', () => {
+    const refus = { accord_appel: 'non', accord_appel_date: '2026-10-01', accord_appel_preuve: '' }
+    const { valeurs, ecartes } = reunirConsentement(contactEssai(OUI), contactEssai(refus))
+    expect(valeurs).toMatchObject(refus)
+    expect(ecartes).toEqual([
+      "Autre réponse sur l'accord pour être appelé : Oui, depuis le 15 septembre 2026 (Accord fictif de vive voix)",
+    ])
+  })
+
+  it('retient le refus quand les dates ne départagent pas', () => {
+    const { valeurs } = reunirConsentement(contactEssai(OUI), contactEssai({ accord_appel: 'non' }))
+    expect(valeurs.accord_appel).toBe('non')
+    expect(valeurs.accord_appel_date).toBeNull()
+  })
+
+  it('étend à la fiche réunie l’opposition et le « client existant » de l’une des deux', () => {
+    const { valeurs } = reunirConsentement(
+      contactEssai({ client_existant: true }),
+      contactEssai({ opposition_demarchage: true, opposition_demarchage_date: '2026-10-20' }),
+    )
+    expect(valeurs).toMatchObject({
+      client_existant: true,
+      opposition_demarchage: true,
+      opposition_demarchage_date: '2026-10-20',
+    })
+  })
+
+  it('garde la date de collecte la plus ancienne et note une autre origine', () => {
+    const { valeurs, ecartes } = reunirConsentement(
+      contactEssai({ collecte_date: '2026-11-16', collecte_origine: 'Annonce fictive' }),
+      contactEssai({ collecte_date: '2026-05-04', collecte_origine: 'Porte-à-porte fictif' }),
+    )
+    expect(valeurs.collecte_date).toBe('2026-05-04')
+    expect(valeurs.collecte_origine).toBe('Annonce fictive')
+    expect(ecartes).toEqual(['Autre origine des données : Porte-à-porte fictif'])
   })
 })
 

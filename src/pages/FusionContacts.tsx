@@ -23,7 +23,9 @@ import {
   valeurBloc,
   type ChoixFusion,
 } from '../features/contacts/fusion'
+import { resumeAccord } from '../features/contacts/consentement'
 import { formaterTelephone } from '../features/contacts/telephone'
+import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
 
 type Etat =
@@ -217,6 +219,20 @@ export default function FusionContacts() {
               nom="Température"
               valeur={libelleTemperature(valeurs.temperature ?? null) ?? ''}
             />
+            <Ligne
+              nom="Accord pour être appelé"
+              valeur={[
+                resumeAccord({
+                  accord_appel: valeurs.accord_appel ?? 'inconnu',
+                  accord_appel_date: valeurs.accord_appel_date ?? null,
+                }),
+                valeurs.client_existant === true ? 'client existant' : '',
+                valeurs.opposition_demarchage === true ? 's’oppose au démarchage' : '',
+              ]
+                .filter(Boolean)
+                .join(' — ')}
+            />
+            <Ligne nom="Données collectées le" valeur={formaterDate(valeurs.collecte_date)} />
             <Ligne nom="Notes" valeur={valeurs.notes ?? ''} />
           </dl>
         </Carte>

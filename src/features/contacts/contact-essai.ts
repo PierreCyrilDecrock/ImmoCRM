@@ -28,6 +28,15 @@ export function contactEssai(valeurs: Partial<Contact> = {}): Contact {
     nom_tri: '',
     recherche: '',
     fusionne_dans_id: null,
+    collecte_origine: '',
+    collecte_date: '2026-11-16',
+    accord_appel: 'inconnu',
+    accord_appel_date: null,
+    accord_appel_preuve: '',
+    client_existant: false,
+    opposition_demarchage: false,
+    opposition_demarchage_date: null,
+    dernier_contact_le: '2026-11-16',
     ...valeurs,
   }
 }

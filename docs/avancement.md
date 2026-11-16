@@ -9,7 +9,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 | Phase | Étapes terminées | État |
 | --- | --- | --- |
 | Phase 0 — Fondations | 5 sur 5 | terminée |
-| Version 1 — Le quotidien | 2 sur 14 | en cours |
+| Version 1 — Le quotidien | 3 sur 14 | en cours |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
 | Version 4 — Le confort | 0 sur 7 | à faire |
@@ -30,7 +30,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 | --- | --- | --- | --- | --- |
 | 1.1 | Contacts : fiche et liste | terminée | 16/11/2026 | Migration `0002_contacts` appliquée sur le projet de test puis sur le projet réel ; liste triée par nom, création rapide, fiche avec Appeler, SMS et Courriel, modification, archivage et restauration ; rôles multiples et étiquettes libres ; validation et formatage des téléphones français ; premier lot de 12 contacts fictifs. |
 | 1.2 | Contacts : recherche, filtres, doublons | terminée | 16/11/2026 | Recherche faite par la base (nom, prénom, société, téléphone sous tous ses formats, courriel, adresse), sans accent ni majuscule ; champ de recherche en haut de toutes les pages ; liste lue 50 fiches à la fois ; filtres combinables (rôle, étiquette, source, température) gardés pendant la session ; alerte de doublon à la création ; écran de fusion de deux fiches. Migrations `0003_contacts_recherche` et `0004_contacts_recherche_ajustements` appliquées sur le projet de test (la 0004 collée à la main dans l'éditeur SQL : elle ne figure pas dans l'historique des migrations de Supabase), puis toutes deux sur le projet réel. Mesures ci-dessous. |
-| 1.3 | Contacts : consentement et RGPD | à faire | | |
+| 1.3 | Contacts : consentement et RGPD | terminée | 16/11/2026 | Sur chaque fiche : origine et date de collecte, accord pour être appelé (oui, non, inconnu) avec date et preuve, client existant, opposition au démarchage, date du dernier contact calculée par la base. Sans accord, le bouton Appeler est remplacé par un avertissement ; on passe outre en indiquant un motif, enregistré. Export d'un contact en fichier texte ; suppression définitive en deux confirmations. Migrations `0005_contacts_consentement` et `0006_contacts_consentement_ajustements` appliquées sur le projet de test seulement : le projet réel attend votre accord. Règles juridiques à faire valider par un juriste. |
 | 1.4 | Biens : fiche et liste | à faire | | |
 | 1.5 | Biens : photos | à faire | | |
 | 1.6 | Tâches et rendez-vous | à faire | | |
@@ -113,7 +113,12 @@ Le script qui a créé ces fiches est `supabase/tests/contacts-fictifs-volume.sq
 - Les règles juridiques et les chiffres de l'offre gratuite de Supabase cités dans le cadrage sont à vérifier (voir cadrage, sections Conformité et Architecture technique).
 - Depuis l'environnement de Claude Code, Supabase n'est pas joignable par le réseau : la connexion a été vérifiée avec des réponses simulées, pas avec un vrai compte. La vérification réelle se fait sur le site publié.
 - Supabase signale, sur le projet de test, que la protection contre les mots de passe compromis est désactivée (réglage d'Auth, hors migrations). À activer si l'offre le permet.
-- La fonction de fusion (`fusionner_contacts`) ne connaît que les contacts. Chaque étape qui crée une table liée aux contacts (biens, projets, tâches, journal) devra y ajouter le transfert de ses lignes vers la fiche gardée, et l'étape 1.3 ses nouvelles colonnes.
+- Chaque étape qui crée une table liée aux contacts (biens, projets, tâches, journal) doit faire quatre choses : ajouter le transfert de ses lignes à la fonction de fusion (`fusionner_contacts`), poser `on delete cascade` sur son lien vers le contact (suppression définitive), s'ajouter à l'export d'un contact, et, si elle enregistre un échange, entrer dans le calcul de la date du dernier contact. Détail dans `docs/donnees.md`, « Consentement et RGPD des contacts ».
+- Consentement (étape 1.3), à faire valider par un juriste : qui est concerné par l'accord préalable (particuliers seulement ?), ce qui vaut preuve d'un accord, la portée exacte de l'exception « client existant », et si les SMS et courriels de prospection doivent être bloqués de la même façon (aujourd'hui seul l'appel l'est ; une opposition au démarchage n'est que signalée pour le SMS et le courriel).
+- À la migration 0005, toutes les fiches déjà enregistrées passent en accord « inconnu » : leur bouton Appeler est remplacé par l'avertissement tant que l'accord n'est pas noté, fiche par fiche. Leur date de collecte est le jour de création de la fiche.
+- La date du dernier contact ne connaît pour l'instant que la collecte, l'accord, l'opposition et les appels passés outre. Le journal d'activité (étape 1.7) la rendra fiable ; la purge des fiches inactives (repère : 3 ans) viendra ensuite.
+- Enregistrer le motif d'un appel sans accord met à jour la date « modifiée le » de la fiche (la date du dernier contact y est recalculée).
+- Une suppression définitive efface tout de la base, mais les sauvegardes automatiques de Supabase gardent les données jusqu'à leur expiration. Aucune liste des personnes effacées n'est conservée : rien n'empêche de recréer plus tard la fiche d'une personne qui avait demandé son effacement.
 - Une fiche fusionnée reste archivée telle qu'elle était, avec un lien vers la fiche gardée. Il n'y a pas de bouton pour défaire une fusion.
 - Le filtre par étiquette distingue majuscules et accents (« Investisseur » et « investisseur » sont deux étiquettes pour le filtre) ; la saisie évite déjà ce doublon sur une même fiche.
 - L'alerte de doublon ne se déclenche qu'à la création, pas à la modification d'une fiche.

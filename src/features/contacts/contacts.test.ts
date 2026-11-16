@@ -17,6 +17,7 @@ import {
   nomDeListe,
   preparerContact,
   resumeContact,
+  supprimerContactDefinitivement,
   validerCourriel,
   type BrouillonContact,
 } from './contacts'
@@ -222,6 +223,104 @@ describe('preparerContact', () => {
   })
 })
 
+describe('preparerContact — consentement', () => {
+  const AUJOURDHUI = '2026-11-16'
+  const preparer = (valeurs: Partial<BrouillonContact>) =>
+    preparerContact(brouillon({ nom: 'Fictif', ...valeurs }), AUJOURDHUI)
+
+  it('part d’un accord inconnu et de données collectées aujourd’hui', () => {
+    const preparation = preparerContact({ ...brouillonVide(AUJOURDHUI), nom: 'Fictif' }, AUJOURDHUI)
+    expect(preparation).toMatchObject({
+      ok: true,
+      valeurs: {
+        collecte_date: AUJOURDHUI,
+        accord_appel: 'inconnu',
+        accord_appel_date: null,
+        accord_appel_preuve: '',
+        client_existant: false,
+        opposition_demarchage: false,
+        opposition_demarchage_date: null,
+      },
+    })
+  })
+
+  it('refuse un accord sans date ou sans preuve', () => {
+    expect(preparer({ accord_appel: 'oui' })).toEqual({
+      ok: false,
+      erreurs: {
+        accord_appel_date: "Indiquez la date à laquelle l'accord a été donné.",
+        accord_appel_preuve:
+          "Indiquez comment l'accord a été obtenu : c'est ce qui permettra de le prouver.",
+      },
+    })
+  })
+
+  it('enregistre un accord avec sa date et sa preuve', () => {
+    const preparation = preparer({
+      accord_appel: 'oui',
+      accord_appel_date: '2026-11-02',
+      accord_appel_preuve: '  Accord fictif de vive voix ',
+    })
+    expect(preparation).toMatchObject({
+      ok: true,
+      valeurs: {
+        accord_appel: 'oui',
+        accord_appel_date: '2026-11-02',
+        accord_appel_preuve: 'Accord fictif de vive voix',
+      },
+    })
+  })
+
+  it('accepte un refus sans date, et efface date et preuve d’un accord redevenu inconnu', () => {
+    expect(preparer({ accord_appel: 'non' })).toMatchObject({
+      ok: true,
+      valeurs: { accord_appel: 'non', accord_appel_date: null },
+    })
+    const inconnu = preparer({
+      accord_appel: 'inconnu',
+      accord_appel_date: '2026-11-02',
+      accord_appel_preuve: 'Reste de saisie',
+    })
+    expect(inconnu).toMatchObject({
+      ok: true,
+      valeurs: { accord_appel_date: null, accord_appel_preuve: '' },
+    })
+  })
+
+  it('refuse une date dans le futur ou illisible', () => {
+    expect(preparer({ collecte_date: '2026-11-17' })).toEqual({
+      ok: false,
+      erreurs: { collecte_date: 'Cette date est dans le futur.' },
+    })
+    expect(preparer({ accord_appel: 'non', accord_appel_date: '2026-02-30' })).toEqual({
+      ok: false,
+      erreurs: { accord_appel_date: "Cette date n'est pas reconnue." },
+    })
+  })
+
+  it('date du jour une collecte ou une opposition laissée sans date', () => {
+    const preparation = preparer({ collecte_date: '', opposition_demarchage: true })
+    expect(preparation).toMatchObject({
+      ok: true,
+      valeurs: {
+        collecte_date: AUJOURDHUI,
+        opposition_demarchage: true,
+        opposition_demarchage_date: AUJOURDHUI,
+      },
+    })
+  })
+
+  it('ne garde pas de date d’opposition sans opposition', () => {
+    const preparation = preparer({ opposition_demarchage_date: '2026-10-20' })
+    expect(preparation).toMatchObject({ ok: true, valeurs: { opposition_demarchage_date: null } })
+  })
+
+  it('n’envoie jamais la date du dernier contact : la base la calcule', () => {
+    const preparation = preparer({})
+    expect(preparation.ok && 'dernier_contact_le' in preparation.valeurs).toBe(false)
+  })
+})
+
 describe('brouillonDepuis', () => {
   it('remplit le formulaire avec la fiche, téléphones mis en forme', () => {
     const fiche = contact({
@@ -335,5 +434,18 @@ describe('accès aux données', () => {
     const panne = fauxClient('panne')
     const resultat = await archiverContact(panne.client, 'abc')
     expect(resultat).toMatchObject({ ok: false, erreur: { genre: 'reseau' } })
+  })
+
+  it('supprime définitivement par la fonction de la base', async () => {
+    const { client, appels } = fauxClient({ data: 2, error: null })
+    const resultat = await supprimerContactDefinitivement(client, 'abc')
+    expect(resultat).toEqual({ ok: true, donnees: 2 })
+    expect(appels).toContainEqual(['rpc', 'supprimer_contact_definitivement', { p_id: 'abc' }])
+  })
+
+  it('signale une fiche introuvable quand rien n’a été supprimé', async () => {
+    const { client } = fauxClient({ data: 0, error: null })
+    const resultat = await supprimerContactDefinitivement(client, 'abc')
+    expect(resultat).toMatchObject({ ok: false, erreur: { genre: 'introuvable' } })
   })
 })
