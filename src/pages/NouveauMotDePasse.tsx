@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import BoutonPrincipal from '../components/BoutonPrincipal'
+import Bouton from '../components/Bouton'
 import CadreConnexion from '../components/CadreConnexion'
 import ChampSaisie from '../components/ChampSaisie'
-import MessageFormulaire from '../components/MessageFormulaire'
+import Message from '../components/Message'
 import {
   LONGUEUR_MIN_MOT_DE_PASSE,
   messageErreurConnexion,
@@ -40,7 +40,7 @@ export default function NouveauMotDePasse() {
   return (
     <CadreConnexion titre="Nouveau mot de passe">
       <form onSubmit={(evenement) => void enregistrer(evenement)} className="flex flex-col gap-4">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-encre-douce">
           Choisissez un mot de passe d'au moins {LONGUEUR_MIN_MOT_DE_PASSE} caractères.
         </p>
         <ChampSaisie
@@ -61,14 +61,14 @@ export default function NouveauMotDePasse() {
           value={confirmation}
           onChange={(e) => setConfirmation(e.target.value)}
         />
-        {erreur !== null && <MessageFormulaire genre="erreur">{erreur}</MessageFormulaire>}
-        <BoutonPrincipal type="submit" disabled={envoi}>
+        {erreur !== null && <Message genre="erreur">{erreur}</Message>}
+        <Bouton pleineLargeur type="submit" disabled={envoi}>
           {envoi ? 'Enregistrement…' : 'Enregistrer'}
-        </BoutonPrincipal>
+        </Bouton>
         <button
           type="button"
           onClick={terminerRecuperation}
-          className="min-h-11 text-sm text-sky-700 underline"
+          className="min-h-11 text-sm text-accent underline"
         >
           Plus tard, garder mon mot de passe actuel
         </button>

@@ -1,13 +1,23 @@
+import BandeauHorsLigne from './components/BandeauHorsLigne'
+import FournisseurNotifications from './components/FournisseurNotifications'
+import MiseEnPage from './components/MiseEnPage'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import FournisseurSession from './features/connexion/FournisseurSession'
 import { useSession } from './features/connexion/session-contexte'
 import { erreurConfigSupabase, supabase } from './lib/supabase'
-import Accueil from './pages/Accueil'
+import Aujourdhui from './pages/Aujourdhui'
+import Biens from './pages/Biens'
 import Chargement from './pages/Chargement'
+import Composants from './pages/Composants'
 import ConfigurationManquante from './pages/ConfigurationManquante'
 import Connexion from './pages/Connexion'
+import Contacts from './pages/Contacts'
 import MotDePasseOublie from './pages/MotDePasseOublie'
 import NouveauMotDePasse from './pages/NouveauMotDePasse'
+import Pipelines from './pages/Pipelines'
+import Plus from './pages/Plus'
+import Reglages from './pages/Reglages'
+import Taches from './pages/Taches'
 
 /**
  * Choisit ce qui s'affiche selon la session. Sans session, seuls les écrans de connexion
@@ -37,21 +47,40 @@ function Pages() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<Accueil />} />
+        <Route element={<MiseEnPage />}>
+          <Route path="/" element={<Aujourdhui />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/biens" element={<Biens />} />
+          <Route path="/pipelines" element={<Pipelines />} />
+          <Route path="/taches" element={<Taches />} />
+          <Route path="/plus" element={<Plus />} />
+          <Route path="/plus/reglages" element={<Reglages />} />
+          <Route path="/plus/composants" element={<Composants />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
   )
 }
 
-/** Routage par ancre (#/...) : fonctionne sur GitHub Pages sans configuration serveur. */
+/**
+ * Routage par ancre (#/...) : fonctionne sur GitHub Pages sans configuration serveur.
+ * L'application occupe tout l'écran : le bandeau « Connexion perdue » en haut si besoin,
+ * puis l'écran en cours.
+ */
 export default function App() {
-  if (supabase === null) {
-    return <ConfigurationManquante message={erreurConfigSupabase ?? 'Configuration absente.'} />
-  }
   return (
-    <FournisseurSession client={supabase}>
-      <Pages />
-    </FournisseurSession>
+    <div className="flex h-dvh flex-col bg-fond text-encre">
+      <BandeauHorsLigne />
+      {supabase === null ? (
+        <ConfigurationManquante message={erreurConfigSupabase ?? 'Configuration absente.'} />
+      ) : (
+        <FournisseurSession client={supabase}>
+          <FournisseurNotifications>
+            <Pages />
+          </FournisseurNotifications>
+        </FournisseurSession>
+      )}
+    </div>
   )
 }
