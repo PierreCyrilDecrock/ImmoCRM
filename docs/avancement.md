@@ -29,7 +29,7 @@ Ce tableau suit les 45 étapes du [plan de développement](plan-developpement.md
 | Étape | Intitulé | État | Date | Notes |
 | --- | --- | --- | --- | --- |
 | 1.1 | Contacts : fiche et liste | terminée | 16/11/2026 | Migration `0002_contacts` appliquée sur le projet de test puis sur le projet réel ; liste triée par nom, création rapide, fiche avec Appeler, SMS et Courriel, modification, archivage et restauration ; rôles multiples et étiquettes libres ; validation et formatage des téléphones français ; premier lot de 12 contacts fictifs. |
-| 1.2 | Contacts : recherche, filtres, doublons | terminée | 16/11/2026 | Recherche faite par la base (nom, prénom, société, téléphone sous tous ses formats, courriel, adresse), sans accent ni majuscule ; champ de recherche en haut de toutes les pages ; liste lue 50 fiches à la fois ; filtres combinables (rôle, étiquette, source, température) gardés pendant la session ; alerte de doublon à la création ; écran de fusion de deux fiches. Migration `0003_contacts_recherche` appliquée sur le projet de test ; migration `0004_contacts_recherche_ajustements` écrite, **en attente d'application sur le test** ; aucune des deux sur le projet réel. Mesures ci-dessous. |
+| 1.2 | Contacts : recherche, filtres, doublons | terminée | 16/11/2026 | Recherche faite par la base (nom, prénom, société, téléphone sous tous ses formats, courriel, adresse), sans accent ni majuscule ; champ de recherche en haut de toutes les pages ; liste lue 50 fiches à la fois ; filtres combinables (rôle, étiquette, source, température) gardés pendant la session ; alerte de doublon à la création ; écran de fusion de deux fiches. Migrations `0003_contacts_recherche` et `0004_contacts_recherche_ajustements` appliquées sur le projet de test (la 0004 collée à la main dans l'éditeur SQL : elle ne figure pas dans l'historique des migrations de Supabase) ; aucune des deux sur le projet réel. Mesures ci-dessous. |
 | 1.3 | Contacts : consentement et RGPD | à faire | | |
 | 1.4 | Biens : fiche et liste | à faire | | |
 | 1.5 | Biens : photos | à faire | | |
@@ -100,11 +100,11 @@ Faites le 16/11/2026 sur le projet de test, avec 30 001 fiches, en se plaçant d
 | Recherche sans aucun résultat | 19 ms |
 | Quatre filtres combinés (rôle, étiquette, source, température) | 13 ms |
 | Liste des étiquettes utilisées | 34 ms |
-| Détection des doublons (téléphone, courriel, nom proche) | 630 à 750 ms avec la migration 0003 ; à remesurer après la migration 0004, qui corrige ce point |
+| Détection des doublons (téléphone, courriel, nom proche) | 140 à 160 ms (630 à 750 ms avant la migration 0004) |
 
-Conclusion : l'objectif « moins d'une seconde » est tenu avec une large marge pour la recherche, les listes et les filtres. Seule la détection des doublons en était proche : la migration 0004 la réécrit.
+Conclusion : l'objectif « moins d'une seconde » est tenu avec une large marge. La détection des doublons, seule opération qui s'en approchait, a été réécrite par la migration 0004 et répond maintenant en 0,15 seconde.
 
-Ce que les mesures ont appris : avec les règles d'accès par ligne, la base vérifie d'abord à qui appartient chaque fiche, puis applique la recherche. Elle ne peut donc pas utiliser d'index de recherche « contient » : elle lit les fiches du compte une à une, ce qui reste très rapide à cette échelle (20 ms pour 30 000 fiches, donc de l'ordre de 70 ms pour 100 000). Les index de ce type créés par la migration 0003 ne servaient à rien ; la migration 0004 les retire. L'index de la liste alphabétique, lui, est bien utilisé.
+Ce que les mesures ont appris : avec les règles d'accès par ligne, la base vérifie d'abord à qui appartient chaque fiche, puis applique la recherche. Elle ne peut donc pas utiliser d'index de recherche « contient » : elle lit les fiches du compte une à une, ce qui reste très rapide à cette échelle (20 ms pour 30 000 fiches, donc de l'ordre de 70 ms pour 100 000). Les index de ce type créés par la migration 0003 ne servaient à rien ; la migration 0004 les a retirés. L'index de la liste alphabétique, lui, est bien utilisé.
 
 Le script qui a créé ces fiches est `supabase/tests/contacts-fictifs-volume.sql` (projet de test uniquement). Les 30 000 fiches y restent pour vos essais ; la commande pour les retirer est en tête du script.
 
