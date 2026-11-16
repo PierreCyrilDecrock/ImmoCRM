@@ -1,13 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+  appeler,
   archiver,
   creer,
   lire,
-  lister,
+  listerPage,
   modifier,
   restaurer,
   type Creation,
+  type Filtre,
   type Ligne,
+  type PageLignes,
   type Resultat,
 } from '../../lib/donnees'
 import { analyserTelephone, formaterTelephone } from './telephone'
@@ -20,8 +23,14 @@ import { analyserTelephone, formaterTelephone } from './telephone'
 /** Un contact tel qu'il est lu dans la base. */
 export type Contact = Ligne<'contacts'>
 
-/** Valeurs envoyées à la base pour créer ou modifier un contact. */
-export type ValeursContact = Creation<'contacts'>
+/**
+ * Valeurs envoyées à la base pour créer ou modifier un contact. Les colonnes que la base
+ * calcule elle-même (recherche, nom de classement, lien de fusion) n'en font pas partie.
+ */
+export type ValeursContact = Omit<
+  Creation<'contacts'>,
+  'recherche' | 'nom_tri' | 'fusionne_dans_id'
+>
 
 export type TypeContact = 'personne' | 'societe'
 export type Civilite = 'm' | 'mme'
@@ -146,12 +155,8 @@ export function interlocuteur(contact: Identite): string {
   return assembler(libelleCivilite(contact.civilite), contact.prenom, contact.nom)
 }
 
+/** Compare deux textes à la française : sans tenir compte des accents ni des majuscules. */
 const ORDRE_FRANCAIS = new Intl.Collator('fr', { sensitivity: 'base', numeric: true })
-
-/** Trie par nom, à la française : sans tenir compte des accents ni des majuscules. */
-export function trierParNom<C extends Identite>(contacts: readonly C[]): C[] {
-  return [...contacts].sort((a, b) => ORDRE_FRANCAIS.compare(nomDeListe(a), nomDeListe(b)))
-}
 
 /** Seconde ligne d'un contact dans la liste : son premier téléphone, puis ses rôles. */
 export function resumeContact(contact: Contact): string | undefined {
@@ -351,17 +356,45 @@ export function preparerContact(brouillon: BrouillonContact): PreparationContact
   }
 }
 
-/** Lit les contacts, triés par nom. `archives` : les fiches archivées au lieu des actives. */
-export async function listerContacts(
+/** Nombre de fiches lues à la fois dans la liste. */
+export const TAILLE_PAGE_CONTACTS = 50
+
+export type OptionsRecherche = {
+  /** Conditions calculées par `conditionsContacts` (recherche et filtres). */
+  conditions?: readonly Filtre<'contacts'>[]
+  /** Les fiches archivées au lieu des actives. */
+  archives?: boolean
+  /** Rang de la première fiche voulue (0 pour le début). */
+  debut?: number
+  taille?: number
+  /** Demande aussi le nombre total de fiches trouvées. */
+  compter?: boolean
+}
+
+/**
+ * Lit une page de contacts, par ordre alphabétique. La recherche, les filtres et le tri
+ * sont faits par la base : l'application ne charge jamais toute la table.
+ */
+export function chercherContacts(
   client: SupabaseClient,
-  options: { archives?: boolean } = {},
-): Promise<Resultat<Contact[]>> {
-  const resultat = await lister(client, 'contacts', {
+  options: OptionsRecherche = {},
+): Promise<Resultat<PageLignes<Contact>>> {
+  return listerPage(client, 'contacts', {
     archives: options.archives === true ? 'seulement' : 'sans',
-    tri: { colonne: 'nom', croissant: true },
+    filtres: options.conditions,
+    // `id` départage les homonymes : l'ordre reste le même d'une page à l'autre.
+    tri: [{ colonne: 'nom_tri' }, { colonne: 'id' }],
+    debut: options.debut ?? 0,
+    taille: options.taille ?? TAILLE_PAGE_CONTACTS,
+    compter: options.compter,
   })
+}
+
+/** Les étiquettes portées par les fiches actives, les plus utilisées d'abord. */
+export async function listerEtiquettes(client: SupabaseClient): Promise<Resultat<string[]>> {
+  const resultat = await appeler(client, 'etiquettes_contacts')
   if (!resultat.ok) return resultat
-  return { ok: true, donnees: trierParNom(resultat.donnees) }
+  return { ok: true, donnees: resultat.donnees.map((ligne) => ligne.etiquette) }
 }
 
 export function lireContact(client: SupabaseClient, id: string): Promise<Resultat<Contact>> {

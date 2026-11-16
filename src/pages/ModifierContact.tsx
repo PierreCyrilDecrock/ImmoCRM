@@ -8,7 +8,6 @@ import Page from '../components/Page'
 import {
   brouillonDepuis,
   lireContact,
-  listerContacts,
   modifierContact,
   nomComplet,
   preparerContact,
@@ -22,7 +21,7 @@ import { exigerSupabase } from '../lib/supabase'
 type Etat =
   | { phase: 'chargement' }
   | { phase: 'erreur'; message: string }
-  | { phase: 'pret'; contact: Contact; autres: Contact[] }
+  | { phase: 'pret'; contact: Contact; recommandePar: Contact | null }
 
 /** Formulaire complet d'un contact, ouvert depuis sa fiche. */
 export default function ModifierContact() {
@@ -39,16 +38,25 @@ export default function ModifierContact() {
   useEffect(() => {
     let actif = true
     const client = exigerSupabase()
-    void Promise.all([lireContact(client, id), listerContacts(client)]).then(([fiche, liste]) => {
+    async function charger() {
+      const fiche = await lireContact(client, id)
+      if (!fiche.ok) return fiche
+      // Le nom de la personne qui a recommandé : son absence n'empêche pas de modifier le reste.
+      const origine =
+        fiche.donnees.recommande_par_id === null
+          ? null
+          : await lireContact(client, fiche.donnees.recommande_par_id)
+      const recommandePar = origine !== null && origine.ok ? origine.donnees : null
+      return { ok: true, contact: fiche.donnees, recommandePar } as const
+    }
+    void charger().then((resultat) => {
       if (!actif) return
-      if (!fiche.ok) {
-        setEtat({ phase: 'erreur', message: fiche.erreur.message })
+      if (!resultat.ok) {
+        setEtat({ phase: 'erreur', message: resultat.erreur.message })
         return
       }
-      // Sans la liste, on peut modifier tout le reste : « Recommandé par » sera simplement vide.
-      const autres = liste.ok ? liste.donnees.filter((contact) => contact.id !== id) : []
-      setBrouillon(brouillonDepuis(fiche.donnees))
-      setEtat({ phase: 'pret', contact: fiche.donnees, autres })
+      setBrouillon(brouillonDepuis(resultat.contact))
+      setEtat({ phase: 'pret', contact: resultat.contact, recommandePar: resultat.recommandePar })
     })
     return () => {
       actif = false
@@ -112,7 +120,8 @@ export default function ModifierContact() {
           brouillon={brouillon}
           erreurs={erreurs}
           onChange={setBrouillon}
-          autresContacts={etat.autres}
+          idContact={id}
+          recommandePar={etat.recommandePar}
         />
         {echec !== null && <Message genre="erreur">{echec}</Message>}
         <div className="flex flex-col gap-2 md:flex-row-reverse md:justify-start">

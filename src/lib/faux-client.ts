@@ -2,7 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** Réponse simulée de Supabase, ou `'panne'` pour simuler une requête qui échoue net. */
 export type ReponseSimulee =
-  { data: unknown; error: { code?: string; message?: string } | null; status?: number } | 'panne'
+  | {
+      data: unknown
+      error: { code?: string; message?: string } | null
+      status?: number
+      /** Nombre total de lignes, quand la requête le demande. */
+      count?: number | null
+    }
+  | 'panne'
 
 /**
  * Faux client Supabase pour les tests : il note chaque appel (`['from', 'reglages']`,

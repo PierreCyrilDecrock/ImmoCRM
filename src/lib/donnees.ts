@@ -53,10 +53,42 @@ export type OptionsListe<T extends NomTable> = {
   limite?: number
 }
 
+/** Condition appliquée par la base lors d'une lecture par page. */
+export type Filtre<T extends NomTable> = { colonne: keyof Ligne<T> & string } & (
+  | { genre: 'egal'; valeur: string }
+  /** Le texte de la colonne contient ce texte (sans caractère joker). */
+  | { genre: 'contient'; valeur: string }
+  /** La colonne, un tableau, comprend toutes ces valeurs. */
+  | { genre: 'comprend'; valeur: string[] }
+)
+
+export type OptionsPage<T extends NomTable> = {
+  archives?: 'sans' | 'avec' | 'seulement'
+  /** Conditions à remplir toutes à la fois. */
+  filtres?: readonly Filtre<T>[]
+  /** Colonnes de tri, dans l'ordre. La dernière doit départager toutes les lignes (`id`). */
+  tri: readonly { colonne: keyof Ligne<T> & string; croissant?: boolean }[]
+  /** Rang de la première ligne voulue (0 pour le début). */
+  debut: number
+  /** Nombre de lignes voulues. */
+  taille: number
+  /** Demande aussi le nombre total de lignes qui remplissent les conditions. */
+  compter?: boolean
+}
+
+/** Une page de lignes ; `total` n'est connu que s'il a été demandé. */
+export type PageLignes<L> = { lignes: L[]; total: number | null }
+
+type FonctionsBase = Database['public']['Functions']
+
+/** Nom d'une fonction de la base, appelable par l'application. */
+export type NomFonction = keyof FonctionsBase
+
 type Reponse = {
   data: unknown
   error: { code?: string; message?: string } | null
   status?: number
+  count?: number | null
 }
 
 /** Attend une requête et range sa réponse dans un `Resultat`, sans jamais lever d'erreur. */
@@ -94,6 +126,63 @@ export function lister<T extends NomTable>(
   requete = requete.order(tri?.colonne ?? 'created_at', { ascending: tri?.croissant ?? false })
   if (limite !== undefined) requete = requete.limit(limite)
   return executer<Ligne<T>[]>(requete, false)
+}
+
+/**
+ * Lit une page de lignes, filtrées et triées par la base : jamais toute la table.
+ * À utiliser pour toute liste qui peut grossir (contacts, biens…).
+ */
+export async function listerPage<T extends NomTable>(
+  client: SupabaseClient,
+  table: T,
+  options: OptionsPage<T>,
+): Promise<Resultat<PageLignes<Ligne<T>>>> {
+  const { archives = 'sans', filtres = [], tri, debut, taille, compter = false } = options
+  let requete = compter
+    ? client.from(table).select('*', { count: 'exact' })
+    : client.from(table).select('*')
+  if (TABLES[table].archivable) {
+    if (archives === 'sans') requete = requete.is('archived_at', null)
+    if (archives === 'seulement') requete = requete.not('archived_at', 'is', null)
+  }
+  for (const filtre of filtres) {
+    // Le nom de colonne est déjà vérifié par le type `Filtre`.
+    const colonne: string = filtre.colonne
+    if (filtre.genre === 'egal') requete = requete.eq(colonne, filtre.valeur)
+    if (filtre.genre === 'contient') requete = requete.like(colonne, `%${filtre.valeur}%`)
+    if (filtre.genre === 'comprend') {
+      // Entre guillemets : une valeur peut contenir une espace ou une virgule (étiquette libre).
+      const valeurs = filtre.valeur.map((valeur) => `"${valeur.replace(/(["\\])/g, '\\$1')}"`)
+      requete = requete.contains(colonne, valeurs)
+    }
+  }
+  for (const { colonne, croissant = true } of tri) {
+    requete = requete.order(colonne, { ascending: croissant })
+  }
+  const requetePage: PromiseLike<Reponse> = requete.range(debut, debut + taille - 1)
+
+  let total: number | null = null
+  const resultat = await executer<Ligne<T>[]>(
+    requetePage.then((reponse) => {
+      total = reponse.count ?? null
+      return reponse
+    }),
+    false,
+  )
+  if (!resultat.ok) return resultat
+  return { ok: true, donnees: { lignes: resultat.donnees, total } }
+}
+
+/**
+ * Appelle une fonction de la base (recherche de doublons, fusion…). Elle s'exécute avec
+ * les droits du compte connecté : les règles d'accès par ligne s'appliquent.
+ */
+export function appeler<F extends NomFonction>(
+  client: SupabaseClient,
+  fonction: F,
+  parametres?: FonctionsBase[F]['Args'],
+): Promise<Resultat<FonctionsBase[F]['Returns']>> {
+  return executer<FonctionsBase[F]['Returns']>(client.rpc(fonction, parametres ?? {}), false)
 }
 
 /** Lit une ligne par son identifiant (archivée ou non). */

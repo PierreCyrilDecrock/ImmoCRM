@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  appeler,
   archiver,
   creer,
   enregistrerUnique,
   lire,
   lister,
+  listerPage,
   modifier,
   restaurer,
   TABLES,
@@ -136,5 +138,78 @@ describe('archiver, restaurer', () => {
     const { client, appels } = fauxClient({ data: LIGNE, error: null })
     await restaurer(client, TABLE_ARCHIVABLE, LIGNE.id)
     expect(appels).toContainEqual(['update', { archived_at: null }])
+  })
+})
+
+describe('listerPage', () => {
+  it('lit une tranche de lignes, filtrée et triée par la base, avec le total', async () => {
+    const { client, appels } = fauxClient({ data: [LIGNE], error: null, count: 42 })
+    const resultat = await listerPage(client, 'reglages', {
+      filtres: [
+        { colonne: 'nom_affiche', genre: 'contient', valeur: 'camille' },
+        { colonne: 'user_id', genre: 'egal', valeur: LIGNE.user_id },
+      ],
+      tri: [{ colonne: 'nom_affiche' }, { colonne: 'id', croissant: false }],
+      debut: 100,
+      taille: 50,
+      compter: true,
+    })
+    expect(resultat).toEqual({ ok: true, donnees: { lignes: [LIGNE], total: 42 } })
+    expect(appels).toEqual([
+      ['from', 'reglages'],
+      ['select', '*', { count: 'exact' }],
+      ['like', 'nom_affiche', '%camille%'],
+      ['eq', 'user_id', LIGNE.user_id],
+      ['order', 'nom_affiche', { ascending: true }],
+      ['order', 'id', { ascending: false }],
+      ['range', 100, 149],
+    ])
+  })
+
+  it('met entre guillemets les valeurs cherchées dans un tableau', async () => {
+    const { client, appels } = fauxClient({ data: [], error: null })
+    await listerPage(client, 'contacts', {
+      filtres: [{ colonne: 'etiquettes', genre: 'comprend', valeur: ['résidence, "secondaire"'] }],
+      tri: [{ colonne: 'id' }],
+      debut: 0,
+      taille: 10,
+    })
+    expect(appels).toContainEqual(['contains', 'etiquettes', ['"résidence, \\"secondaire\\""']])
+  })
+
+  it('ne demande pas le total s’il n’est pas voulu', async () => {
+    const { client, appels } = fauxClient({ data: [], error: null })
+    const resultat = await listerPage(client, 'reglages', {
+      tri: [{ colonne: 'id' }],
+      debut: 0,
+      taille: 10,
+    })
+    expect(resultat).toEqual({ ok: true, donnees: { lignes: [], total: null } })
+    expect(appels).toContainEqual(['select', '*'])
+  })
+
+  it('traduit une panne de réseau', async () => {
+    const { client } = fauxClient('panne')
+    const resultat = await listerPage(client, 'reglages', {
+      tri: [{ colonne: 'id' }],
+      debut: 0,
+      taille: 10,
+    })
+    expect(resultat).toMatchObject({ ok: false, erreur: { genre: 'reseau' } })
+  })
+})
+
+describe('appeler', () => {
+  it('appelle une fonction de la base avec ses paramètres', async () => {
+    const { client, appels } = fauxClient({ data: 'camille fictif', error: null })
+    const resultat = await appeler(client, 'normaliser_recherche', { texte: 'Camille FICTIF' })
+    expect(resultat).toEqual({ ok: true, donnees: 'camille fictif' })
+    expect(appels).toEqual([['rpc', 'normaliser_recherche', { texte: 'Camille FICTIF' }]])
+  })
+
+  it('traduit un refus de la base', async () => {
+    const { client } = fauxClient({ data: null, error: { code: '22023' }, status: 400 })
+    const resultat = await appeler(client, 'etiquettes_contacts')
+    expect(resultat).toMatchObject({ ok: false, erreur: { genre: 'invalide' } })
   })
 })

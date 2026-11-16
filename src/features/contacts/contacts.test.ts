@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { contactEssai } from './contact-essai'
 import { fauxClient } from '../../lib/faux-client'
 import {
   adresseComplete,
@@ -8,47 +9,20 @@ import {
   brouillonVide,
   creerContact,
   interlocuteur,
-  listerContacts,
+  chercherContacts,
+  listerEtiquettes,
   MAX_ETIQUETTES,
   nomAvecCivilite,
   nomComplet,
   nomDeListe,
   preparerContact,
   resumeContact,
-  trierParNom,
   validerCourriel,
   type BrouillonContact,
-  type Contact,
 } from './contacts'
 
 /** Fiche fictive complète, pour les tests. */
-function contact(valeurs: Partial<Contact> = {}): Contact {
-  return {
-    id: '00000000-0000-4000-8000-000000000001',
-    user_id: '00000000-0000-4000-8000-0000000000aa',
-    created_at: '2026-11-16T09:00:00Z',
-    updated_at: '2026-11-16T09:00:00Z',
-    archived_at: null,
-    type: 'personne',
-    civilite: null,
-    prenom: 'Camille',
-    nom: 'Fictif',
-    raison_sociale: '',
-    telephones: [],
-    courriels: [],
-    adresse: '',
-    code_postal: '',
-    ville: '',
-    notes: '',
-    roles: [],
-    etiquettes: [],
-    source: null,
-    source_detail: '',
-    recommande_par_id: null,
-    temperature: null,
-    ...valeurs,
-  }
-}
+const contact = contactEssai
 
 function brouillon(valeurs: Partial<BrouillonContact> = {}): BrouillonContact {
   return { ...brouillonVide(), ...valeurs }
@@ -74,31 +48,6 @@ describe('noms', () => {
     expect(nomAvecCivilite(societe)).toBe('Étude Spécimen')
     expect(nomDeListe(societe)).toBe('Étude Spécimen')
     expect(interlocuteur(societe)).toBe('M. Camille Fictif')
-  })
-})
-
-describe('trierParNom', () => {
-  it('classe par nom puis prénom, sans tenir compte des accents ni des majuscules', () => {
-    const tries = trierParNom([
-      contact({ nom: 'Postiche', prenom: 'Lou' }),
-      contact({ nom: 'exemple', prenom: 'Sacha' }),
-      contact({ type: 'societe', raison_sociale: 'Étude Spécimen', nom: 'Zzz' }),
-      contact({ nom: 'Fictif', prenom: 'Dominique' }),
-      contact({ nom: 'Fictif', prenom: 'Camille' }),
-    ])
-    expect(tries.map(nomDeListe)).toEqual([
-      'Étude Spécimen',
-      'exemple Sacha',
-      'Fictif Camille',
-      'Fictif Dominique',
-      'Postiche Lou',
-    ])
-  })
-
-  it('ne modifie pas la liste reçue', () => {
-    const liste = [contact({ nom: 'B' }), contact({ nom: 'A' })]
-    trierParNom(liste)
-    expect(liste.map((c) => c.nom)).toEqual(['B', 'A'])
   })
 })
 
@@ -325,21 +274,49 @@ describe('brouillonDepuis', () => {
 })
 
 describe('accès aux données', () => {
-  it('liste les contacts actifs, triés par nom', async () => {
-    const { client, appels } = fauxClient({
-      data: [contact({ nom: 'Postiche' }), contact({ nom: 'Exemple' })],
-      error: null,
-    })
-    const resultat = await listerContacts(client)
-    expect(resultat.ok && resultat.donnees.map((c) => c.nom)).toEqual(['Exemple', 'Postiche'])
-    expect(appels).toContainEqual(['from', 'contacts'])
-    expect(appels).toContainEqual(['is', 'archived_at', null])
+  it('lit la première page des contacts actifs, par ordre alphabétique', async () => {
+    const { client, appels } = fauxClient({ data: [contact()], error: null, count: 1 })
+    const resultat = await chercherContacts(client, { compter: true })
+    expect(resultat).toEqual({ ok: true, donnees: { lignes: [contact()], total: 1 } })
+    expect(appels).toEqual([
+      ['from', 'contacts'],
+      ['select', '*', { count: 'exact' }],
+      ['is', 'archived_at', null],
+      ['order', 'nom_tri', { ascending: true }],
+      ['order', 'id', { ascending: true }],
+      ['range', 0, 49],
+    ])
   })
 
-  it('liste les contacts archivés sur demande', async () => {
+  it('applique la recherche et les filtres, et lit la suite à partir du rang demandé', async () => {
     const { client, appels } = fauxClient({ data: [], error: null })
-    await listerContacts(client, { archives: true })
+    await chercherContacts(client, {
+      archives: true,
+      debut: 50,
+      conditions: [
+        { colonne: 'recherche', genre: 'contient', valeur: '0612' },
+        { colonne: 'roles', genre: 'comprend', valeur: ['vendeur'] },
+        { colonne: 'source', genre: 'egal', valeur: 'pige' },
+      ],
+    })
     expect(appels).toContainEqual(['not', 'archived_at', 'is', null])
+    expect(appels).toContainEqual(['like', 'recherche', '%0612%'])
+    expect(appels).toContainEqual(['contains', 'roles', ['"vendeur"']])
+    expect(appels).toContainEqual(['eq', 'source', 'pige'])
+    expect(appels).toContainEqual(['range', 50, 99])
+  })
+
+  it('liste les étiquettes utilisées', async () => {
+    const { client, appels } = fauxClient({
+      data: [
+        { etiquette: 'fictif', nombre: 12 },
+        { etiquette: 'investisseur', nombre: 3 },
+      ],
+      error: null,
+    })
+    const resultat = await listerEtiquettes(client)
+    expect(resultat).toEqual({ ok: true, donnees: ['fictif', 'investisseur'] })
+    expect(appels).toEqual([['rpc', 'etiquettes_contacts', {}]])
   })
 
   it('crée un contact avec les valeurs préparées', async () => {

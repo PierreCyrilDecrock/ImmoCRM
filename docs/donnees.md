@@ -93,11 +93,13 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | Fonction | Effet |
 | --- | --- |
 | `lister(client, table, options)` | Lit les lignes ; écarte les archivées sauf `archives: 'avec'` ou `'seulement'` ; tri et limite facultatifs |
+| `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir |
 | `lire(client, table, id)` | Lit une ligne |
 | `creer(client, table, valeurs)` | Crée une ligne et la renvoie complète |
 | `modifier(client, table, id, valeurs)` | Modifie une ligne et la renvoie à jour |
 | `archiver` / `restaurer(client, table, id)` | Archive une ligne, ou annule l'archivage |
 | `enregistrerUnique(client, table, valeurs, colonne)` | Crée ou met à jour la ligne unique (réglages) |
+| `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes) |
 
 Chaque fonction renvoie soit `{ ok: true, donnees }`, soit `{ ok: false, erreur }`, sans jamais lever d'erreur. `erreur.message` est une phrase en français, affichable telle quelle ; `erreur.genre` permet à un écran de réagir (`reseau`, `session`, `droits`, `doublon`, `lien`, `invalide`, `introuvable`, `inconnue`). La traduction est dans `src/lib/erreurs-donnees.ts`.
 
@@ -108,7 +110,29 @@ if (!resultat.ok) notifier('erreur', resultat.erreur.message)
 
 Une valeur choisie dans une liste fermée (type, rôle, source, température) est une colonne de texte, bornée par une contrainte dans la migration ; ses libellés français sont dans le code du domaine (`src/features/contacts/contacts.ts`). Un téléphone est enregistré au format international sans espace (`+33612345678`) et affiché à la française (`src/features/contacts/telephone.ts`).
 
-Supabase renvoie au plus 1 000 lignes par lecture : `lister` ne va pas au-delà. Suffisant pour démarrer ; la recherche de l'étape 1.2 devra en tenir compte.
+Supabase renvoie au plus 1 000 lignes par lecture : `lister` ne va pas au-delà. Il est réservé aux petites tables. Une liste qui peut grossir (contacts, biens…) se lit avec `listerPage`, 50 lignes à la fois : l'application ne charge jamais toute une table.
+
+### Recherche, doublons et fusion des contacts
+
+La recherche est faite par la base, pas par le navigateur.
+
+| Élément | Rôle |
+| --- | --- |
+| Colonne `recherche` | Tout le texte cherchable d'une fiche (nom, prénom, société, courriels, adresse), sans accent ni majuscule, suivi de chaque téléphone en chiffres seuls sous deux écritures : `0612345678` et `33612345678` |
+| Colonne `nom_tri` | Nom de classement (« nom prénom » ou raison sociale), sans accent ni majuscule : c'est l'ordre de la liste |
+| Colonne `fusionne_dans_id` | Sur une fiche fusionnée : la fiche qui a tout repris |
+| Fonction `normaliser_recherche(texte)` | La mise en forme commune (minuscules, sans accent, tirets et apostrophes en espaces) |
+| Fonction `etiquettes_contacts()` | Les étiquettes utilisées, pour le filtre |
+| Fonction `doublons_contact(…)` | Les fiches au même téléphone, au même courriel ou au nom très proche |
+| Fonction `fusionner_contacts(garde, absorbe, valeurs)` | Réunit deux fiches en une seule opération : tout réussit ou rien ne change |
+
+Les colonnes `recherche` et `nom_tri` sont calculées par un déclencheur à chaque enregistrement : l'application ne les envoie jamais. Côté application, `src/lib/recherche.ts` applique la même mise en forme à ce qui est tapé et réunit les morceaux d'un téléphone (« 06 12 » devient `0612`, « +33 6 12 » devient `33612`) ; chaque mot tapé doit figurer dans la fiche. Les deux mises en forme (SQL et TypeScript) doivent rester identiques.
+
+Ces fonctions s'exécutent avec les droits du compte connecté : les règles d'accès par ligne s'y appliquent comme ailleurs, et un visiteur sans session ne peut pas les appeler. Aucune fonction ne contourne ces règles.
+
+Conséquence à connaître : avec les règles d'accès par ligne, la base ne peut pas s'appuyer sur un index pour une recherche « contient ». Elle lit les fiches du compte une à une (20 ms pour 30 000 fiches, mesures dans `docs/avancement.md`). Inutile donc de créer ce type d'index.
+
+**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` ; toute nouvelle colonne des contacts doit y être ajoutée aussi.
 
 Chaque domaine range ses propres fonctions dans `src/features/<domaine>` (exemple : `src/features/reglages/reglages.ts`), bâties sur cette couche. Pour les tests, `src/lib/faux-client.ts` simule Supabase sans réseau.
 
@@ -136,6 +160,8 @@ L'application reconnaît le projet de test à son adresse (`src/lib/environnemen
 | Adresse | `00000 Villefictive`, rue de l'Exemple, avenue du Test… |
 
 L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif ») ; chaque appui en ajoute 12 de plus. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
+
+Exception : l'essai de volume de l'étape 1.2 (30 000 contacts, pour mesurer les temps de réponse) est un script SQL, `supabase/tests/contacts-fictifs-volume.sql`, lancé par Claude Code sur le seul projet de test. Ses fiches portent l'étiquette « essai de volume » ; leurs téléphones viennent des tranches réservées aux fictions (06 39 98, 01 99 00, 02 61 91). Le script refuse de tourner sur une base qui contient plus de 20 fiches non fictives.
 
 Cette protection est un garde-fou contre une fausse manœuvre, pas une barrière de sécurité : c'est un contrôle fait par le site. Elle évite de mélanger du faux aux vraies fiches.
 
