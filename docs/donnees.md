@@ -97,14 +97,14 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | Fonction | Effet |
 | --- | --- |
 | `lister(client, table, options)` | Lit les lignes ; écarte les archivées sauf `archives: 'avec'` ou `'seulement'` ; tri et limite facultatifs |
-| `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir. Filtres possibles : `egal`, `contient`, `comprend` (tableau), `parmi` (liste de valeurs), `min` et `max` (nombres ou dates `AAAA-MM-JJ`) |
+| `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir. Filtres possibles : `egal`, `contient`, `comprend` (tableau), `parmi` (liste de valeurs), `min` et `max` (nombres ou dates `AAAA-MM-JJ`), `vide` (colonne sans valeur) |
 | `lire(client, table, id)` | Lit une ligne |
 | `creer(client, table, valeurs)` | Crée une ligne et la renvoie complète |
 | `modifier(client, table, id, valeurs)` | Modifie une ligne et la renvoie à jour |
 | `archiver` / `restaurer(client, table, id)` | Archive une ligne, ou annule l'archivage |
 | `supprimer(client, table, id)` | Supprime une ligne pour de bon. Réservé aux photos (`biens_photos`) : voir « Photos des biens » |
 | `enregistrerUnique(client, table, valeurs, colonne)` | Crée ou met à jour la ligne unique (réglages) |
-| `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive, clôture d'une tâche) |
+| `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive, clôture d'une tâche, boucle de relance) |
 
 Chaque fonction renvoie soit `{ ok: true, donnees }`, soit `{ ok: false, erreur }`, sans jamais lever d'erreur. `erreur.message` est une phrase en français, affichable telle quelle ; `erreur.genre` permet à un écran de réagir (`reseau`, `session`, `droits`, `doublon`, `lien`, `invalide`, `introuvable`, `inconnue`). La traduction est dans `src/lib/erreurs-donnees.ts`.
 
@@ -213,7 +213,7 @@ Une tâche est toute action à venir, avec une date et un motif (table `taches`)
 
 ### Journal d'activité
 
-Une activité est tout événement passé : appel, message, visite, note, document envoyé (table `activites`). **Activité (le passé) et tâche (le futur) sont deux objets distincts** : une tâche cochée ne crée pas encore d'activité (boucle de relance, étape 1.8).
+Une activité est tout événement passé : appel, message, visite, note, document envoyé (table `activites`). **Activité (le passé) et tâche (le futur) sont deux objets distincts** : cocher une tâche liée à un contact les relie : la boucle de relance consigne l'activité et prévoit la tâche suivante (voir « Boucle de relance »).
 
 | Élément | Rôle |
 | --- | --- |
@@ -233,6 +233,23 @@ Une activité est tout événement passé : appel, message, visite, note, docume
 **Contacts.** La suppression définitive d'un contact emporte son journal (même les activités liées aussi à un bien) ; la fusion le transfère à la fiche gardée ; l'export d'un contact le contient en entier, activités retirées comprises.
 
 Code : `src/features/activites/` (règles de saisie, lecture, périodes de la page Journal, testées) ; les fiches liées sont lues par `src/features/liens/fiches-liees.ts`, commun aux tâches et au journal.
+
+### Boucle de relance
+
+Deux règles du cadrage : **clôturer une tâche crée une activité et propose aussitôt la suivante** ; **aucun contact sans prochaine action datée**.
+
+| Élément | Rôle |
+| --- | --- |
+| Colonnes `relance_chaud`, `relance_tiede`, `relance_froid`, `relance_veille` (table `reglages`) | Délai de relance par défaut de chaque température : un nombre de 1 à 99 suivi de `j`, `s` ou `m` (`1s`, `1m`, `3m`, `6m` par défaut). Modifiables dans Réglages, « Rythme des relances » |
+| Colonne `contacts.prochaine_action_le` | Échéance de la plus proche des tâches à faire liées au contact ; vide : rien n'est prévu. **Calculée par la base** (déclencheurs `contacts_maj_prochaine_action` et `taches_maj_contact`) ; l'application ne l'envoie jamais |
+| Colonne `contacts.sans_prochaine_action_le` | Moment où l'absence de prochaine action a été confirmée. Vidée par la base dès qu'une tâche est de nouveau prévue |
+| Fonction `boucler_tache(...)` | Une tâche liée à un contact est faite : clôture (et occurrence suivante d'une série, avec les contrôles de `cloturer_tache`), activité au journal (liée au contact et au bien de la tâche), température mise à jour si elle a changé, puis prochaine action créée (même contact, même bien) ou refus confirmé. Tout ou rien. Sans prochaine action ni refus, la base exige qu'une autre tâche reste prévue pour le contact |
+
+**Date proposée** (`src/features/relances/delais.ts`, testé) : aujourd'hui plus le délai de la température du contact ; les semaines comptent 7 jours, les mois suivent le calendrier (le 31 janvier + 1 mois = le 28 ou 29 février). Sans température, le délai d'un contact tiède. La date se change au cas par cas dans l'écran (champ Date, raccourcis, ou changement de température). L'écran et ses règles sont dans `src/features/relances/` (`boucle.ts`, testé).
+
+**Quelles tâches ?** Cocher une tâche liée à un contact ouvre la boucle, depuis la page Tâches, les fiches ou l'en-tête de la fiche Contact. Une tâche sans contact (même liée à un bien) est faite en un geste, sans activité. Annuler une tâche ne passe pas par la boucle.
+
+**Vue « Contacts sans prochaine action »** : fiches actives dont `prochaine_action_le` est vide, qu'il y ait eu refus confirmé ou jamais aucune tâche. Changer une tâche ne touche la fiche (et sa date « modifiée le ») que si la date de la prochaine action change.
 
 ### Consentement et RGPD des contacts
 

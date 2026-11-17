@@ -411,10 +411,12 @@ export type Database = {
           opposition_demarchage: boolean
           opposition_demarchage_date: string | null
           prenom: string
+          prochaine_action_le: string | null
           raison_sociale: string
           recherche: string
           recommande_par_id: string | null
           roles: string[]
+          sans_prochaine_action_le: string | null
           source: string | null
           source_detail: string
           telephones: string[]
@@ -447,10 +449,12 @@ export type Database = {
           opposition_demarchage?: boolean
           opposition_demarchage_date?: string | null
           prenom?: string
+          prochaine_action_le?: string | null
           raison_sociale?: string
           recherche?: string
           recommande_par_id?: string | null
           roles?: string[]
+          sans_prochaine_action_le?: string | null
           source?: string | null
           source_detail?: string
           telephones?: string[]
@@ -483,10 +487,12 @@ export type Database = {
           opposition_demarchage?: boolean
           opposition_demarchage_date?: string | null
           prenom?: string
+          prochaine_action_le?: string | null
           raison_sociale?: string
           recherche?: string
           recommande_par_id?: string | null
           roles?: string[]
+          sans_prochaine_action_le?: string | null
           source?: string | null
           source_detail?: string
           telephones?: string[]
@@ -518,6 +524,10 @@ export type Database = {
           created_at: string
           id: string
           nom_affiche: string
+          relance_chaud: string
+          relance_froid: string
+          relance_tiede: string
+          relance_veille: string
           updated_at: string
           user_id: string
         }
@@ -525,6 +535,10 @@ export type Database = {
           created_at?: string
           id?: string
           nom_affiche?: string
+          relance_chaud?: string
+          relance_froid?: string
+          relance_tiede?: string
+          relance_veille?: string
           updated_at?: string
           user_id?: string
         }
@@ -532,6 +546,10 @@ export type Database = {
           created_at?: string
           id?: string
           nom_affiche?: string
+          relance_chaud?: string
+          relance_froid?: string
+          relance_tiede?: string
+          relance_veille?: string
           updated_at?: string
           user_id?: string
         }
@@ -626,6 +644,51 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      boucler_tache: {
+        Args: {
+          p_compte_rendu?: string
+          p_id: string
+          p_prochaine_categorie?: string
+          p_prochaine_echeance?: string
+          p_prochaine_heure?: string
+          p_prochaine_motif?: string
+          p_prochaine_titre?: string
+          p_resultat?: string
+          p_sans_prochaine_action?: boolean
+          p_suivante_echeance?: string
+          p_suivante_rang?: number
+          p_temperature?: string
+          p_type: string
+        }
+        Returns: {
+          archived_at: string | null
+          bien_id: string | null
+          categorie: string
+          cloturee_le: string | null
+          contact_id: string | null
+          created_at: string
+          duree: number | null
+          echeance: string
+          etat: string
+          heure: string | null
+          id: string
+          lieu: string
+          motif: string
+          priorite: number
+          recurrence: string | null
+          recurrence_ancre: string | null
+          recurrence_rang: number
+          titre: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'taches'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       cloturer_tache: {
         Args: {
           p_etat: string
@@ -692,10 +755,12 @@ export type Database = {
           opposition_demarchage: boolean
           opposition_demarchage_date: string | null
           prenom: string
+          prochaine_action_le: string | null
           raison_sociale: string
           recherche: string
           recommande_par_id: string | null
           roles: string[]
+          sans_prochaine_action_le: string | null
           source: string | null
           source_detail: string
           telephones: string[]
@@ -751,10 +816,12 @@ export type Database = {
           opposition_demarchage: boolean
           opposition_demarchage_date: string | null
           prenom: string
+          prochaine_action_le: string | null
           raison_sociale: string
           recherche: string
           recommande_par_id: string | null
           roles: string[]
+          sans_prochaine_action_le: string | null
           source: string | null
           source_detail: string
           telephones: string[]

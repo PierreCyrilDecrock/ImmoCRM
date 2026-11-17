@@ -13,6 +13,8 @@ export type FiltresContacts = {
   etiquette: string
   source: Source | ''
   temperature: Temperature | ''
+  /** Vue « Contacts sans prochaine action » : seulement les fiches où rien n'est prévu. */
+  sansAction: boolean
 }
 
 export const FILTRES_VIDES: FiltresContacts = {
@@ -21,9 +23,10 @@ export const FILTRES_VIDES: FiltresContacts = {
   etiquette: '',
   source: '',
   temperature: '',
+  sansAction: false,
 }
 
-/** Nombre de filtres choisis (la recherche ne compte pas). */
+/** Nombre de filtres choisis (ni la recherche ni la vue ne comptent). */
 export function nombreFiltres(filtres: FiltresContacts): number {
   return [filtres.role, filtres.etiquette, filtres.source, filtres.temperature].filter(
     (valeur) => valeur !== '',
@@ -54,6 +57,9 @@ export function conditionsContacts(filtres: FiltresContacts): Filtre<'contacts'>
   if (filtres.temperature !== '') {
     conditions.push({ colonne: 'temperature', genre: 'egal', valeur: filtres.temperature })
   }
+  if (filtres.sansAction) {
+    conditions.push({ colonne: 'prochaine_action_le', genre: 'vide' })
+  }
   return conditions
 }
 
@@ -82,6 +88,7 @@ export function lireFiltres(memoire: string | null): FiltresContacts {
     etiquette: texte(valeurs.etiquette, 30),
     source: parmi(SOURCES, valeurs.source),
     temperature: parmi(TEMPERATURES, valeurs.temperature),
+    sansAction: valeurs.sansAction === true,
   }
 }
 

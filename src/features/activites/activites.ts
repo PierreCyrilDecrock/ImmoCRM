@@ -107,6 +107,22 @@ export function titreActivite(activite: Pick<Activite, 'type' | 'resultat'>): st
   return resultat === null ? type : `${type} · ${resultat}`
 }
 
+/** Ce que demande le champ du compte rendu, selon le type d'activité. */
+const INVITES: Partial<Record<TypeActivite, string>> = {
+  appel: 'Ce qui a été dit, ce qui est convenu',
+  sms: 'Le message envoyé ou reçu, en résumé',
+  courriel: 'Objet ou résumé du courriel',
+  note: 'Votre note',
+  visite: 'Impressions de la visite, objections, suite',
+  estimation: 'Valeur avancée, état du bien, projet du vendeur',
+  porte_a_porte: 'Rue, numéro, personne rencontrée, intérêt',
+  document: 'Quel document, à qui',
+}
+
+export function inviteCompteRendu(type: TypeActivite): string {
+  return INVITES[type] ?? 'Ce qui s’est passé'
+}
+
 /** « 14 h 30 », ou « 14 h 30 · 45 min » avec une durée. */
 export function horaireActivite(activite: Pick<Activite, 'heure' | 'duree'>): string {
   const heure = formaterHeure(activite.heure)

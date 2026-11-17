@@ -14,13 +14,15 @@ const FILTRES: FiltresContacts = {
   etiquette: 'investisseur',
   source: 'pige',
   temperature: 'chaud',
+  sansAction: true,
 }
 
 describe('nombreFiltres et listeRestreinte', () => {
-  it('comptent les filtres choisis, sans la recherche', () => {
+  it('comptent les filtres choisis, sans la recherche ni la vue', () => {
     expect(nombreFiltres(FILTRES_VIDES)).toBe(0)
     expect(nombreFiltres(FILTRES)).toBe(4)
     expect(nombreFiltres({ ...FILTRES_VIDES, recherche: 'camille' })).toBe(0)
+    expect(nombreFiltres({ ...FILTRES_VIDES, sansAction: true })).toBe(0)
   })
 
   it('disent si la liste est restreinte', () => {
@@ -44,6 +46,13 @@ describe('conditionsContacts', () => {
       { colonne: 'etiquettes', genre: 'comprend', valeur: ['investisseur'] },
       { colonne: 'source', genre: 'egal', valeur: 'pige' },
       { colonne: 'temperature', genre: 'egal', valeur: 'chaud' },
+      { colonne: 'prochaine_action_le', genre: 'vide' },
+    ])
+  })
+
+  it('ne garde que les fiches sans prochaine action dans cette vue', () => {
+    expect(conditionsContacts({ ...FILTRES_VIDES, sansAction: true })).toEqual([
+      { colonne: 'prochaine_action_le', genre: 'vide' },
     ])
   })
 })
@@ -60,7 +69,7 @@ describe('lireFiltres', () => {
   })
 
   it('ignore une valeur inconnue sans perdre les autres', () => {
-    const memoire = JSON.stringify({ ...FILTRES, role: 'pirate', source: 12 })
-    expect(lireFiltres(memoire)).toEqual({ ...FILTRES, role: '', source: '' })
+    const memoire = JSON.stringify({ ...FILTRES, role: 'pirate', source: 12, sansAction: 'oui' })
+    expect(lireFiltres(memoire)).toEqual({ ...FILTRES, role: '', source: '', sansAction: false })
   })
 })

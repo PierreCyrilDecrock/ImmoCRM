@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import BoucleRelance from '../relances/BoucleRelance'
 import { useActionsTache } from './actions-tache'
 import FormulaireTache from './FormulaireTache'
 import LigneTache from './LigneTache'
@@ -16,12 +17,20 @@ type Props = {
 
 /**
  * Liste de tâches avec leurs gestes : cocher, reporter, ouvrir pour modifier, rouvrir.
- * Sert à la page Tâches et aux rubriques Tâches des fiches.
+ * Sert à la page Tâches et aux rubriques Tâches des fiches. Cocher une tâche liée à un
+ * contact ouvre la boucle de relance (résultat, compte rendu, prochaine action) ; une tâche
+ * sans contact est faite en un geste.
  */
 export default function ListeTaches({ taches, aujourdhui, masquer, onChangement }: Props) {
   const actions = useActionsTache(onChangement)
   const [aReporter, setAReporter] = useState<TacheAffichee | null>(null)
   const [ouverte, setOuverte] = useState<TacheAffichee | null>(null)
+  const [aBoucler, setABoucler] = useState<TacheAffichee | null>(null)
+
+  function cocher(affichee: TacheAffichee) {
+    if (affichee.contact !== null) setABoucler(affichee)
+    else void actions.cocher(affichee.tache, aujourdhui)
+  }
 
   return (
     <>
@@ -33,7 +42,7 @@ export default function ListeTaches({ taches, aujourdhui, masquer, onChangement 
             aujourdhui={aujourdhui}
             masquer={masquer}
             occupee={actions.occupee === affichee.id}
-            onCocher={() => void actions.cocher(affichee.tache, aujourdhui)}
+            onCocher={() => cocher(affichee)}
             onReporter={() => setAReporter(affichee)}
             onOuvrir={() => setOuverte(affichee)}
             onRouvrir={() => void actions.rouvrir(affichee.tache)}
@@ -61,6 +70,20 @@ export default function ListeTaches({ taches, aujourdhui, masquer, onChangement 
           affichee={ouverte}
           verrouiller={masquer}
           onFermer={() => setOuverte(null)}
+          onChangement={onChangement}
+          onBoucler={() => {
+            setABoucler(ouverte)
+            setOuverte(null)
+          }}
+        />
+      )}
+
+      {aBoucler !== null && aBoucler.contact !== null && (
+        <BoucleRelance
+          tache={aBoucler.tache}
+          contact={aBoucler.contact}
+          aujourdhui={aujourdhui}
+          onFermer={() => setABoucler(null)}
           onChangement={onChangement}
         />
       )}

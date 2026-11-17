@@ -10,10 +10,12 @@ import LigneListe from '../components/LigneListe'
 import Liste from '../components/Liste'
 import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
+import Onglets from '../components/Onglets'
 import Page from '../components/Page'
 import SuiteListe from '../components/SuiteListe'
 import {
   brouillonVide,
+  chercherContacts,
   creerContact,
   listerEtiquettes,
   nomDeListe,
@@ -37,6 +39,7 @@ import {
 } from '../features/contacts/filtres'
 import FormulaireContact from '../features/contacts/FormulaireContact'
 import { useListeContacts } from '../features/contacts/liste-contacts'
+import { formaterDate } from '../lib/dates'
 import { accorder } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
 
@@ -152,9 +155,24 @@ function NouveauContact({ ouverte, onFermer }: { ouverte: boolean; onFermer: () 
   )
 }
 
+/** Dans la vue « sans prochaine action » : depuis quand, et pourquoi la fiche y est. */
+function detailSansAction(contact: Contact): string {
+  const depuis =
+    contact.sans_prochaine_action_le !== null
+      ? `Confirmé le ${formaterDate(contact.sans_prochaine_action_le)}`
+      : `Dernier contact le ${formaterDate(contact.dernier_contact_le)}`
+  return [depuis, resumeContact(contact)].filter(Boolean).join(' · ')
+}
+
+const VUES = [
+  { valeur: 'tous', libelle: 'Tous' },
+  { valeur: 'sans_action', libelle: 'Sans prochaine action' },
+] as const
+
 /**
  * Liste des contacts : recherche instantanée, filtres combinables, défilement progressif.
- * La recherche et les filtres sont gardés en mémoire tant que l'onglet reste ouvert.
+ * Une vue réunit les contacts sans prochaine action (aucune tâche à faire). La recherche, les
+ * filtres et la vue sont gardés en mémoire tant que l'onglet reste ouvert.
  */
 export default function Contacts() {
   const [archives, setArchives] = useState(false)
@@ -162,9 +180,27 @@ export default function Contacts() {
   const [panneau, setPanneau] = useState(() => nombreFiltres(filtres) > 0)
   const [etiquettes, setEtiquettes] = useState<string[]>([])
   const [creation, setCreation] = useState(false)
-  const liste = useListeContacts(filtres, archives)
+  const [nbSansAction, setNbSansAction] = useState<number | null>(null)
+  // Les fiches archivées n'ont pas besoin de prochaine action : la vue ne s'y applique pas.
+  const sansAction = filtres.sansAction && !archives
+  const liste = useListeContacts({ ...filtres, sansAction }, archives)
   const restreinte = listeRestreinte(filtres)
   const nbFiltres = nombreFiltres(filtres)
+
+  // Nombre de fiches sans prochaine action, affiché sur l'onglet (toutes fiches actives).
+  useEffect(() => {
+    let actif = true
+    void chercherContacts(exigerSupabase(), {
+      conditions: [{ colonne: 'prochaine_action_le', genre: 'vide' }],
+      taille: 1,
+      compter: true,
+    }).then((resultat) => {
+      if (actif && resultat.ok) setNbSansAction(resultat.donnees.total)
+    })
+    return () => {
+      actif = false
+    }
+  }, [])
 
   // Les étiquettes existantes alimentent le filtre ; sans elles, le reste fonctionne.
   useEffect(() => {
@@ -200,18 +236,30 @@ export default function Contacts() {
   const decompte =
     liste.total === null
       ? null
-      : archives
-        ? accorder(
-            liste.total,
-            restreinte ? 'archivé trouvé' : 'contact archivé',
-            restreinte ? 'archivés trouvés' : 'contacts archivés',
-          )
-        : restreinte
-          ? accorder(liste.total, 'contact trouvé', 'contacts trouvés')
-          : `${accorder(liste.total, 'contact')}, par ordre alphabétique`
+      : sansAction
+        ? `${accorder(liste.total, restreinte ? 'contact trouvé' : 'contact', restreinte ? 'contacts trouvés' : 'contacts')} sans prochaine action, par ordre alphabétique`
+        : archives
+          ? accorder(
+              liste.total,
+              restreinte ? 'archivé trouvé' : 'contact archivé',
+              restreinte ? 'archivés trouvés' : 'contacts archivés',
+            )
+          : restreinte
+            ? accorder(liste.total, 'contact trouvé', 'contacts trouvés')
+            : `${accorder(liste.total, 'contact')}, par ordre alphabétique`
 
   return (
     <Page titre={archives ? 'Contacts archivés' : 'Contacts'} actions={!archives && ajouter}>
+      {!archives && (
+        <Onglets
+          libelle="Vues des contacts"
+          options={VUES.map((vue) =>
+            vue.valeur === 'sans_action' ? { ...vue, compteur: nbSansAction } : vue,
+          )}
+          valeur={filtres.sansAction ? 'sans_action' : 'tous'}
+          onChange={(vue) => changerFiltres({ sansAction: vue === 'sans_action' })}
+        />
+      )}
       <div className="flex gap-2">
         <div className="min-w-0 flex-1">
           <ChampRecherche
@@ -289,7 +337,13 @@ export default function Contacts() {
               <Bouton
                 variante="discret"
                 icone="fermer"
-                onClick={() => changerFiltres({ ...FILTRES_VIDES, recherche: filtres.recherche })}
+                onClick={() =>
+                  changerFiltres({
+                    ...FILTRES_VIDES,
+                    recherche: filtres.recherche,
+                    sansAction: filtres.sansAction,
+                  })
+                }
               >
                 Retirer les filtres
               </Bouton>
@@ -310,13 +364,22 @@ export default function Contacts() {
               icone="recherche"
               titre="Aucun contact trouvé"
               action={
-                <Bouton variante="secondaire" onClick={() => changerFiltres(FILTRES_VIDES)}>
+                <Bouton
+                  variante="secondaire"
+                  onClick={() =>
+                    changerFiltres({ ...FILTRES_VIDES, sansAction: filtres.sansAction })
+                  }
+                >
                   Tout afficher
                 </Bouton>
               }
             >
               Aucune fiche{archives ? ' archivée' : ''} ne correspond à cette recherche
               {nbFiltres > 0 ? ' et à ces filtres' : ''}.
+            </EtatVide>
+          ) : sansAction ? (
+            <EtatVide icone="succes" titre="Tous vos contacts ont une prochaine action">
+              Chaque fiche active a au moins une tâche datée : personne n'est oublié.
             </EtatVide>
           ) : archives ? (
             <EtatVide icone="archiver" titre="Aucun contact archivé">
@@ -346,7 +409,7 @@ export default function Contacts() {
               <LigneListe
                 key={contact.id}
                 titre={nomDeListe(contact)}
-                detail={resumeContact(contact)}
+                detail={sansAction ? detailSansAction(contact) : resumeContact(contact)}
                 vers={`/contacts/${contact.id}`}
               />
             ))}

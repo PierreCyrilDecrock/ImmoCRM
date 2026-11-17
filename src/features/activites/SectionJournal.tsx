@@ -23,7 +23,12 @@ import FilActivites from './FilActivites'
 import FormulaireActivite from './FormulaireActivite'
 
 type Props = ({ contact: Contact; bien?: undefined } | { bien: Bien; contact?: undefined }) & {
-  /** Appelé après un ajout ou une modification (la fiche peut se relire : dernier contact). */
+  /** Change quand la fiche demande une relecture (après un geste fait ailleurs sur la fiche). */
+  version?: number
+  /**
+   * Appelé après un ajout ou une modification. Fourni, c'est la fiche qui fait relire toutes
+   * ses rubriques (en changeant `version`) ; absent, le fil se relit seul.
+   */
   onChangement?: () => void
 }
 
@@ -48,12 +53,13 @@ export default function SectionJournal(props: Props) {
     lien: props.contact !== undefined ? { contactId: props.contact.id } : { bienId: props.bien.id },
     type,
   }
-  const fil = useListePaginee(JSON.stringify([critere, version]), lirePage, TAILLE_PAGE_ACTIVITES)
+  const fil = useListePaginee(
+    JSON.stringify([critere, version + (props.version ?? 0)]),
+    lirePage,
+    TAILLE_PAGE_ACTIVITES,
+  )
 
-  function relire() {
-    setVersion((v) => v + 1)
-    props.onChangement?.()
-  }
+  const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
 
   return (
     <Carte titre="Journal">

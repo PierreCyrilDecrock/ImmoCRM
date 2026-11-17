@@ -70,6 +70,10 @@ export default function FicheBien() {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [confirmation, setConfirmation] = useState(false)
   const [envoi, setEnvoi] = useState(false)
+  // Change après chaque geste sur les tâches ou le journal : les deux rubriques se relisent
+  // (une tâche faite depuis la fiche inscrit une activité au journal).
+  const [version, setVersion] = useState(0)
+  const toutRelire = () => setVersion((v) => v + 1)
 
   useEffect(() => {
     let actif = true
@@ -278,11 +282,11 @@ export default function FicheBien() {
         <ProprietairesBien bienId={bien.id} />
 
         <div className="min-w-0">
-          <SectionTaches bien={bien} />
+          <SectionTaches bien={bien} version={version} onChangement={toutRelire} />
         </div>
 
         <div className="min-w-0 lg:col-span-2">
-          <SectionJournal bien={bien} />
+          <SectionJournal bien={bien} version={version} onChangement={toutRelire} />
         </div>
 
         <Carte titre="Historique des prix">

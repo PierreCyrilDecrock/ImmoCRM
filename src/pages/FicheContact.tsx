@@ -47,6 +47,7 @@ import SelecteurContact from '../features/contacts/SelecteurContact'
 import SuppressionContact from '../features/contacts/SuppressionContact'
 import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
 import SectionJournal from '../features/activites/SectionJournal'
+import ProchaineAction from '../features/relances/ProchaineAction'
 import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
@@ -99,6 +100,8 @@ export default function FicheContact() {
   const [exportEnCours, setExportEnCours] = useState(false)
   // Numéro pour lequel un motif vient d'être enregistré : l'appel est rétabli pour cette visite.
   const [appelLibere, setAppelLibere] = useState<string | null>(null)
+  // Change après chaque geste sur les tâches ou le journal : toutes les rubriques se relisent.
+  const [version, setVersion] = useState(0)
   const naviguer = useNavigate()
 
   useEffect(() => {
@@ -205,7 +208,16 @@ export default function FicheContact() {
     })
   }
 
-  /** Le journal a changé : la fiche est relue, pour afficher la date du dernier contact. */
+  /**
+   * Une tâche ou une activité a changé (boucle de relance comprise) : la prochaine action,
+   * les tâches et le journal se relisent, et la fiche aussi (dernier contact, température,
+   * prochaine action).
+   */
+  function toutRelire() {
+    setVersion((v) => v + 1)
+    void relireContact()
+  }
+
   async function relireContact() {
     const relue = await lireContact(exigerSupabase(), contact.id)
     if (!relue.ok) return
@@ -282,6 +294,10 @@ export default function FicheContact() {
             <Etiquette key={etiquette}>{etiquette}</Etiquette>
           ))}
         </div>
+      )}
+
+      {!archive && !fusionnee && (
+        <ProchaineAction contact={contact} version={version} onChangement={toutRelire} />
       )}
 
       {telephone !== undefined && !droit.autorise && (
@@ -484,10 +500,10 @@ export default function FicheContact() {
         </div>
         {/* `min-w-0` : un titre ou une adresse longue est coupé au lieu d'élargir la page. */}
         <div className="min-w-0">
-          <SectionTaches contact={contact} />
+          <SectionTaches contact={contact} version={version} onChangement={toutRelire} />
         </div>
         <div className="min-w-0 lg:col-span-2">
-          <SectionJournal contact={contact} onChangement={() => void relireContact()} />
+          <SectionJournal contact={contact} version={version} onChangement={toutRelire} />
         </div>
       </div>
 
