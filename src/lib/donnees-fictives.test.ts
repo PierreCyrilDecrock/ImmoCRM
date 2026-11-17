@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  activiteFictive,
   bienFictif,
   contactFictif,
   insererDonneesFictives,
+  NOMBRE_ACTIVITES_FICTIVES,
   NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
   NOMBRE_TACHES_FICTIVES,
@@ -12,6 +14,11 @@ import {
   telephoneFictif,
   type JeuFictif,
 } from './donnees-fictives'
+import {
+  brouillonActiviteVide,
+  estTypeActivite,
+  preparerActivite,
+} from '../features/activites/activites'
 import { bienEssai } from '../features/biens/bien-essai'
 import { brouillonBienDepuis, preparerBien, TYPES_BIEN } from '../features/biens/biens'
 import { brouillonTacheVide, preparerTache } from '../features/taches/taches'
@@ -134,7 +141,11 @@ describe('contacts fictifs', () => {
   it('font partie des lots insérés sur le projet de test', async () => {
     const { client, appels } = fauxClient({ data: { id: 'x' }, error: null })
     const bilan = await insererDonneesFictives(client, 'test')
-    const attendues = NOMBRE_CONTACTS_FICTIFS + NOMBRE_BIENS_FICTIFS + NOMBRE_TACHES_FICTIVES
+    const attendues =
+      NOMBRE_CONTACTS_FICTIFS +
+      NOMBRE_BIENS_FICTIFS +
+      NOMBRE_TACHES_FICTIVES +
+      NOMBRE_ACTIVITES_FICTIVES
     expect(bilan).toEqual({ ok: true, lignes: attendues })
     expect(appels.filter((appel) => appel[0] === 'insert')).toHaveLength(attendues)
   })
@@ -200,5 +211,43 @@ describe('tâches fictives', () => {
     expect(taches[0]).toMatchObject({ contact_id: 'c1', bien_id: null })
     expect(taches[3]).toMatchObject({ contact_id: 'c1', bien_id: 'b1' })
     expect(tacheFictive(0, '2026-11-17', { contactId: null, bienId: null }).contact_id).toBeNull()
+  })
+})
+
+describe('activités fictives', () => {
+  const liens = { contactId: 'c1', bienId: 'b1' }
+  const activites = Array.from({ length: NOMBRE_ACTIVITES_FICTIVES }, (_, rang) =>
+    activiteFictive(rang, '2026-11-17', liens),
+  )
+
+  it('sont acceptées par les règles de saisie, et jamais datées après aujourd’hui', () => {
+    for (const activite of activites) {
+      const date = activite.date_activite ?? ''
+      const type = estTypeActivite(activite.type) ? activite.type : 'autre'
+      const resultat = preparerActivite(
+        {
+          ...brouillonActiviteVide(type, { date, heure: activite.heure ?? '' }),
+          compteRendu: activite.compte_rendu ?? '',
+        },
+        '2026-11-17',
+      )
+      expect(resultat.ok).toBe(true)
+      expect(date <= '2026-11-17').toBe(true)
+    }
+  })
+
+  it('sont clairement fictives', () => {
+    for (const activite of activites) {
+      if (activite.compte_rendu !== '') expect(activite.compte_rendu).toMatch(/fictif|fictive/i)
+    }
+  })
+
+  it('lient une visite au contact et au bien, et le résultat seulement aux appels', () => {
+    const visite = activites.find((activite) => activite.type === 'visite')
+    expect(visite).toMatchObject({ contact_id: 'c1', bien_id: 'b1' })
+    for (const activite of activites) {
+      if (activite.type !== 'appel') expect(activite.resultat ?? null).toBeNull()
+    }
+    expect(activites.some((activite) => activite.contact_id === null)).toBe(true)
   })
 })

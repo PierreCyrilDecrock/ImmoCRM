@@ -20,6 +20,8 @@ export default function ChampTexteLong({ libelle, aide, erreur, rows = 4, ...cha
         aria-invalid={erreur !== undefined || undefined}
         aria-describedby={descriptionChamp(id, aide, erreur)}
         {...champ}
+        // Repère lu par `FenetreModale` pour placer le curseur à l'ouverture.
+        data-autofocus={champ.autoFocus === true ? '' : undefined}
       />
     </EnveloppeChamp>
   )

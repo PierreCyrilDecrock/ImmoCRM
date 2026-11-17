@@ -8,7 +8,7 @@ import { seDeconnecter } from '../features/connexion/deconnexion'
 import { useSession } from '../features/connexion/session-contexte'
 import { libelleVersion, VERSION } from '../lib/version'
 
-/** Page « Plus » : ce qui ne sert pas tous les jours (réglages, compte, déconnexion). */
+/** Page « Plus » : le journal, les réglages, le compte et la déconnexion. */
 export default function Plus() {
   const { session } = useSession()
   const [deconnexion, setDeconnexion] = useState(false)
@@ -23,6 +23,12 @@ export default function Plus() {
   return (
     <Page titre="Plus">
       <Liste>
+        <LigneListe
+          icone="journal"
+          titre="Journal"
+          detail="Appels, messages, visites et notes, du plus récent au plus ancien"
+          vers="/plus/journal"
+        />
         <LigneListe
           icone="reglages"
           titre="Réglages"

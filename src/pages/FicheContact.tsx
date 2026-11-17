@@ -46,6 +46,7 @@ import {
 import SelecteurContact from '../features/contacts/SelecteurContact'
 import SuppressionContact from '../features/contacts/SuppressionContact'
 import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
+import SectionJournal from '../features/activites/SectionJournal'
 import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
@@ -202,6 +203,17 @@ export default function FicheContact() {
       appels: [appel, ...appels],
       biens,
     })
+  }
+
+  /** Le journal a changé : la fiche est relue, pour afficher la date du dernier contact. */
+  async function relireContact() {
+    const relue = await lireContact(exigerSupabase(), contact.id)
+    if (!relue.ok) return
+    setEtat((actuel) =>
+      actuel.phase === 'pret' && actuel.contact.id === relue.donnees.id
+        ? { ...actuel, contact: relue.donnees }
+        : actuel,
+    )
   }
 
   /** Droit d'accès : fabrique le fichier qui contient tout ce que la base sait de la personne. */
@@ -474,9 +486,9 @@ export default function FicheContact() {
         <div className="min-w-0">
           <SectionTaches contact={contact} />
         </div>
-        <Emplacement titre="Journal">
-          Les appels, messages, visites et notes passés s'afficheront ici.
-        </Emplacement>
+        <div className="min-w-0 lg:col-span-2">
+          <SectionJournal contact={contact} onChangement={() => void relireContact()} />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

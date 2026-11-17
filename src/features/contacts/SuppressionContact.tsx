@@ -81,6 +81,8 @@ export default function SuppressionContact({ contact, onFermer, onSupprime }: Pr
           <ul className="list-disc space-y-1 pl-5">
             <li>sa fiche : coordonnées, notes, origine et consentement ;</li>
             <li>l'historique de ses appels passés sans accord ;</li>
+            <li>ses tâches et son journal d'activité, y compris ce qui concerne aussi un bien ;</li>
+            <li>ses liens de propriétaire (les biens eux-mêmes restent) ;</li>
             <li>les anciennes fiches en double fusionnées dans celle-ci.</li>
           </ul>
           <p>

@@ -30,6 +30,23 @@ export function dateDuJour(maintenant: Date = new Date()): string {
   return JOUR_ISO.format(maintenant)
 }
 
+const HEURE_PARIS = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'Europe/Paris',
+})
+
+/** L'heure qu'il est à Paris, au format des champs d'heure : `09:05`, `14:30`. */
+export function heureDuMoment(maintenant: Date = new Date()): string {
+  return HEURE_PARIS.format(maintenant)
+}
+
+/** Vérifie qu'un texte est une heure `HH:MM` (de `00:00` à `23:59`). */
+export function estHeureValide(heure: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(heure)
+}
+
 /** Vérifie qu'un texte est une date `AAAA-MM-JJ` qui existe (pas de 30 février). */
 export function estDateValide(date: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false

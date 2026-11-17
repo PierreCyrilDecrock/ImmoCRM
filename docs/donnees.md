@@ -137,7 +137,7 @@ Ces fonctions s'exécutent avec les droits du compte connecté : les règles d'a
 
 Conséquence à connaître : avec les règles d'accès par ligne, la base ne peut pas s'appuyer sur un index pour une recherche « contient ». Elle lit les fiches du compte une à une (20 ms pour 30 000 fiches, mesures dans `docs/avancement.md`). Inutile donc de créer ce type d'index.
 
-**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord`, `biens_proprietaires` et `taches`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
+**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord`, `biens_proprietaires`, `taches` et `activites`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
 
 ### Biens, propriétaires et historique des prix
 
@@ -209,7 +209,30 @@ Une tâche est toute action à venir, avec une date et un motif (table `taches`)
 
 **Récurrence** (`src/features/taches/recurrence.ts`). Les dates d'une série se calculent toujours depuis la première : une tâche mensuelle du 31 janvier tombe le 28 (ou 29) février, puis le 31 mars. Clôturer une occurrence (faite, ou annulée « cette fois seulement ») crée la suivante : la première date de la série qui tombe après l'occurrence close et pas avant aujourd'hui. Une occurrence close en retard ne crée donc pas une suite déjà en retard. « Arrêter la série » annule sans créer de suite. Changer la date ou la fréquence dans le formulaire fait repartir la série de la nouvelle date. Le calcul est fait par l'application (fonctions pures testées) ; la base vérifie seulement que la date proposée est après l'occurrence close.
 
-**Contacts.** La suppression définitive d'un contact emporte ses tâches (même liées aussi à un bien) ; la fusion les transfère à la fiche gardée ; l'export d'un contact les liste toutes, closes comprises. Une tâche n'est pas un échange : elle n'entre pas dans la date du dernier contact (le journal d'activité, étape 1.7, s'en chargera).
+**Contacts.** La suppression définitive d'un contact emporte ses tâches (même liées aussi à un bien) ; la fusion les transfère à la fiche gardée ; l'export d'un contact les liste toutes, closes comprises. Une tâche n'est pas un échange : elle n'entre pas dans la date du dernier contact ; c'est le journal d'activité qui l'alimente.
+
+### Journal d'activité
+
+Une activité est tout événement passé : appel, message, visite, note, document envoyé (table `activites`). **Activité (le passé) et tâche (le futur) sont deux objets distincts** : une tâche cochée ne crée pas encore d'activité (boucle de relance, étape 1.8).
+
+| Élément | Rôle |
+| --- | --- |
+| `type` | `appel`, `sms`, `courriel`, `rendez_vous`, `visite`, `estimation`, `porte_a_porte`, `note`, `document` (document envoyé), `autre` |
+| `resultat` | Pour un appel seulement : `joint`, `messagerie`, `pas_de_reponse`, `rappeler`. La base refuse un résultat sur un autre type |
+| `compte_rendu` | Ce qui a été dit ou fait (5 000 caractères au plus). Obligatoire pour une note seulement, vérifié par l'application |
+| `date_activite`, `heure` | Jour et heure de l'activité, à l'heure de Paris (heure affichée sur la montre). Valent maintenant si rien n'est envoyé. L'application refuse une date à venir : pour l'avenir, on crée une tâche |
+| `duree` | Minutes, facultative |
+| `contact_id`, `bien_id` | Liens facultatifs, vers des fiches du même compte. Une visite liée aux deux apparaît sur les deux fiches. Le lien vers un projet viendra avec les projets (étape 1.9) |
+
+**Ordre.** Du plus récent au plus ancien : par date, puis par heure, puis par ordre de saisie. Les fils (fiches et page Journal) sont lus 50 activités à la fois, regroupés par jour.
+
+**Correction.** Une activité se modifie (toucher la ligne). Une saisie en double ou faite sur la mauvaise fiche se **retire du journal** : elle est archivée, pas supprimée, et ne compte plus dans la date du dernier contact.
+
+**Date du dernier contact.** Toute activité liée à un contact compte comme un échange, **sauf une note** (une remarque pour soi). La base recalcule la date dès qu'une activité est ajoutée, redatée, change de type, change de fiche ou est retirée (déclencheur `activites_maj_contact`) ; modifier seulement le compte rendu ne touche pas à la fiche. Recalculer la date met à jour la date « modifiée le » de la fiche, comme pour les appels sans accord.
+
+**Contacts.** La suppression définitive d'un contact emporte son journal (même les activités liées aussi à un bien) ; la fusion le transfère à la fiche gardée ; l'export d'un contact le contient en entier, activités retirées comprises.
+
+Code : `src/features/activites/` (règles de saisie, lecture, périodes de la page Journal, testées) ; les fiches liées sont lues par `src/features/liens/fiches-liees.ts`, commun aux tâches et au journal.
 
 ### Consentement et RGPD des contacts
 
@@ -227,9 +250,9 @@ Ces règles traduisent la section Conformité du cadrage. Elles sont **à faire 
 
 **Blocage de l'appel.** La règle est une fonction pure, `droitAppel` (`src/features/contacts/consentement.ts`) : l'appel direct n'est proposé que si l'accord vaut `oui` et qu'il n'y a pas d'opposition. Sinon la fiche affiche un avertissement ; pour passer outre, il faut indiquer un motif, enregistré dans `appels_sans_accord` **avant** que le numéro ne soit proposé. Ce blocage est une aide à la conformité faite par le site, pas une barrière technique : le numéro reste lisible sur la fiche.
 
-**Date du dernier contact.** La plus récente parmi : la date de collecte, la date de l'accord ou du refus, la date d'opposition et les appels sans accord. L'application ne l'envoie jamais. Toute table qui enregistre un échange avec un contact (le journal d'activité, étape 1.7) doit être ajoutée au calcul, dans la fonction `contacts_maj_dernier_contact`, et déclencher le recalcul comme le fait `appels_sans_accord`.
+**Date du dernier contact.** La plus récente parmi : la date de collecte, la date de l'accord ou du refus, la date d'opposition, les appels sans accord et les activités du journal liées au contact (sauf les notes, et sauf les activités retirées). L'application ne l'envoie jamais. Toute autre table qui enregistrerait un échange avec un contact doit être ajoutée au calcul, dans la fonction `contacts_maj_dernier_contact`, et déclencher le recalcul comme le font `appels_sans_accord` et `activites`.
 
-**Export (droit d'accès).** `src/features/contacts/export-contact.ts` fabrique un fichier texte avec toutes les colonnes de la fiche, les appels sans accord, les biens, les tâches et les anciennes fiches fusionnées. Un test échoue si une colonne de `contacts` n'y figure pas. Toute nouvelle table liée aux contacts doit être ajoutée à `rassemblerDonneesContact` et au fichier.
+**Export (droit d'accès).** `src/features/contacts/export-contact.ts` fabrique un fichier texte avec toutes les colonnes de la fiche, les appels sans accord, les biens, les tâches, le journal d'activité et les anciennes fiches fusionnées. Un test échoue si une colonne de `contacts` n'y figure pas. Toute nouvelle table liée aux contacts doit être ajoutée à `rassemblerDonneesContact` et au fichier.
 
 **Suppression définitive (droit à l'effacement).** Elle ne laisse aucune ligne dans la base ; le lien « recommandé par » des autres contacts est vidé. Deux limites à connaître : les sauvegardes automatiques de Supabase gardent les données supprimées jusqu'à leur expiration, et un nom cité dans les notes d'une autre fiche n'est pas retrouvé.
 
@@ -258,7 +281,7 @@ L'application reconnaît le projet de test à son adresse (`src/lib/environnemen
 | Courriel | Domaine `exemple.invalid`, qui ne peut recevoir aucun message |
 | Adresse | `00000 Villefictive`, rue de l'Exemple, avenue du Test… |
 
-L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens et 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
+L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens, 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire) et 8 activités du journal, du jour même à trois semaines en arrière (appels aux résultats variés, SMS, courriel, une visite et une estimation liées à un contact et à un bien, du porte-à-porte sans fiche, une note sur un bien) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
 
 Exception : l'essai de volume de l'étape 1.2 (30 000 contacts, pour mesurer les temps de réponse) est un script SQL, `supabase/tests/contacts-fictifs-volume.sql`, lancé par Claude Code sur le seul projet de test. Ses fiches portent l'étiquette « essai de volume » ; leurs téléphones viennent des tranches réservées aux fictions (06 39 98, 01 99 00, 02 61 91). Le script refuse de tourner sur une base qui contient plus de 20 fiches non fictives.
 

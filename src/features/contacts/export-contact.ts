@@ -26,6 +26,12 @@ import {
   type TacheAffichee,
 } from '../taches/taches'
 import { formaterTelephone } from './telephone'
+import {
+  horaireActivite,
+  listerToutJournalContact,
+  titreActivite,
+  type ActiviteAffichee,
+} from '../activites/activites'
 
 /**
  * Export d'un contact (droit d'accès) : un fichier texte lisible par tous, qui contient
@@ -44,6 +50,8 @@ export type DonneesContact = {
   biens: BienDuContact[]
   /** Les tâches et rendez-vous liés à la personne (à faire, faits, annulés). */
   taches: TacheAffichee[]
+  /** Le journal d'activité de la personne, retraits compris, le plus récent d'abord. */
+  activites: ActiviteAffichee[]
 }
 
 const ouiNon = (valeur: boolean) => (valeur ? 'Oui' : 'Non')
@@ -219,7 +227,7 @@ function lignesFiche(contact: Contact): string[] {
 
 /** Le contenu du fichier d'export, en clair. `date` : le jour de l'export (`2026-11-16`). */
 export function texteExportContact(donnees: DonneesContact, date: string = dateDuJour()): string {
-  const { contact, fichesFusionnees, appels, biens, taches } = donnees
+  const { contact, fichesFusionnees, appels, biens, taches, activites } = donnees
   const lignes = [
     `DONNÉES PERSONNELLES — ${nomComplet(contact)}`,
     `Document établi le ${formaterDate(date)} à partir du fichier de contacts ImmoCRM.`,
@@ -263,6 +271,20 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
     ]
     lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
   }
+  lignes.push(...titre("Journal d'activité"))
+  if (activites.length === 0) lignes.push('Aucune.')
+  for (const { activite, bien } of activites) {
+    const morceaux = [
+      `${formaterDate(`${activite.date_activite}T12:00:00Z`)}, ${horaireActivite(activite)}`,
+      titreActivite(activite),
+      bien === null ? null : `bien : ${adresseBien(bien)}`,
+      activite.archived_at === null
+        ? null
+        : `retirée du journal le ${formaterDate(activite.archived_at)}`,
+      activite.compte_rendu === '' ? null : `compte rendu : ${activite.compte_rendu}`,
+    ]
+    lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
+  }
   fichesFusionnees.forEach((fiche, rang) => {
     lignes.push(
       '',
@@ -290,7 +312,7 @@ export function nomFichierExport(contact: Contact, date: string = dateDuJour()):
 /**
  * Lit tout ce que la base contient sur une personne : sa fiche, les fiches fusionnées dans
  * celle-ci (y compris les fusions successives), les appels sans accord de chacune et les
- * biens dont elle est notée propriétaire (liens retirés compris) et ses tâches.
+ * biens dont elle est notée propriétaire (liens retirés compris), ses tâches et son journal.
  * Chaque table liée aux contacts, créée à une étape suivante, viendra s'ajouter ici.
  */
 export async function rassemblerDonneesContact(
@@ -326,6 +348,7 @@ export async function rassemblerDonneesContact(
   const appels: AppelSansAccord[] = []
   const biens: BienDuContact[] = []
   const taches: TacheAffichee[] = []
+  const activites: ActiviteAffichee[] = []
   for (const idFiche of [id, ...fichesFusionnees.map((f) => f.id)]) {
     const resultat = await listerAppelsSansAccord(client, idFiche)
     if (!resultat.ok) return resultat
@@ -336,11 +359,20 @@ export async function rassemblerDonneesContact(
     const liees = await listerTachesLiees(client, { contactId: idFiche }, 'toutes')
     if (!liees.ok) return liees
     taches.push(...liees.donnees)
+    const journal = await listerToutJournalContact(client, idFiche)
+    if (!journal.ok) return journal
+    activites.push(...journal.donnees)
   }
   appels.sort((a, b) => b.created_at.localeCompare(a.created_at))
+  // Le plus récent d'abord, toutes fiches confondues.
+  activites.sort((a, b) =>
+    `${b.activite.date_activite} ${b.activite.heure}`.localeCompare(
+      `${a.activite.date_activite} ${a.activite.heure}`,
+    ),
+  )
 
   return {
     ok: true,
-    donnees: { contact: fiche.donnees, fichesFusionnees, appels, biens, taches },
+    donnees: { contact: fiche.donnees, fichesFusionnees, appels, biens, taches, activites },
   }
 }

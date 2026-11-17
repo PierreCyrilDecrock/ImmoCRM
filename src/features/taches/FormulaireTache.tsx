@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import Bouton from '../../components/Bouton'
 import ChampChoix from '../../components/ChampChoix'
 import ChampSaisie from '../../components/ChampSaisie'
@@ -10,9 +9,8 @@ import { useNotifications } from '../../components/notifications-contexte'
 import { ajouterJours, formaterDate, formaterJourCourt } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import { adresseBien, type Bien } from '../biens/biens'
-import SelecteurBien from '../biens/SelecteurBien'
-import { nomComplet, type Contact } from '../contacts/contacts'
-import SelecteurContact from '../contacts/SelecteurContact'
+import type { Contact } from '../contacts/contacts'
+import ChoixLiens from '../liens/ChoixLiens'
 import { useActionsTache } from './actions-tache'
 import { libelleVue, REPORTS, vueDe } from './echeances'
 import { RECURRENCES, type Recurrence } from './recurrence'
@@ -46,9 +44,6 @@ type Props = {
   onChangement: () => void
 }
 
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
-
 /** Les dates proposées d'un toucher sous le champ Date. */
 const RACCOURCIS_DATE = [{ valeur: 'aujourdhui', libelle: "Aujourd'hui", jours: 0 }, ...REPORTS]
 
@@ -79,7 +74,6 @@ export default function FormulaireTache({
   const [erreurs, setErreurs] = useState<ErreursTache>({})
   const [echec, setEchec] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
-  const [choix, setChoix] = useState<'contact' | 'bien' | null>(null)
   const [annulation, setAnnulation] = useState(false)
 
   const aFaire = existante === null || existante.etat === 'a_faire'
@@ -167,7 +161,6 @@ export default function FormulaireTache({
     )
   }
 
-  const lienContact = brouillon.contact
   const lienBien = brouillon.bien
 
   return (
@@ -311,78 +304,21 @@ export default function FormulaireTache({
           )}
         </div>
 
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-sm font-medium text-encre">Liée à</legend>
-          <div className="flex min-h-11 flex-wrap items-center gap-2">
-            <span className="w-16 text-sm text-encre-douce">Contact</span>
-            {lienContact === null ? (
-              <Bouton variante="discret" icone="ajouter" onClick={() => setChoix('contact')}>
-                Choisir un contact
-              </Bouton>
-            ) : (
-              <>
-                <Link
-                  to={`/contacts/${lienContact.id}`}
-                  className={`${CLASSES_LIEN} min-w-0 break-words`}
-                >
-                  {nomComplet(lienContact)}
-                </Link>
-                {verrouiller !== 'contact' && (
-                  <Bouton variante="discret" onClick={() => changer('contact', null)}>
-                    Retirer
-                  </Bouton>
-                )}
-              </>
-            )}
-          </div>
-          {choix === 'contact' && (
-            <SelecteurContact
-              libelle="Chercher le contact"
-              autoFocus
-              onChoisir={(contact) => {
-                changer('contact', contact)
-                setChoix(null)
-              }}
-            />
-          )}
-          <div className="flex min-h-11 flex-wrap items-center gap-2">
-            <span className="w-16 text-sm text-encre-douce">Bien</span>
-            {lienBien === null ? (
-              <Bouton variante="discret" icone="ajouter" onClick={() => setChoix('bien')}>
-                Choisir un bien
-              </Bouton>
-            ) : (
-              <>
-                <Link
-                  to={`/biens/${lienBien.id}`}
-                  className={`${CLASSES_LIEN} min-w-0 break-words`}
-                >
-                  {adresseBien(lienBien)}
-                </Link>
-                {verrouiller !== 'bien' && (
-                  <Bouton variante="discret" onClick={() => changer('bien', null)}>
-                    Retirer
-                  </Bouton>
-                )}
-              </>
-            )}
-          </div>
-          {choix === 'bien' && (
-            <SelecteurBien
-              libelle="Chercher le bien"
-              autoFocus
-              onChoisir={(bien) => {
-                setBrouillon((actuel) => ({
-                  ...actuel,
-                  bien,
-                  // Pour une visite ou une estimation, l'adresse du bien est le bon lieu.
-                  lieu: actuel.lieu.trim() === '' ? adresseBien(bien) : actuel.lieu,
-                }))
-                setChoix(null)
-              }}
-            />
-          )}
-        </fieldset>
+        <ChoixLiens
+          legende="Liée à"
+          contact={brouillon.contact}
+          bien={lienBien}
+          verrouiller={verrouiller}
+          onContact={(contact) => changer('contact', contact)}
+          onBien={(bien) =>
+            setBrouillon((actuel) => ({
+              ...actuel,
+              bien,
+              // Pour une visite ou une estimation, l'adresse du bien est le bon lieu.
+              lieu: bien !== null && actuel.lieu.trim() === '' ? adresseBien(bien) : actuel.lieu,
+            }))
+          }
+        />
 
         <ChampChoix
           libelle="Répétition"

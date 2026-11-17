@@ -60,7 +60,7 @@ Police du système de l'appareil (aucun fichier à télécharger).
 
 Tous sont dans `src/components`, un par fichier.
 
-Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`.
+Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour le journal, `SectionJournal` (rubrique d'une fiche : un bouton par type pour consigner, puis le fil), `FilActivites` (fil regroupé par jour) et `FormulaireActivite` ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`, réunis avec l'affichage du lien dans `ChoixLiens` (rubrique « Liée à » des formulaires de tâche et d'activité).
 
 ### Structure
 
@@ -91,7 +91,7 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | --- | --- | --- |
 | `Bouton` | Bouton d'action. `principal` (un seul par écran), `secondaire`, `discret` (action de faible poids), `danger` (suppression). | `variante?`, `pleineLargeur?`, `icone?`, plus celles d'un bouton HTML |
 | `ChampSaisie` | Champ sur une ligne : texte, courriel, téléphone, date, nombre. | `libelle`, `aide?`, `erreur?`, plus celles d'un champ HTML |
-| `ChampTexteLong` | Champ sur plusieurs lignes : note, compte rendu. | `libelle`, `aide?`, `erreur?`, `rows?` |
+| `ChampTexteLong` | Champ sur plusieurs lignes : note, compte rendu. Le micro du clavier du téléphone permet de dicter. | `libelle`, `aide?`, `erreur?`, `rows?` |
 | `ChampRecherche` | Champ de recherche : loupe, saisie, croix pour effacer. Pas de libellé visible. | `libelle` (lu par les lecteurs d'écran), `valeur`, `onChange(valeur)`, plus celles d'un champ HTML |
 | `ChampChoix` | Liste déroulante (sélecteur natif du téléphone). | `libelle`, `options` (`{ valeur, libelle }`), `optionVide?`, `aide?`, `erreur?` |
 | `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
@@ -107,7 +107,7 @@ Un formulaire est une colonne `flex flex-col gap-4` ; sur grand écran, une gril
 
 ### Fenêtre modale
 
-`FenetreModale` : plein écran sur téléphone, centrée au-delà. Se ferme par la croix, la touche Échap ou un clic à côté. Les boutons vont dans `pied`, fixé en bas ; mettre l'action principale en premier. Un `ChampSaisie` ou un `ChampRecherche` marqué `autoFocus` reçoit le curseur à l'ouverture (sinon il irait sur la croix) : pour taper aussitôt.
+`FenetreModale` : plein écran sur téléphone, centrée au-delà. Se ferme par la croix, la touche Échap ou un clic à côté. Les boutons vont dans `pied`, fixé en bas ; mettre l'action principale en premier. Un `ChampSaisie`, un `ChampTexteLong` ou un `ChampRecherche` marqué `autoFocus` reçoit le curseur à l'ouverture (sinon il irait sur la croix) : pour taper aussitôt.
 
 ```tsx
 <FenetreModale
@@ -150,7 +150,7 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Installation sur l'écran d'accueil
 

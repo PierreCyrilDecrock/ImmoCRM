@@ -31,6 +31,7 @@ import {
 } from '../features/biens/biens'
 import PhotosBien from '../features/biens/PhotosBien'
 import ProprietairesBien from '../features/biens/ProprietairesBien'
+import SectionJournal from '../features/activites/SectionJournal'
 import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { formaterNombre, formaterPrix, formaterSurface } from '../lib/nombres'
@@ -278,6 +279,10 @@ export default function FicheBien() {
 
         <div className="min-w-0">
           <SectionTaches bien={bien} />
+        </div>
+
+        <div className="min-w-0 lg:col-span-2">
+          <SectionJournal bien={bien} />
         </div>
 
         <Carte titre="Historique des prix">

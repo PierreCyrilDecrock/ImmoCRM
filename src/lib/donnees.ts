@@ -37,6 +37,7 @@ export type TableArchivable = {
  * (TypeScript signale un oubli). `archivable` : la table a une colonne `archived_at`.
  */
 export const TABLES: Record<NomTable, { archivable: boolean }> = {
+  activites: { archivable: true },
   appels_sans_accord: { archivable: true },
   biens: { archivable: true },
   biens_photos: { archivable: false },
