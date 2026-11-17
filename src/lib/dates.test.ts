@@ -12,6 +12,7 @@ import {
   formaterDuree,
   formaterHeure,
   formaterJourCourt,
+  formaterJourLong,
   heureDeFin,
   instantDeParis,
   jourDeSemaine,
@@ -172,5 +173,16 @@ describe('instantDeParis', () => {
     const instant = new Date(instantDeParis('2026-03-29', '10:00'))
     expect(dateDuJour(instant)).toBe('2026-03-29')
     expect(heureDuMoment(instant)).toBe('10:00')
+  })
+})
+
+describe('formaterJourLong', () => {
+  it('écrit le jour en toutes lettres, avec une majuscule', () => {
+    expect(formaterJourLong('2026-11-17')).toBe('Mardi 17 novembre')
+    expect(formaterJourLong('2027-01-01')).toBe('Vendredi 1 janvier')
+  })
+
+  it('reste vide pour une date illisible', () => {
+    expect(formaterJourLong('2026-02-30')).toBe('')
   })
 })

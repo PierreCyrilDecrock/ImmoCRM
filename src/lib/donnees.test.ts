@@ -124,6 +124,13 @@ describe('creer, modifier, enregistrerUnique', () => {
       { onConflict: 'user_id' },
     ])
   })
+
+  it('accepte une unicité sur plusieurs colonnes', async () => {
+    const { client, appels } = fauxClient({ data: LIGNE, error: null })
+    const valeurs = { jour: '2026-11-17', action_1: 'Appeler Camille Fictif' }
+    await enregistrerUnique(client, 'priorites_du_jour', valeurs, ['user_id', 'jour'])
+    expect(appels).toContainEqual(['upsert', valeurs, { onConflict: 'user_id,jour' }])
+  })
 })
 
 describe('archiver, restaurer', () => {
@@ -204,6 +211,17 @@ describe('listerPage', () => {
       taille: 10,
     })
     expect(appels).toContainEqual(['is', 'prochaine_action_le', null])
+  })
+
+  it('cherche une colonne renseignée', async () => {
+    const { client, appels } = fauxClient({ data: [], error: null })
+    await listerPage(client, 'taches', {
+      filtres: [{ colonne: 'heure', genre: 'nonVide' }],
+      tri: [{ colonne: 'id' }],
+      debut: 0,
+      taille: 10,
+    })
+    expect(appels).toContainEqual(['not', 'heure', 'is', null])
   })
 
   it('ne demande pas le total s’il n’est pas voulu', async () => {

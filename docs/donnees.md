@@ -34,7 +34,7 @@ La procédure pas à pas est dans `.claude/skills/supabase/SKILL.md`.
 
 L'application n'envoie jamais ces cinq colonnes : la base les remplit. `archived_at` ne change que par les fonctions `archiver` et `restaurer`.
 
-Exceptions : une table qui n'a qu'une ligne par utilisateur et ne s'archive pas (`reglages`) n'a pas de colonne `archived_at` ; les photos (`biens_photos`) non plus, car elles se suppriment vraiment pour libérer la place.
+Exceptions : une table qui n'a qu'une ligne par utilisateur (`reglages`), ou par utilisateur et par jour (`priorites_du_jour`), et ne s'archive pas n'a pas de colonne `archived_at` ; les photos (`biens_photos`) non plus, car elles se suppriment vraiment pour libérer la place.
 
 Nommage : tables et colonnes en français, sans accent, en minuscules avec des tirets bas (`projets_vendeurs`, `date_naissance`). Tables au pluriel. Les cinq colonnes communes gardent leur nom anglais, par habitude de l'outil.
 
@@ -97,13 +97,13 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | Fonction | Effet |
 | --- | --- |
 | `lister(client, table, options)` | Lit les lignes ; écarte les archivées sauf `archives: 'avec'` ou `'seulement'` ; tri et limite facultatifs |
-| `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir. Filtres possibles : `egal`, `contient`, `comprend` (tableau), `parmi` (liste de valeurs), `min` et `max` (nombres ou dates `AAAA-MM-JJ`), `vide` (colonne sans valeur) |
+| `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir. Filtres possibles : `egal`, `contient`, `comprend` (tableau), `parmi` (liste de valeurs), `min` et `max` (nombres ou dates `AAAA-MM-JJ`), `vide` (colonne sans valeur), `nonVide` (colonne renseignée) |
 | `lire(client, table, id)` | Lit une ligne |
 | `creer(client, table, valeurs)` | Crée une ligne et la renvoie complète |
 | `modifier(client, table, id, valeurs)` | Modifie une ligne et la renvoie à jour |
 | `archiver` / `restaurer(client, table, id)` | Archive une ligne, ou annule l'archivage |
 | `supprimer(client, table, id)` | Supprime une ligne pour de bon. Réservé aux photos (`biens_photos`) : voir « Photos des biens » |
-| `enregistrerUnique(client, table, valeurs, colonne)` | Crée ou met à jour la ligne unique (réglages) |
+| `enregistrerUnique(client, table, valeurs, colonne)` | Crée ou met à jour la ligne unique (réglages ; colonne, ou liste de colonnes : `['user_id', 'jour']` pour les trois actions du jour) |
 | `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive, clôture d'une tâche, boucle de relance, sortie d'un projet du pipeline, planification d'une visite) |
 
 Chaque fonction renvoie soit `{ ok: true, donnees }`, soit `{ ok: false, erreur }`, sans jamais lever d'erreur. `erreur.message` est une phrase en français, affichable telle quelle ; `erreur.genre` permet à un écran de réagir (`reseau`, `session`, `droits`, `doublon`, `lien`, `invalide`, `introuvable`, `inconnue`). La traduction est dans `src/lib/erreurs-donnees.ts`.
@@ -253,6 +253,32 @@ Deux règles du cadrage : **clôturer une tâche crée une activité et propose 
 
 **Vue « Contacts sans prochaine action »** : fiches actives dont `prochaine_action_le` est vide, qu'il y ait eu refus confirmé ou jamais aucune tâche. Changer une tâche ne touche la fiche (et sa date « modifiée le ») que si la date de la prochaine action change.
 
+### Écran « Aujourd'hui »
+
+La page d'accueil lit sa journée en deux vagues de requêtes parallèles, toutes bornées (`src/features/aujourdhui/lecture-journee.ts`) ; les règles de rangement sont des fonctions pures testées (`journee.ts`).
+
+| Bloc | Ce qu'il contient | Ordre, limite |
+| --- | --- | --- |
+| Agenda du jour | Tâches à faire aujourd'hui **qui ont une heure** (rendez-vous, visites, estimations, appel à heure fixe) | Par heure ; 30 |
+| À relancer | Tâches de catégorie « Relance » en retard, ou d'aujourd'hui sans heure, avec la dernière activité du contact | Les plus anciennes d'abord ; 30 |
+| Tâches | Toutes les autres tâches en retard, ou d'aujourd'hui sans heure (un rendez-vous d'un jour passé resté ouvert y figure) | Les plus anciennes d'abord ; 30 |
+| Alertes | Projets en cours (vendeur ou acquéreur) sans activité depuis 15 jours ; contacts actifs sans prochaine action | Les plus anciens d'abord (10) ; les fiches les plus récentes d'abord (5) |
+| Nouveautés | Projets acquéreurs à l'étape « Demande » (non qualifiés), avec le temps écoulé depuis leur réception | Les plus anciennes d'abord ; 10 |
+
+Chaque tâche à faire d'aujourd'hui ou en retard apparaît dans **un seul** des trois premiers blocs. Chaque bloc affiche le nombre total, même au-delà des lignes lues, avec un lien vers la liste complète.
+
+| Élément | Rôle |
+| --- | --- |
+| Table `priorites_du_jour` | Les trois actions qui comptent : une ligne par jour (`jour`, à Paris), `action_1` à `action_3` (200 caractères au plus, vides si non choisies), `faite_1` à `faite_3` (seule une action écrite peut être faite). Pas d'archivage ; règles d'accès habituelles |
+| Fonction `dernieres_activites(contacts)` | La dernière activité au journal (notes comprises, activités retirées exclues) de chaque contact d'une liste de 200 au plus |
+| Fonction `projets_sans_activite(aujourdhui, jours, limite)` | Les projets à l'état « actif » dont la dernière activité date d'au moins `jours` jours (15 par défaut), avec leur nombre total (`total`). Dernière activité : la plus récente du journal liée au projet ou à son contact principal, **notes exclues**, ou l'entrée dans l'étape en cours si elle est plus récente (un projet qui avance, ou qui vient d'être créé, n'est pas signalé). 50 lignes au plus |
+
+Les deux fonctions s'exécutent avec les droits du compte connecté : les règles d'accès par ligne s'appliquent.
+
+**Contacts actifs sans prochaine action** (alerte) : fiches non archivées, sans tâche à faire, et dont l'absence de prochaine action n'a pas été confirmée dans la boucle de relance (une absence confirmée est un choix, pas un oubli). Le lien « Voir la liste » ouvre la vue « Sans prochaine action » de la page Contacts, qui, elle, montre aussi les absences confirmées.
+
+**Version 2.** Les alertes sont rangées par genre (`Alerte`, `GroupeAlertes`) : les échéances de mandat et les conditions suspensives des transactions s'y ajouteront comme deux nouveaux genres, avec leur ligne dans `LigneAlerte`.
+
 ### Projets vendeurs et pipeline vendeur
 
 Un projet vendeur est **l'intention de vendre un bien donné** (table `projets_vendeurs`). La personne et son projet sont deux choses distinctes : un même contact peut avoir plusieurs projets, un par bien. Un bien n'a qu'un projet en cours (ou à recontacter) à la fois ; les projets perdus ou gagnés restent à côté.
@@ -360,7 +386,7 @@ L'application reconnaît le projet de test à son adresse (`src/lib/environnemen
 | Courriel | Domaine `exemple.invalid`, qui ne peut recevoir aucun message |
 | Adresse | `00000 Villefictive`, rue de l'Exemple, avenue du Test… |
 
-L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens, 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire), 4 projets vendeurs (un à chacune des quatre premières étapes, deux du même vendeur, trois avec une relance liée), 3 projets acquéreurs (une demande de portail du jour avec son bien concerné et son appel de qualification ; une recherche en sélection avec un co-acquéreur et deux biens proposés, l'un intéressant, l'autre refusé ; une recherche aux visites, menée par le vendeur des deux premiers projets vendeurs, avec une visite faite et son compte rendu, et une contre-visite planifiée) et 8 activités du journal, du jour même à trois semaines en arrière (appels aux résultats variés, SMS, courriel, une visite et une estimation liées à un contact et à un bien, du porte-à-porte sans fiche, une note sur un bien) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
+L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens, 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire), 4 projets vendeurs (un à chacune des quatre premières étapes, deux du même vendeur, trois avec une relance liée), 3 projets acquéreurs (une demande de portail du jour avec son bien concerné et son appel de qualification ; une recherche en sélection avec un co-acquéreur et deux biens proposés, l'un intéressant, l'autre refusé ; une recherche aux visites, menée par le vendeur des deux premiers projets vendeurs, avec une visite faite et son compte rendu, et une contre-visite planifiée) et 8 activités du journal, du jour même à trois semaines en arrière (appels aux résultats variés, SMS, courriel, une visite et une estimation liées à un contact et à un bien, du porte-à-porte sans fiche, une note sur un bien), puis un lot « Journée » pour l'écran Aujourd'hui (une estimation à 14 h 30 sans lieu, dont l'adresse vient du bien ; un rappel à heure fixe ; une relance en retard de 6 jours et une du jour, avec leur motif ; une tâche administrative en retard sans fiche ; un vendeur nouveau, sans prochaine action, dont le projet dort depuis 25 jours) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
 
 Exception : l'essai de volume de l'étape 1.2 (30 000 contacts, pour mesurer les temps de réponse) est un script SQL, `supabase/tests/contacts-fictifs-volume.sql`, lancé par Claude Code sur le seul projet de test. Ses fiches portent l'étiquette « essai de volume » ; leurs téléphones viennent des tranches réservées aux fictions (06 39 98, 01 99 00, 02 61 91). Le script refuse de tourner sur une base qui contient plus de 20 fiches non fictives.
 

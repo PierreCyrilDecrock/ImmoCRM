@@ -1,9 +1,5 @@
-import { useState } from 'react'
-import BoucleRelance from '../relances/BoucleRelance'
-import { useActionsTache } from './actions-tache'
-import FormulaireTache from './FormulaireTache'
+import { useGestesTache } from './gestes-tache'
 import LigneTache from './LigneTache'
-import ReportTache from './ReportTache'
 import type { TacheAffichee } from './taches'
 
 type Props = {
@@ -17,20 +13,12 @@ type Props = {
 
 /**
  * Liste de tâches avec leurs gestes : cocher, reporter, ouvrir pour modifier, rouvrir.
- * Sert à la page Tâches et aux rubriques Tâches des fiches. Cocher une tâche liée à un
- * contact ouvre la boucle de relance (résultat, compte rendu, prochaine action) ; une tâche
- * sans contact est faite en un geste.
+ * Sert à la page Tâches, aux rubriques Tâches des fiches et au bloc Tâches de l'écran
+ * Aujourd'hui. Cocher une tâche liée à un contact ouvre la boucle de relance (résultat,
+ * compte rendu, prochaine action) ; une tâche sans contact est faite en un geste.
  */
 export default function ListeTaches({ taches, aujourdhui, masquer, onChangement }: Props) {
-  const actions = useActionsTache(onChangement)
-  const [aReporter, setAReporter] = useState<TacheAffichee | null>(null)
-  const [ouverte, setOuverte] = useState<TacheAffichee | null>(null)
-  const [aBoucler, setABoucler] = useState<TacheAffichee | null>(null)
-
-  function cocher(affichee: TacheAffichee) {
-    if (affichee.contact !== null) setABoucler(affichee)
-    else void actions.cocher(affichee.tache, aujourdhui)
-  }
+  const gestes = useGestesTache({ aujourdhui, verrouiller: masquer, onChangement })
 
   return (
     <>
@@ -41,52 +29,15 @@ export default function ListeTaches({ taches, aujourdhui, masquer, onChangement 
             affichee={affichee}
             aujourdhui={aujourdhui}
             masquer={masquer}
-            occupee={actions.occupee === affichee.id}
-            onCocher={() => cocher(affichee)}
-            onReporter={() => setAReporter(affichee)}
-            onOuvrir={() => setOuverte(affichee)}
-            onRouvrir={() => void actions.rouvrir(affichee.tache)}
+            occupee={gestes.occupee === affichee.id}
+            onCocher={() => gestes.cocher(affichee)}
+            onReporter={() => gestes.reporter(affichee)}
+            onOuvrir={() => gestes.ouvrir(affichee)}
+            onRouvrir={() => gestes.rouvrir(affichee)}
           />
         ))}
       </ul>
-
-      {aReporter !== null && (
-        <ReportTache
-          tache={aReporter.tache}
-          aujourdhui={aujourdhui}
-          envoi={actions.occupee === aReporter.id}
-          onFermer={() => setAReporter(null)}
-          onReporter={(echeance) => {
-            void actions.reporter(aReporter.tache, echeance, aujourdhui).then((reussi) => {
-              if (reussi) setAReporter(null)
-            })
-          }}
-        />
-      )}
-
-      {ouverte !== null && (
-        <FormulaireTache
-          aujourdhui={aujourdhui}
-          affichee={ouverte}
-          verrouiller={masquer}
-          onFermer={() => setOuverte(null)}
-          onChangement={onChangement}
-          onBoucler={() => {
-            setABoucler(ouverte)
-            setOuverte(null)
-          }}
-        />
-      )}
-
-      {aBoucler !== null && aBoucler.contact !== null && (
-        <BoucleRelance
-          tache={aBoucler.tache}
-          contact={aBoucler.contact}
-          aujourdhui={aujourdhui}
-          onFermer={() => setABoucler(null)}
-          onChangement={onChangement}
-        />
-      )}
+      {gestes.fenetres}
     </>
   )
 }

@@ -608,6 +608,48 @@ export type Database = {
           },
         ]
       }
+      priorites_du_jour: {
+        Row: {
+          action_1: string
+          action_2: string
+          action_3: string
+          created_at: string
+          faite_1: boolean
+          faite_2: boolean
+          faite_3: boolean
+          id: string
+          jour: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_1?: string
+          action_2?: string
+          action_3?: string
+          created_at?: string
+          faite_1?: boolean
+          faite_2?: boolean
+          faite_3?: boolean
+          id?: string
+          jour: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          action_1?: string
+          action_2?: string
+          action_3?: string
+          created_at?: string
+          faite_1?: boolean
+          faite_2?: boolean
+          faite_3?: boolean
+          id?: string
+          jour?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       projets_acquereurs: {
         Row: {
           accord_principe: boolean
@@ -1086,6 +1128,36 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      dernieres_activites: {
+        Args: { p_contacts: string[] }
+        Returns: {
+          archived_at: string | null
+          bien_id: string | null
+          compte_rendu: string
+          contact_id: string | null
+          created_at: string
+          date_activite: string
+          duree: number | null
+          heure: string
+          id: string
+          projet_acquereur_id: string | null
+          projet_vendeur_id: string | null
+          resultat: string | null
+          type: string
+          updated_at: string
+          user_id: string
+          visite_interet: string | null
+          visite_points_negatifs: string
+          visite_points_positifs: string
+          visite_suite: string | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'activites'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       doublons_contact: {
         Args: {
           p_courriels: string[]
@@ -1245,6 +1317,19 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      projets_sans_activite: {
+        Args: { p_aujourdhui?: string; p_jours?: number; p_limite?: number }
+        Returns: {
+          bien_id: string
+          calme_depuis: string
+          contact_id: string
+          derniere_activite_le: string
+          etape: string
+          genre: string
+          projet_id: string
+          total: number
+        }[]
       }
       sortir_projet_acquereur: {
         Args: {

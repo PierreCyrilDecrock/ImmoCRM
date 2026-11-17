@@ -11,6 +11,7 @@ import EtatVide from '../components/EtatVide'
 import Etiquette from '../components/Etiquette'
 import FenetreModale from '../components/FenetreModale'
 import LienAction from '../components/LienAction'
+import LienBouton from '../components/LienBouton'
 import LigneListe from '../components/LigneListe'
 import Liste from '../components/Liste'
 import Message from '../components/Message'
@@ -175,6 +176,17 @@ export default function Composants() {
           <LienAction libelle="Appeler" icone="telephone" href="tel:+33639980000" />
           <LienAction libelle="SMS" icone="sms" href="sms:+33639980000" />
           <LienAction libelle="Courriel" icone="courriel" />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <LienBouton icone="telephone" href="tel:+33639980000">
+            Appeler
+          </LienBouton>
+          <LienBouton icone="itineraire" href="https://www.google.com/maps" nouvelOnglet>
+            Itinéraire
+          </LienBouton>
+          <LienBouton icone="contacts" variante="discret" vers="/contacts">
+            Fiche
+          </LienBouton>
         </div>
       </Carte>
 

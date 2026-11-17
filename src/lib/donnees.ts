@@ -45,6 +45,7 @@ export const TABLES: Record<NomTable, { archivable: boolean }> = {
   biens_proposes: { archivable: true },
   biens_proprietaires: { archivable: true },
   contacts: { archivable: true },
+  priorites_du_jour: { archivable: false },
   projets_acquereurs: { archivable: true },
   projets_vendeurs: { archivable: true },
   reglages: { archivable: false },
@@ -77,6 +78,8 @@ export type Filtre<T extends NomTable> = { colonne: keyof Ligne<T> & string } & 
   | { genre: 'max'; valeur: number | string }
   /** La colonne est vide (`null`). */
   | { genre: 'vide' }
+  /** La colonne a une valeur (pas `null`). */
+  | { genre: 'nonVide' }
 )
 
 export type OptionsPage<T extends NomTable> = {
@@ -171,6 +174,7 @@ export async function listerPage<T extends NomTable>(
     if (filtre.genre === 'min') requete = requete.gte(colonne, filtre.valeur)
     if (filtre.genre === 'max') requete = requete.lte(colonne, filtre.valeur)
     if (filtre.genre === 'vide') requete = requete.is(colonne, null)
+    if (filtre.genre === 'nonVide') requete = requete.not(colonne, 'is', null)
     if (filtre.genre === 'comprend') {
       // Entre guillemets : une valeur peut contenir une espace ou une virgule (étiquette libre).
       const valeurs = filtre.valeur.map((valeur) => `"${valeur.replace(/(["\\])/g, '\\$1')}"`)
@@ -256,17 +260,19 @@ export function modifier<T extends NomTable>(
 }
 
 /**
- * Crée la ligne, ou la modifie si elle existe déjà pour la colonne unique indiquée.
- * Sert aux tables qui n'ont qu'une ligne par utilisateur (`reglages`, colonne `user_id`).
+ * Crée la ligne, ou la modifie si elle existe déjà pour la ou les colonnes uniques indiquées.
+ * Sert aux tables qui n'ont qu'une ligne par utilisateur (`reglages`, colonne `user_id`) ou
+ * par utilisateur et par jour (`priorites_du_jour`, colonnes `user_id` et `jour`).
  */
 export function enregistrerUnique<T extends NomTable>(
   client: SupabaseClient,
   table: T,
   valeurs: Creation<T>,
-  colonneUnique: keyof Ligne<T> & string,
+  colonneUnique: (keyof Ligne<T> & string) | readonly (keyof Ligne<T> & string)[],
 ): Promise<Resultat<Ligne<T>>> {
+  const onConflict = typeof colonneUnique === 'string' ? colonneUnique : colonneUnique.join(',')
   return executer<Ligne<T>>(
-    client.from(table).upsert(valeurs, { onConflict: colonneUnique }).select().single(),
+    client.from(table).upsert(valeurs, { onConflict }).select().single(),
     true,
   )
 }

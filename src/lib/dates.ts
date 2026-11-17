@@ -135,6 +135,20 @@ export function formaterJourCourt(date: string, aujourdhui: string = dateDuJour(
   return format.format(new Date(versInstant(date)))
 }
 
+const JOUR_LONG_SEMAINE = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+})
+
+/** Un jour en toutes lettres, pour un titre : « Mardi 17 novembre ». Vide si illisible. */
+export function formaterJourLong(date: string): string {
+  if (!estDateValide(date)) return ''
+  const texte = JOUR_LONG_SEMAINE.format(new Date(versInstant(date)))
+  return texte.charAt(0).toUpperCase() + texte.slice(1)
+}
+
 /** Une heure de la base (`09:30:00`) à la française : « 9 h 30 », « 14 h ». */
 export function formaterHeure(heure: string | null): string {
   if (heure === null) return ''
