@@ -11,6 +11,11 @@ import {
   type ResultatAppel,
   type TypeActivite,
 } from '../activites/activites'
+import {
+  raisonRefusApresVisite,
+  reactionApresVisite,
+  type Reaction,
+} from '../acquereurs/biens-proposes'
 import { nomComplet, TEMPERATURES, type Contact, type Temperature } from '../contacts/contacts'
 import {
   LONGUEURS_MAX_TACHE,
@@ -106,6 +111,24 @@ export type BrouillonBoucle = {
   motif: string
   /** Compte rendu structuré, quand ce qui a été fait est une visite. */
   visite: CompteRenduVisite
+  /**
+   * Réaction au bien visité, dans la sélection du projet d'achat : choisie à la main, ou
+   * `null` pour suivre ce que suggère le compte rendu (`reactionApresVisite`).
+   */
+  reactionBien: Reaction | 'inchangee' | null
+}
+
+/** La visite porte sur un bien d'un projet d'achat : sa réaction peut se mettre à jour. */
+export function visiteDeProjetAcquereur(
+  tache: Pick<Tache, 'projet_acquereur_id' | 'bien_id'>,
+  type: TypeActivite,
+): boolean {
+  return type === 'visite' && tache.projet_acquereur_id !== null && tache.bien_id !== null
+}
+
+/** La réaction qui sera enregistrée : celle choisie, sinon celle que suggère le compte rendu. */
+export function reactionBienRetenue(brouillon: BrouillonBoucle): Reaction | 'inchangee' {
+  return brouillon.reactionBien ?? reactionApresVisite(brouillon.visite) ?? 'inchangee'
 }
 
 export type ErreursBoucle = Partial<
@@ -143,6 +166,7 @@ export function brouillonBoucle(
     heure: '',
     motif: '',
     visite: COMPTE_RENDU_VISITE_VIDE,
+    reactionBien: null,
   }
 }
 
@@ -216,6 +240,7 @@ export function preparerBoucle(
         : {}),
       ...(temperature === undefined ? {} : { p_temperature: temperature }),
       p_sans_prochaine_action: brouillon.mode === 'aucune',
+      ...reactionEnvoyee(brouillon, tache),
       ...(brouillon.type === 'visite'
         ? {
             p_visite_points_positifs: visite.visite_points_positifs,
@@ -226,6 +251,19 @@ export function preparerBoucle(
         : {}),
     },
   }
+}
+
+/** Les paramètres de la réaction au bien visité ; rien si elle reste inchangée. */
+function reactionEnvoyee(
+  brouillon: BrouillonBoucle,
+  tache: Tache,
+): { p_reaction_bien?: Reaction; p_raison_refus?: string } {
+  if (!visiteDeProjetAcquereur(tache, brouillon.type)) return {}
+  const reaction = reactionBienRetenue(brouillon)
+  if (reaction === 'inchangee') return {}
+  return reaction === 'refuse'
+    ? { p_reaction_bien: reaction, p_raison_refus: raisonRefusApresVisite(brouillon.visite) }
+    : { p_reaction_bien: reaction }
 }
 
 /**

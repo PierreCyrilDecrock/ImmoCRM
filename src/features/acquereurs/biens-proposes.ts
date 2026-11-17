@@ -12,6 +12,7 @@ import {
 import { estDateValide, estHeureValide } from '../../lib/dates'
 import { adresseBien, type Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
+import type { CompteRenduVisite } from '../activites/activites'
 import { LONGUEURS_MAX_TACHE, type Tache } from '../taches/taches'
 import type { ProjetAcquereur } from './pipeline-acquereur'
 
@@ -38,6 +39,35 @@ export function libelleReaction(reaction: string | null): string {
 
 export function genreReaction(reaction: string | null): GenreEtiquette {
   return REACTIONS.find((option) => option.valeur === reaction)?.genre ?? 'alerte'
+}
+
+/** La réaction au bien après une visite : une réaction, ou `null` pour ne rien changer. */
+export type ReactionApresVisite = Reaction | null
+
+/**
+ * La réaction que suggère le compte rendu d'une visite (décision du 17/11/2026). D'abord la
+ * suite envisagée : offre, contre-visite ou réflexion → intéressé ; ne donne pas suite →
+ * refusé ; voir d'autres biens → inchangée. Sans suite renseignée, l'intérêt : fort ou
+ * moyen → intéressé ; aucun → refusé ; faible ou non renseigné → inchangée.
+ */
+export function reactionApresVisite(visite: CompteRenduVisite): ReactionApresVisite {
+  if (
+    visite.suite === 'offre' ||
+    visite.suite === 'contre_visite' ||
+    visite.suite === 'reflexion'
+  ) {
+    return 'interesse'
+  }
+  if (visite.suite === 'abandon') return 'refuse'
+  if (visite.suite === 'autres_biens') return null
+  if (visite.interet === 'fort' || visite.interet === 'moyen') return 'interesse'
+  if (visite.interet === 'aucun') return 'refuse'
+  return null
+}
+
+/** La raison d'un refus après visite : les points négatifs, raccourcis s'il le faut. */
+export function raisonRefusApresVisite(visite: CompteRenduVisite): string {
+  return visite.pointsNegatifs.trim().slice(0, LONGUEUR_MAX_RAISON_REFUS)
 }
 
 /** Un bien proposé avec sa fiche, pour la rubrique du projet. */
