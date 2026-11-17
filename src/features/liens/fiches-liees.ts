@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { listerPage, type Resultat } from '../../lib/donnees'
+import { listerPage, type Filtre, type Resultat } from '../../lib/donnees'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 
@@ -61,4 +61,16 @@ export async function lireFichesLiees<L extends AvecLiens>(
       bien: ligne.bien_id === null ? null : (biens.get(ligne.bien_id) ?? null),
     })),
   }
+}
+
+/** Une fiche à laquelle des tâches ou des activités sont liées. */
+export type LienFiche = { contactId: string } | { bienId: string } | { projetVendeurId: string }
+
+/** La condition qui retrouve les lignes liées à cette fiche. */
+export function filtreLien(
+  lien: LienFiche,
+): Filtre<'taches'> & Filtre<'activites'> & { genre: 'egal' } {
+  if ('contactId' in lien) return { colonne: 'contact_id', genre: 'egal', valeur: lien.contactId }
+  if ('bienId' in lien) return { colonne: 'bien_id', genre: 'egal', valeur: lien.bienId }
+  return { colonne: 'projet_vendeur_id', genre: 'egal', valeur: lien.projetVendeurId }
 }

@@ -27,6 +27,14 @@ import {
 } from '../taches/taches'
 import { formaterTelephone } from './telephone'
 import {
+  libelleEtape,
+  libelleEtatProjet,
+  libelleMotifPerte,
+  libelleTypeMandat,
+} from '../projets/pipeline-vendeur'
+import { listerProjetsVendeursLies, type ProjetVendeurAffiche } from '../projets/projets-vendeurs'
+import { formaterPrix } from '../../lib/nombres'
+import {
   horaireActivite,
   listerToutJournalContact,
   titreActivite,
@@ -52,6 +60,8 @@ export type DonneesContact = {
   taches: TacheAffichee[]
   /** Le journal d'activité de la personne, retraits compris, le plus récent d'abord. */
   activites: ActiviteAffichee[]
+  /** Ses projets de vente, archivés compris. */
+  projetsVendeurs: ProjetVendeurAffiche[]
 }
 
 const ouiNon = (valeur: boolean) => (valeur ? 'Oui' : 'Non')
@@ -235,9 +245,48 @@ function lignesFiche(contact: Contact): string[] {
   ])
 }
 
+/** Un projet de vente sur une ligne, avec tout ce qui est enregistré. */
+function resumeProjetExport(
+  projet: ProjetVendeurAffiche['projet'],
+  bien: ProjetVendeurAffiche['bien'],
+) {
+  const montant = (valeur: number | null) => (valeur === null ? null : formaterPrix(valeur))
+  const date = (valeur: string | null) => (valeur === null ? null : formaterDate(valeur))
+  const morceaux: [string, string | null][] = [
+    ['bien', bien === null ? null : adresseBien(bien)],
+    ['étape', libelleEtape(projet.etape)],
+    ['état', libelleEtatProjet(projet.etat)],
+    ['ouvert le', formaterDate(projet.created_at)],
+    ['motif de vente', projet.motif_vente === '' ? null : projet.motif_vente],
+    ['échéance souhaitée', date(projet.echeance_souhaitee)],
+    ['prix espéré', montant(projet.prix_espere)],
+    ['estimation basse', montant(projet.estimation_basse)],
+    ['estimation haute', montant(projet.estimation_haute)],
+    ['estimé le', date(projet.estimation_le)],
+    ['avis de valeur remis le', date(projet.avis_remis_le)],
+    [
+      'autres agences consultées',
+      projet.agences_consultees === '' ? null : projet.agences_consultees,
+    ],
+    ['mandat signé ailleurs', projet.mandat_ailleurs ? 'oui' : null],
+    ['fin du mandat ailleurs', date(projet.mandat_ailleurs_fin)],
+    ['mandat', projet.mandat_type === null ? null : libelleTypeMandat(projet.mandat_type)],
+    ['mandat signé le', date(projet.mandat_le)],
+    ['à recontacter le', date(projet.recontacter_le)],
+    ['motif de perte', projet.motif_perte === null ? null : libelleMotifPerte(projet.motif_perte)],
+    ['précision', projet.motif_perte_detail === '' ? null : projet.motif_perte_detail],
+    ['notes', projet.notes === '' ? null : projet.notes],
+    ['archivé le', date(projet.archived_at)],
+  ]
+  return morceaux
+    .filter((morceau): morceau is [string, string] => morceau[1] !== null)
+    .map(([nom, valeur]) => `${nom} : ${valeur}`)
+    .join(' — ')
+}
+
 /** Le contenu du fichier d'export, en clair. `date` : le jour de l'export (`2026-11-16`). */
 export function texteExportContact(donnees: DonneesContact, date: string = dateDuJour()): string {
-  const { contact, fichesFusionnees, appels, biens, taches, activites } = donnees
+  const { contact, fichesFusionnees, appels, biens, taches, activites, projetsVendeurs } = donnees
   const lignes = [
     `DONNÉES PERSONNELLES — ${nomComplet(contact)}`,
     `Document établi le ${formaterDate(date)} à partir du fichier de contacts ImmoCRM.`,
@@ -266,6 +315,10 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
     ]
     lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
   }
+  lignes.push(...titre('Projets de vente'))
+  if (projetsVendeurs.length === 0) lignes.push('Aucun.')
+  for (const { projet, bien } of projetsVendeurs)
+    lignes.push(`- ${resumeProjetExport(projet, bien)}`)
   lignes.push(...titre('Tâches et rendez-vous'))
   if (taches.length === 0) lignes.push('Aucun.')
   for (const { tache, bien } of taches) {
@@ -359,6 +412,7 @@ export async function rassemblerDonneesContact(
   const biens: BienDuContact[] = []
   const taches: TacheAffichee[] = []
   const activites: ActiviteAffichee[] = []
+  const projetsVendeurs: ProjetVendeurAffiche[] = []
   for (const idFiche of [id, ...fichesFusionnees.map((f) => f.id)]) {
     const resultat = await listerAppelsSansAccord(client, idFiche)
     if (!resultat.ok) return resultat
@@ -372,6 +426,9 @@ export async function rassemblerDonneesContact(
     const journal = await listerToutJournalContact(client, idFiche)
     if (!journal.ok) return journal
     activites.push(...journal.donnees)
+    const projets = await listerProjetsVendeursLies(client, { contactId: idFiche }, 'avec')
+    if (!projets.ok) return projets
+    projetsVendeurs.push(...projets.donnees)
   }
   appels.sort((a, b) => b.created_at.localeCompare(a.created_at))
   // Le plus récent d'abord, toutes fiches confondues.
@@ -383,6 +440,14 @@ export async function rassemblerDonneesContact(
 
   return {
     ok: true,
-    donnees: { contact: fiche.donnees, fichesFusionnees, appels, biens, taches, activites },
+    donnees: {
+      contact: fiche.donnees,
+      fichesFusionnees,
+      appels,
+      biens,
+      taches,
+      activites,
+      projetsVendeurs,
+    },
   }
 }

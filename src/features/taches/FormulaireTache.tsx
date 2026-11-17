@@ -36,9 +36,15 @@ type Props = {
   /** Tâche à modifier ; absente : création d'une nouvelle tâche. */
   affichee?: TacheAffichee
   /** Valeurs de départ d'une nouvelle tâche. */
-  depart?: { titre?: string; echeance?: string; contact?: Contact | null; bien?: Bien | null }
+  depart?: {
+    titre?: string
+    echeance?: string
+    contact?: Contact | null
+    bien?: Bien | null
+    projetVendeurId?: string | null
+  }
   /** Lien fixé par la fiche d'où l'on vient : il ne se change pas ici. */
-  verrouiller?: 'contact' | 'bien'
+  verrouiller?: 'contact' | 'bien' | 'projet'
   onFermer: () => void
   /** Appelé après tout enregistrement : la liste se relit. */
   onChangement: () => void
@@ -314,7 +320,19 @@ export default function FormulaireTache({
           legende="Liée à"
           contact={brouillon.contact}
           bien={lienBien}
+          projetVendeurId={brouillon.projetVendeurId}
           verrouiller={verrouiller}
+          onProjetVendeur={(projet) =>
+            setBrouillon((actuel) => {
+              const bien = actuel.bien ?? projet?.bien ?? null
+              return {
+                ...actuel,
+                projetVendeurId: projet?.id ?? null,
+                bien,
+                lieu: bien !== null && actuel.lieu.trim() === '' ? adresseBien(bien) : actuel.lieu,
+              }
+            })
+          }
           onContact={(contact) => changer('contact', contact)}
           onBien={(bien) =>
             setBrouillon((actuel) => ({

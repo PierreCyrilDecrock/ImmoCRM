@@ -5,13 +5,18 @@ import Carte from '../../components/Carte'
 import Message from '../../components/Message'
 import { dateDuJour } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
-import type { Bien } from '../biens/biens'
-import type { Contact } from '../contacts/contacts'
+import {
+  lienDeFiche,
+  liensDeFiche,
+  masqueDeFiche,
+  verrouDeFiche,
+  type FicheOrigine,
+} from '../liens/fiche-origine'
 import FormulaireTache from './FormulaireTache'
 import ListeTaches from './ListeTaches'
 import { listerTachesLiees, type TacheAffichee } from './taches'
 
-type Props = ({ contact: Contact; bien?: undefined } | { bien: Bien; contact?: undefined }) & {
+type Props = FicheOrigine & {
   /** Change quand la fiche demande une relecture (après un geste fait ailleurs sur la fiche). */
   version?: number
   /**
@@ -35,8 +40,7 @@ export default function SectionTaches(props: Props) {
   const [creation, setCreation] = useState(false)
   const [version, setVersion] = useState(0)
   const aujourdhui = dateDuJour()
-  const lien =
-    props.contact !== undefined ? { contactId: props.contact.id } : { bienId: props.bien.id }
+  const lien = lienDeFiche(props)
   const cle = JSON.stringify(lien)
 
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function SectionTaches(props: Props) {
   }, [cle, version, props.version])
 
   const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
-  const masquer = props.contact !== undefined ? 'contact' : 'bien'
+  const masquer = masqueDeFiche(props)
 
   return (
     <Carte titre="Tâches">
@@ -94,8 +98,8 @@ export default function SectionTaches(props: Props) {
       {creation && (
         <FormulaireTache
           aujourdhui={aujourdhui}
-          depart={props.contact !== undefined ? { contact: props.contact } : { bien: props.bien }}
-          verrouiller={masquer}
+          depart={liensDeFiche(props)}
+          verrouiller={verrouDeFiche(props)}
           onFermer={() => setCreation(false)}
           onChangement={relire}
         />

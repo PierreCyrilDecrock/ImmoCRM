@@ -60,7 +60,9 @@ Police du système de l'appareil (aucun fichier à télécharger).
 
 Tous sont dans `src/components`, un par fichier.
 
-Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour le journal, `SectionJournal` (rubrique d'une fiche : un bouton par type pour consigner, puis le fil), `FilActivites` (fil regroupé par jour) et `FormulaireActivite` ; pour la boucle de relance, `BoucleRelance` (l'écran en trois temps ouvert en cochant une tâche liée à un contact) et `ProchaineAction` (en-tête de la fiche Contact) ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`, réunis avec l'affichage du lien dans `ChoixLiens` (rubrique « Liée à » des formulaires de tâche et d'activité).
+Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour le journal, `SectionJournal` (rubrique d'une fiche : un bouton par type pour consigner, puis le fil), `FilActivites` (fil regroupé par jour) et `FormulaireActivite` ; pour la boucle de relance, `BoucleRelance` (l'écran en trois temps ouvert en cochant une tâche liée à un contact) et `ProchaineAction` (en-tête de la fiche Contact) ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`, réunis avec l'affichage du lien dans `ChoixLiens` (rubrique « Liée à » des formulaires de tâche et d'activité, y compris le projet de vente) ; pour les projets vendeurs, `TableauPipeline` (colonnes par étape avec glisser-déposer par une poignée sur tablette et ordinateur, liste groupée par étape sur téléphone), `CarteProjet`, `SectionProjetsVendeurs` (rubrique des fiches Contact et Bien), `NouveauProjetVendeur`, `FenetrePassage` (ouverte par `useChangementEtape` quand un critère de sortie manque), `SortieProjet` et `FormulaireProjetVendeur`. `SectionTaches` et `SectionJournal` acceptent aussi un projet (`projet={…}`).
+
+**Glisser-déposer.** Fait avec les événements du pointeur (souris, doigt, stylet) : la carte se saisit par sa poignée (dessin `poignee`, 44 px), la colonne visée s'allume, Échap annule, le tableau défile seul près de ses bords. Le même changement reste possible sans glisser, d'un toucher sur l'étape dans la fiche du projet.
 
 ### Structure
 
@@ -151,7 +153,7 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Installation sur l'écran d'accueil
 

@@ -15,6 +15,7 @@ import Connexion from './pages/Connexion'
 import Contacts from './pages/Contacts'
 import FicheBien from './pages/FicheBien'
 import FicheContact from './pages/FicheContact'
+import FicheProjetVendeur from './pages/FicheProjetVendeur'
 import Journal from './pages/Journal'
 import FusionContacts from './pages/FusionContacts'
 import ModifierBien from './pages/ModifierBien'
@@ -64,6 +65,7 @@ function Pages() {
           <Route path="/biens/:id" element={<FicheBien />} />
           <Route path="/biens/:id/modifier" element={<ModifierBien />} />
           <Route path="/pipelines" element={<Pipelines />} />
+          <Route path="/pipelines/vendeurs/:id" element={<FicheProjetVendeur />} />
           <Route path="/taches" element={<Taches />} />
           <Route path="/plus" element={<Plus />} />
           <Route path="/plus/journal" element={<Journal />} />

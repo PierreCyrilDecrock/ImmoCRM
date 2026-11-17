@@ -32,6 +32,7 @@ import {
 import PhotosBien from '../features/biens/PhotosBien'
 import ProprietairesBien from '../features/biens/ProprietairesBien'
 import SectionJournal from '../features/activites/SectionJournal'
+import SectionProjetsVendeurs from '../features/projets/SectionProjetsVendeurs'
 import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { formaterNombre, formaterPrix, formaterSurface } from '../lib/nombres'
@@ -280,6 +281,10 @@ export default function FicheBien() {
           rubrique('Diagnostics', diagnostics, 'DPE et GES non renseignés.')}
 
         <ProprietairesBien bienId={bien.id} />
+
+        <div className="min-w-0">
+          <SectionProjetsVendeurs bien={bien} lectureSeule={bien.archived_at !== null} />
+        </div>
 
         <div className="min-w-0">
           <SectionTaches bien={bien} version={version} onChangement={toutRelire} />

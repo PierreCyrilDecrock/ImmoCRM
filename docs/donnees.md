@@ -104,7 +104,7 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | `archiver` / `restaurer(client, table, id)` | Archive une ligne, ou annule l'archivage |
 | `supprimer(client, table, id)` | Supprime une ligne pour de bon. Réservé aux photos (`biens_photos`) : voir « Photos des biens » |
 | `enregistrerUnique(client, table, valeurs, colonne)` | Crée ou met à jour la ligne unique (réglages) |
-| `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive, clôture d'une tâche, boucle de relance) |
+| `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive, clôture d'une tâche, boucle de relance, sortie d'un projet du pipeline) |
 
 Chaque fonction renvoie soit `{ ok: true, donnees }`, soit `{ ok: false, erreur }`, sans jamais lever d'erreur. `erreur.message` est une phrase en français, affichable telle quelle ; `erreur.genre` permet à un écran de réagir (`reseau`, `session`, `droits`, `doublon`, `lien`, `invalide`, `introuvable`, `inconnue`). La traduction est dans `src/lib/erreurs-donnees.ts`.
 
@@ -137,7 +137,7 @@ Ces fonctions s'exécutent avec les droits du compte connecté : les règles d'a
 
 Conséquence à connaître : avec les règles d'accès par ligne, la base ne peut pas s'appuyer sur un index pour une recherche « contient ». Elle lit les fiches du compte une à une (20 ms pour 30 000 fiches, mesures dans `docs/avancement.md`). Inutile donc de créer ce type d'index.
 
-**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord`, `biens_proprietaires`, `taches` et `activites`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
+**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord`, `biens_proprietaires`, `taches`, `activites` et `projets_vendeurs`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
 
 ### Biens, propriétaires et historique des prix
 
@@ -197,7 +197,7 @@ Une tâche est toute action à venir, avec une date et un motif (table `taches`)
 | `heure`, `duree` | Heure de début (heure de Paris, telle qu'affichée) et durée en minutes, facultatives ; pas de durée sans heure |
 | `lieu` | Texte libre ; proposé d'office à l'adresse du bien choisi |
 | `etat`, `cloturee_le` | `a_faire`, `faite` ou `annulee`, et le moment de la clôture. Une tâche ne se supprime pas : elle est faite ou annulée, et peut être rouverte |
-| `contact_id`, `bien_id` | Liens facultatifs, vers des fiches du même compte. Le lien vers un projet viendra avec les projets (étape 1.9) |
+| `contact_id`, `bien_id`, `projet_vendeur_id` | Liens facultatifs, vers des fiches du même compte |
 | `recurrence`, `recurrence_ancre`, `recurrence_rang` | Fréquence (`jour`, `semaine`, `deux_semaines`, `mois`, `an`), date de la première occurrence de la série, place de cette occurrence dans la série |
 | Fonction `cloturer_tache(id, etat, suivante_echeance, suivante_rang)` | Marque la tâche faite ou annulée et, si une date est donnée, crée l'occurrence suivante, en une seule opération. Refuse une tâche déjà close : un double appui ne crée pas deux suites |
 
@@ -222,7 +222,7 @@ Une activité est tout événement passé : appel, message, visite, note, docume
 | `compte_rendu` | Ce qui a été dit ou fait (5 000 caractères au plus). Obligatoire pour une note seulement, vérifié par l'application |
 | `date_activite`, `heure` | Jour et heure de l'activité, à l'heure de Paris (heure affichée sur la montre). Valent maintenant si rien n'est envoyé. L'application refuse une date à venir : pour l'avenir, on crée une tâche |
 | `duree` | Minutes, facultative |
-| `contact_id`, `bien_id` | Liens facultatifs, vers des fiches du même compte. Une visite liée aux deux apparaît sur les deux fiches. Le lien vers un projet viendra avec les projets (étape 1.9) |
+| `contact_id`, `bien_id`, `projet_vendeur_id` | Liens facultatifs, vers des fiches du même compte. Une visite liée aux deux apparaît sur les deux fiches |
 
 **Ordre.** Du plus récent au plus ancien : par date, puis par heure, puis par ordre de saisie. Les fils (fiches et page Journal) sont lus 50 activités à la fois, regroupés par jour.
 
@@ -251,6 +251,35 @@ Deux règles du cadrage : **clôturer une tâche crée une activité et propose 
 
 **Vue « Contacts sans prochaine action »** : fiches actives dont `prochaine_action_le` est vide, qu'il y ait eu refus confirmé ou jamais aucune tâche. Changer une tâche ne touche la fiche (et sa date « modifiée le ») que si la date de la prochaine action change.
 
+### Projets vendeurs et pipeline vendeur
+
+Un projet vendeur est **l'intention de vendre un bien donné** (table `projets_vendeurs`). La personne et son projet sont deux choses distinctes : un même contact peut avoir plusieurs projets, un par bien. Un bien n'a qu'un projet en cours (ou à recontacter) à la fois ; les projets perdus ou gagnés restent à côté.
+
+| Élément | Rôle |
+| --- | --- |
+| `contact_id`, `bien_id` | Le vendeur (contact principal) et le bien, obligatoires |
+| `etape`, `etape_le` | `premier_contact`, `decouverte`, `estimation`, `suivi`, `mandat_signe`, et le jour d'entrée dans l'étape. **`etape_le` est tenu par la base** (déclencheur `projets_vendeurs_maj_etape_le`) : remis au jour à chaque changement d'étape |
+| `etat` | `actif` (dans le pipeline), `a_recontacter` (avec `recontacter_le`), `perdu` (avec `motif_perte` et `motif_perte_detail`), `gagne` (exactement quand l'étape est `mandat_signe`) |
+| Découverte | `motif_vente`, `echeance_souhaitee` (date avant laquelle vendre), `prix_espere` |
+| Estimation | `estimation_basse`, `estimation_haute` (la base refuse une fourchette inversée), `estimation_le`, `avis_remis_le` |
+| Concurrence | `agences_consultees` (texte), `mandat_ailleurs`, `mandat_ailleurs_fin` |
+| Mandat signé | `mandat_type` (`simple`, `exclusif`) et `mandat_le` ; le détail du mandat viendra en version 2 |
+| `notes` | Relances, objections, points à retenir |
+| Motifs de perte | `mandat_ailleurs`, `vente_particuliers`, `abandon`, `achat_confrere`, `autre` |
+| Fonction `sortir_projet_vendeur(...)` | « À recontacter » (état, date et tâche de relance) ou « Perdu » (motif, fin du mandat concurrent et relance éventuelle), en une seule opération. Refuse un projet qui n'est pas actif |
+
+**Critères de sortie** (`src/features/projets/pipeline-vendeur.ts`, testé ; la base vérifie les mêmes par des contraintes) : quitter « Premier contact » demande la source du contact (enregistrée sur sa fiche) ; quitter « Découverte » demande le motif et l'échéance ; quitter « Estimation » demande la fourchette et la date de remise de l'avis de valeur ; arriver à « Mandat signé » demande son type et sa date. Sauter des étapes demande tout ce qui manque ; revenir en arrière ne demande rien. Le « projet » de la découverte, c'est le bien à vendre, toujours connu.
+
+**Sorties**, possibles à toute étape d'un projet actif, sans suppression : « À recontacter » crée une tâche de relance à la date choisie (raccourcis 1, 3, 6 mois, 1 an) ; « Perdu » enregistre le motif et, si le vendeur a signé ailleurs et que la fin de ce mandat est connue, crée une relance **15 jours avant** (jamais avant aujourd'hui ; `JOURS_AVANT_FIN_MANDAT`). Les tâches créées sont liées au contact, au bien et au projet. Un projet sorti se remet dans le pipeline à l'étape où il était (« Remettre dans le pipeline ») ; l'archivage est réservé aux projets saisis par erreur.
+
+**Mandat signé.** Arriver à cette étape gagne le projet et fait passer le bien « En mandat » s'il était repéré, en veille ou en estimation.
+
+**Tableau.** Les projets actifs (200 au plus) et les mandats signés depuis moins de 30 jours ; dans une colonne, les plus anciens dans l'étape d'abord. Un projet est signalé au-delà de 30 jours dans la même étape. La prochaine action d'une carte est la plus proche tâche à faire liée au projet ; à défaut, celle du contact.
+
+**Liens.** Tâches et activités ont une colonne `projet_vendeur_id`. La clôture d'une tâche récurrente et la boucle de relance la recopient sur l'occurrence suivante, l'activité consignée et la prochaine action. Supprimer définitivement un contact supprime ses projets ; une tâche ou une activité liée au projet mais pas au contact reste, son lien vers le projet est vidé. La fusion transfère les projets à la fiche gardée.
+
+Code : `src/features/projets/` (règles, saisie, lecture, écrans du pipeline) ; fiche du projet `src/pages/FicheProjetVendeur.tsx`, adresse `#/pipelines/vendeurs/<id>`.
+
 ### Consentement et RGPD des contacts
 
 Ces règles traduisent la section Conformité du cadrage. Elles sont **à faire valider par un juriste**.
@@ -269,7 +298,7 @@ Ces règles traduisent la section Conformité du cadrage. Elles sont **à faire 
 
 **Date du dernier contact.** La plus récente parmi : la date de collecte, la date de l'accord ou du refus, la date d'opposition, les appels sans accord et les activités du journal liées au contact (sauf les notes, et sauf les activités retirées). L'application ne l'envoie jamais. Toute autre table qui enregistrerait un échange avec un contact doit être ajoutée au calcul, dans la fonction `contacts_maj_dernier_contact`, et déclencher le recalcul comme le font `appels_sans_accord` et `activites`.
 
-**Export (droit d'accès).** `src/features/contacts/export-contact.ts` fabrique un fichier texte avec toutes les colonnes de la fiche, les appels sans accord, les biens, les tâches, le journal d'activité et les anciennes fiches fusionnées. Un test échoue si une colonne de `contacts` n'y figure pas. Toute nouvelle table liée aux contacts doit être ajoutée à `rassemblerDonneesContact` et au fichier.
+**Export (droit d'accès).** `src/features/contacts/export-contact.ts` fabrique un fichier texte avec toutes les colonnes de la fiche, les appels sans accord, les biens, les projets de vente, les tâches, le journal d'activité et les anciennes fiches fusionnées. Un test échoue si une colonne de `contacts` n'y figure pas. Toute nouvelle table liée aux contacts doit être ajoutée à `rassemblerDonneesContact` et au fichier.
 
 **Suppression définitive (droit à l'effacement).** Elle ne laisse aucune ligne dans la base ; le lien « recommandé par » des autres contacts est vidé. Deux limites à connaître : les sauvegardes automatiques de Supabase gardent les données supprimées jusqu'à leur expiration, et un nom cité dans les notes d'une autre fiche n'est pas retrouvé.
 
@@ -298,7 +327,7 @@ L'application reconnaît le projet de test à son adresse (`src/lib/environnemen
 | Courriel | Domaine `exemple.invalid`, qui ne peut recevoir aucun message |
 | Adresse | `00000 Villefictive`, rue de l'Exemple, avenue du Test… |
 
-L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens, 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire) et 8 activités du journal, du jour même à trois semaines en arrière (appels aux résultats variés, SMS, courriel, une visite et une estimation liées à un contact et à un bien, du porte-à-porte sans fiche, une note sur un bien) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
+L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens, 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire), 4 projets vendeurs (un à chacune des quatre premières étapes, deux du même vendeur, trois avec une relance liée) et 8 activités du journal, du jour même à trois semaines en arrière (appels aux résultats variés, SMS, courriel, une visite et une estimation liées à un contact et à un bien, du porte-à-porte sans fiche, une note sur un bien) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
 
 Exception : l'essai de volume de l'étape 1.2 (30 000 contacts, pour mesurer les temps de réponse) est un script SQL, `supabase/tests/contacts-fictifs-volume.sql`, lancé par Claude Code sur le seul projet de test. Ses fiches portent l'étiquette « essai de volume » ; leurs téléphones viennent des tranches réservées aux fictions (06 39 98, 01 99 00, 02 61 91). Le script refuse de tourner sur une base qui contient plus de 20 fiches non fictives.
 

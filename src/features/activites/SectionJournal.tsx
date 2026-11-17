@@ -8,8 +8,13 @@ import SuiteListe from '../../components/SuiteListe'
 import { dateDuJour } from '../../lib/dates'
 import { useListePaginee, type LecteurPage } from '../../lib/liste-paginee'
 import { exigerSupabase } from '../../lib/supabase'
-import type { Bien } from '../biens/biens'
-import type { Contact } from '../contacts/contacts'
+import {
+  lienDeFiche,
+  liensDeFiche,
+  masqueDeFiche,
+  verrouDeFiche,
+  type FicheOrigine,
+} from '../liens/fiche-origine'
 import {
   estTypeActivite,
   lirePageActivites,
@@ -22,7 +27,7 @@ import {
 import FilActivites from './FilActivites'
 import FormulaireActivite from './FormulaireActivite'
 
-type Props = ({ contact: Contact; bien?: undefined } | { bien: Bien; contact?: undefined }) & {
+type Props = FicheOrigine & {
   /** Change quand la fiche demande une relecture (après un geste fait ailleurs sur la fiche). */
   version?: number
   /**
@@ -48,9 +53,9 @@ export default function SectionJournal(props: Props) {
   const [version, setVersion] = useState(0)
   const [saisie, setSaisie] = useState<TypeActivite | null>(null)
   const aujourdhui = dateDuJour()
-  const masquer = props.contact !== undefined ? 'contact' : 'bien'
+  const masquer = masqueDeFiche(props)
   const critere: CritereJournal = {
-    lien: props.contact !== undefined ? { contactId: props.contact.id } : { bienId: props.bien.id },
+    lien: lienDeFiche(props),
     type,
   }
   const fil = useListePaginee(
@@ -135,12 +140,8 @@ export default function SectionJournal(props: Props) {
         <FormulaireActivite
           // Une nouvelle fenêtre à chaque type choisi : le formulaire repart de zéro.
           key={saisie}
-          depart={
-            props.contact !== undefined
-              ? { type: saisie, contact: props.contact }
-              : { type: saisie, bien: props.bien }
-          }
-          verrouiller={masquer}
+          depart={{ type: saisie, ...liensDeFiche(props) }}
+          verrouiller={verrouDeFiche(props)}
           onFermer={() => setSaisie(null)}
           onChangement={relire}
         />

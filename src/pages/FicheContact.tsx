@@ -47,6 +47,7 @@ import SelecteurContact from '../features/contacts/SelecteurContact'
 import SuppressionContact from '../features/contacts/SuppressionContact'
 import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
 import SectionJournal from '../features/activites/SectionJournal'
+import SectionProjetsVendeurs from '../features/projets/SectionProjetsVendeurs'
 import ProchaineAction from '../features/relances/ProchaineAction'
 import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
@@ -78,15 +79,6 @@ const GENRE_TEMPERATURE: Record<string, GenreEtiquette> = {
 
 const CLASSES_LIEN =
   'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
-
-/** Emplacement d'une rubrique qui arrivera à une étape suivante. */
-function Emplacement({ titre, children }: { titre: string; children: string }) {
-  return (
-    <Carte titre={titre}>
-      <p className="text-sm text-encre-douce">{children}</p>
-    </Carte>
-  )
-}
 
 /** Fiche d'un contact : coordonnées et actions en tête, puis les rubriques liées. */
 export default function FicheContact() {
@@ -462,9 +454,10 @@ export default function FicheContact() {
           </div>
         )}
 
-        <Emplacement titre="Projets">
-          Les projets de vente et de recherche de ce contact s'afficheront ici.
-        </Emplacement>
+        {/* `min-w-0` : une adresse longue est coupée au lieu d'élargir la page. */}
+        <div className="min-w-0">
+          <SectionProjetsVendeurs contact={contact} lectureSeule={archive || fusionnee} />
+        </div>
         {/* `min-w-0` : une adresse longue est coupée au lieu d'élargir la page. */}
         <div className="min-w-0">
           <Carte titre="Biens">

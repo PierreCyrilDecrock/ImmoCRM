@@ -9,6 +9,7 @@ import {
   cloturerTache,
   conditionsVue,
   horaireTache,
+  listerTachesLiees,
   preparerTache,
   type BrouillonTache,
 } from './taches'
@@ -196,5 +197,32 @@ describe('cloturerTache', () => {
       aujourdhui: AUJOURDHUI,
     })
     expect(resultat.ok ? '' : resultat.erreur.message).toContain('déjà été close')
+  })
+})
+
+describe('lien vers un projet vendeur', () => {
+  it('est gardé quand on modifie la tâche', () => {
+    const existante = tacheEssai({ projet_vendeur_id: 'p1' })
+    const brouillon = brouillonTacheDepuis({
+      id: existante.id,
+      tache: existante,
+      contact: null,
+      bien: null,
+    })
+    expect(brouillon.projetVendeurId).toBe('p1')
+    const preparation = preparerTache(brouillon, existante)
+    expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBe('p1')
+  })
+
+  it('peut être posé dès la création, depuis la fiche du projet', () => {
+    const brouillon = brouillonTacheVide('2026-11-17', { projetVendeurId: 'p2' })
+    const preparation = preparerTache({ ...brouillon, titre: 'Relancer' })
+    expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBe('p2')
+  })
+
+  it('se lit par la colonne du projet', async () => {
+    const { client, appels } = fauxClient({ data: [], error: null })
+    await listerTachesLiees(client, { projetVendeurId: 'p3' })
+    expect(appels).toContainEqual(['eq', 'projet_vendeur_id', 'p3'])
   })
 })

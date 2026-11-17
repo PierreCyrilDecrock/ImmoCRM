@@ -14,7 +14,7 @@ import {
 import { estDateValide, estHeureValide, formaterDuree, formaterHeure } from '../../lib/dates'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
-import { lireFichesLiees } from '../liens/fiches-liees'
+import { filtreLien, lireFichesLiees, type LienFiche } from '../liens/fiches-liees'
 import type { Bornes } from './periodes'
 
 /**
@@ -169,6 +169,8 @@ export type BrouillonActivite = {
   duree: string
   contact: Contact | null
   bien: Bien | null
+  /** Projet vendeur lié, ou `null`. */
+  projetVendeurId: string | null
 }
 
 export type ErreursActivite = Partial<Record<'compteRendu' | 'date' | 'heure' | 'duree', string>>
@@ -177,7 +179,7 @@ export type ErreursActivite = Partial<Record<'compteRendu' | 'date' | 'heure' | 
 export function brouillonActiviteVide(
   type: TypeActivite,
   maintenant: { date: string; heure: string },
-  liens: { contact?: Contact | null; bien?: Bien | null } = {},
+  liens: { contact?: Contact | null; bien?: Bien | null; projetVendeurId?: string | null } = {},
 ): BrouillonActivite {
   return {
     type,
@@ -188,6 +190,7 @@ export function brouillonActiviteVide(
     duree: '',
     contact: liens.contact ?? null,
     bien: liens.bien ?? null,
+    projetVendeurId: liens.projetVendeurId ?? null,
   }
 }
 
@@ -205,6 +208,7 @@ export function brouillonActiviteDepuis({
     duree: activite.duree === null ? '' : String(activite.duree),
     contact,
     bien,
+    projetVendeurId: activite.projet_vendeur_id,
   }
 }
 
@@ -255,6 +259,7 @@ export function preparerActivite(
       duree,
       contact_id: brouillon.contact?.id ?? null,
       bien_id: brouillon.bien?.id ?? null,
+      projet_vendeur_id: brouillon.projetVendeurId,
     },
   }
 }
@@ -265,7 +270,7 @@ export function preparerActivite(
 
 /** Ce que l'on cherche dans le journal : une fiche, un type, une période. */
 export type CritereJournal = {
-  lien?: { contactId: string } | { bienId: string }
+  lien?: LienFiche
   /** Vide : tous les types. */
   type?: TypeActivite | ''
   bornes?: Bornes
@@ -275,13 +280,7 @@ export type CritereJournal = {
 export function conditionsJournal(critere: CritereJournal): Filtre<'activites'>[] {
   const conditions: Filtre<'activites'>[] = []
   const { lien, type, bornes = {} } = critere
-  if (lien !== undefined) {
-    conditions.push(
-      'contactId' in lien
-        ? { colonne: 'contact_id', genre: 'egal', valeur: lien.contactId }
-        : { colonne: 'bien_id', genre: 'egal', valeur: lien.bienId },
-    )
-  }
+  if (lien !== undefined) conditions.push(filtreLien(lien))
   if (type !== undefined && type !== '') {
     conditions.push({ colonne: 'type', genre: 'egal', valeur: type })
   }

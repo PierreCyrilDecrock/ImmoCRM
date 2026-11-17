@@ -16,6 +16,7 @@ export function activiteEssai(valeurs: Partial<Activite> = {}): Activite {
     duree: null,
     contact_id: null,
     bien_id: null,
+    projet_vendeur_id: null,
     ...valeurs,
   }
 }
