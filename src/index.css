@@ -82,3 +82,24 @@ body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
+
+/*
+ * Champs date et heure : Safari sur iPhone leur donne une largeur minimale à lui et ignore
+ * la largeur demandée (le champ dépasse de l'écran, ou déborde sur le champ voisin). On
+ * retire l'habillage propre au navigateur et cette largeur minimale ; le sélecteur natif
+ * (roue de dates, d'heures) s'ouvre toujours au toucher.
+ */
+input[type='date'],
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Safari centre la date dans le champ : on l'aligne à gauche, comme les autres champs. */
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
