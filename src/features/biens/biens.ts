@@ -31,7 +31,10 @@ export type PrixBien = Ligne<'biens_prix'>
 /** Valeurs envoyées à la base. La colonne `recherche` est calculée par la base. */
 export type ValeursBien = Omit<Creation<'biens'>, 'recherche'>
 
-export type TypeBien = 'ancien' | 'neuf' | 'viager' | 'commerce' | 'terrain'
+/** Type principal : ce qu'est le bien. */
+export type TypeBien = 'appartement' | 'maison' | 'terrain' | 'commerce'
+/** Type secondaire : comment il se vend. Sans objet pour un terrain. */
+export type CategorieBien = 'ancien' | 'neuf' | 'viager'
 export type StatutBien =
   'repere' | 'en_veille' | 'en_estimation' | 'en_mandat' | 'sous_offre' | 'vendu' | 'retire'
 export type EtatBien = 'neuf' | 'tres_bon' | 'bon' | 'a_rafraichir' | 'a_renover'
@@ -44,11 +47,16 @@ export type OuiNon = 'oui' | 'non'
 type Option<V extends string> = { valeur: V; libelle: string }
 
 export const TYPES_BIEN: readonly Option<TypeBien>[] = [
+  { valeur: 'appartement', libelle: 'Appartement' },
+  { valeur: 'maison', libelle: 'Maison' },
+  { valeur: 'terrain', libelle: 'Terrain' },
+  { valeur: 'commerce', libelle: 'Commerce ou local' },
+]
+
+export const CATEGORIES_BIEN: readonly Option<CategorieBien>[] = [
   { valeur: 'ancien', libelle: 'Ancien' },
   { valeur: 'neuf', libelle: 'Neuf' },
   { valeur: 'viager', libelle: 'Viager' },
-  { valeur: 'commerce', libelle: 'Commerce ou local' },
-  { valeur: 'terrain', libelle: 'Terrain' },
 ]
 
 export const STATUTS_BIEN: readonly (Option<StatutBien> & { genre: GenreEtiquette })[] = [
@@ -113,6 +121,7 @@ function parmi<V extends string>(options: readonly Option<V>[], valeur: string |
 
 /** Libellés français des valeurs enregistrées ; `null` si la valeur est vide ou inconnue. */
 export const libelleType = (type: string) => libelleDe(TYPES_BIEN, type) ?? type
+export const libelleCategorie = (categorie: string | null) => libelleDe(CATEGORIES_BIEN, categorie)
 export const libelleStatut = (statut: string) => libelleDe(STATUTS_BIEN, statut) ?? statut
 export const libelleEtat = (etat: string | null) => libelleDe(ETATS_BIEN, etat)
 export const libelleOccupation = (valeur: string | null) => libelleDe(OCCUPATIONS_VIAGER, valeur)
@@ -155,9 +164,8 @@ export type ChampSelonType =
   | 'constructible'
   | 'viabilise'
 
-/** Ce qui décrit un bâtiment : tout sauf un terrain. */
+/** Ce qui décrit un bâtiment : tout sauf un terrain. L'étage ne vaut que pour un lot. */
 const BATI: readonly ChampSelonType[] = [
-  'etage',
   'surface',
   'pieces',
   'annee_construction',
@@ -171,29 +179,61 @@ const BATI: readonly ChampSelonType[] = [
 ]
 
 /**
- * Les champs utilisés par chaque type de bien. Le formulaire et la fiche n'affichent que
- * ceux-là ; à l'enregistrement, les autres sont vidés. L'adresse, le type, le statut, le
- * prix et la description valent pour tous les types.
+ * Les champs utilisés par chaque type principal, puis ceux qu'ajoute le type secondaire. Le
+ * formulaire et la fiche n'affichent que ceux-là ; à l'enregistrement, les autres sont
+ * vidés. L'adresse, les types, le statut, le prix et la description valent pour tous.
  */
 export const CHAMPS_PAR_TYPE: Record<TypeBien, readonly ChampSelonType[]> = {
-  ancien: [...BATI, 'chambres', 'copropriete', 'charges_annuelles', 'taxe_fonciere'],
-  neuf: [...BATI, 'chambres', 'programme', 'lot', 'date_livraison'],
-  viager: [
-    ...BATI,
-    'chambres',
-    'viager_bouquet',
-    'viager_rente',
-    'viager_occupation',
-    'viager_ages',
-  ],
-  commerce: [...BATI, 'commerce_nature', 'commerce_bail', 'commerce_loyer', 'commerce_activite'],
+  appartement: ['etage', ...BATI, 'chambres'],
+  maison: [...BATI, 'chambres'],
   terrain: ['surface_terrain', 'constructible', 'viabilise'],
+  commerce: [
+    'etage',
+    ...BATI,
+    'commerce_nature',
+    'commerce_bail',
+    'commerce_loyer',
+    'commerce_activite',
+  ],
 }
 
-/** Ce champ a-t-il un sens pour ce type de bien ? Un type inconnu ne montre rien de propre. */
-export function champUtilise(type: string, champ: ChampSelonType): boolean {
-  const champs: readonly ChampSelonType[] | undefined = CHAMPS_PAR_TYPE[type as TypeBien]
-  return champs?.includes(champ) ?? false
+export const CHAMPS_PAR_CATEGORIE: Record<CategorieBien, readonly ChampSelonType[]> = {
+  ancien: ['copropriete', 'charges_annuelles', 'taxe_fonciere'],
+  neuf: ['programme', 'lot', 'date_livraison'],
+  viager: ['viager_bouquet', 'viager_rente', 'viager_occupation', 'viager_ages'],
+}
+
+/** Un terrain n'a pas de type secondaire (la base le refuse aussi). */
+export function aUneCategorie(type: string): boolean {
+  return type !== 'terrain'
+}
+
+/**
+ * Ce champ a-t-il un sens pour ce bien, d'après ses deux types ? Un type inconnu ne montre
+ * rien de propre.
+ */
+export function champUtilise(
+  bien: { type: string; categorie: string | null },
+  champ: ChampSelonType,
+): boolean {
+  const duType: readonly ChampSelonType[] | undefined = CHAMPS_PAR_TYPE[bien.type as TypeBien]
+  if (duType === undefined) return false
+  if (duType.includes(champ)) return true
+  if (!aUneCategorie(bien.type) || bien.categorie === null) return false
+  const deCategorie: readonly ChampSelonType[] | undefined =
+    CHAMPS_PAR_CATEGORIE[bien.categorie as CategorieBien]
+  return deCategorie?.includes(champ) ?? false
+}
+
+/** « Appartement ancien », « Maison en viager », « Terrain », « Commerce ou local ». */
+export function libelleTypes(bien: { type: string; categorie: string | null }): string {
+  const type = libelleType(bien.type)
+  if (!aUneCategorie(bien.type) || bien.categorie === null) return type
+  if (bien.categorie === 'viager') return `${type} en viager`
+  const feminin = bien.type === 'maison'
+  const adjectif =
+    bien.categorie === 'neuf' ? (feminin ? 'neuve' : 'neuf') : feminin ? 'ancienne' : 'ancien'
+  return `${type} ${adjectif}`
 }
 
 function assembler(...morceaux: (string | null)[]): string {
@@ -226,11 +266,11 @@ export function libelleEtage(etage: number): string {
  * vient d'abord : sur un téléphone, la fin de la ligne est coupée.
  */
 export function resumeBien(bien: Bien): string {
-  const surface = champUtilise(bien.type, 'surface_terrain') ? bien.surface_terrain : bien.surface
+  const surface = champUtilise(bien, 'surface_terrain') ? bien.surface_terrain : bien.surface
   const morceaux = [
     bien.ville === '' ? null : bien.ville,
     bien.prix === null ? null : formaterPrix(bien.prix),
-    libelleType(bien.type),
+    libelleTypes(bien),
     surface === null ? null : formaterSurface(surface),
     bien.pieces !== null && bien.pieces > 0
       ? `${bien.pieces} pièce${bien.pieces > 1 ? 's' : ''}`
@@ -247,6 +287,7 @@ export type BrouillonBien = {
   code_postal: string
   ville: string
   type: TypeBien | ''
+  categorie: CategorieBien | ''
   statut: StatutBien
   prix: string
   surface: string
@@ -291,6 +332,7 @@ export function brouillonBienVide(): BrouillonBien {
     code_postal: '',
     ville: '',
     type: '',
+    categorie: '',
     statut: 'repere',
     prix: '',
     surface: '',
@@ -339,6 +381,7 @@ export function brouillonBienDepuis(bien: Bien): BrouillonBien {
     code_postal: bien.code_postal,
     ville: bien.ville,
     type: parmi(TYPES_BIEN, bien.type),
+    categorie: parmi(CATEGORIES_BIEN, bien.categorie),
     statut: parmi(STATUTS_BIEN, bien.statut) || 'repere',
     prix: texteNombre(bien.prix),
     // Sans espace entre les milliers : le champ reste facile à corriger.
@@ -404,8 +447,9 @@ export function lireAges(saisie: string): number[] | 'invalide' {
 
 /**
  * Vérifie le formulaire et prépare les valeurs à enregistrer. Seuls l'adresse et le type
- * sont obligatoires : tout le reste se complète plus tard. Les champs qui ne concernent pas
- * le type choisi sont vidés, même s'ils avaient été remplis avant un changement de type.
+ * principal sont obligatoires : tout le reste se complète plus tard (le type secondaire
+ * aussi). Les champs qui ne concernent pas les types choisis sont vidés, même s'ils avaient
+ * été remplis avant un changement de type. Un terrain n'a pas de type secondaire.
  */
 export function preparerBien(
   brouillon: BrouillonBien,
@@ -413,7 +457,9 @@ export function preparerBien(
 ): PreparationBien {
   const erreurs: ErreursBien = {}
   const type = brouillon.type
-  const utilise = (champ: ChampSelonType) => type !== '' && champUtilise(type, champ)
+  const categorie =
+    type !== '' && aUneCategorie(type) && brouillon.categorie !== '' ? brouillon.categorie : null
+  const utilise = (champ: ChampSelonType) => type !== '' && champUtilise({ type, categorie }, champ)
 
   if (brouillon.adresse.trim() === '') erreurs.adresse = "Indiquez l'adresse du bien."
   if (type === '') erreurs.type = 'Choisissez le type de bien.'
@@ -493,6 +539,7 @@ export function preparerBien(
     code_postal: brouillon.code_postal.trim(),
     ville: brouillon.ville.trim(),
     type,
+    categorie,
     statut: brouillon.statut,
     prix: montant('prix'),
     surface: surface('surface', 9_999_999),

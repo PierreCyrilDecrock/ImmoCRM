@@ -2,7 +2,14 @@ import type { GenreEtiquette } from '../../components/Etiquette'
 import { estDateValide, formaterDate } from '../../lib/dates'
 import type { Ligne, Modification } from '../../lib/donnees'
 import { formaterNombre, formaterPrix, lireNombre } from '../../lib/nombres'
-import { libelleType, TYPES_BIEN, type TypeBien } from '../biens/biens'
+import {
+  CATEGORIES_BIEN,
+  libelleCategorie,
+  libelleType,
+  TYPES_BIEN,
+  type CategorieBien,
+  type TypeBien,
+} from '../biens/biens'
 import { dateRecontacter, lireMontant } from '../projets/pipeline-vendeur'
 
 /**
@@ -128,16 +135,33 @@ export function libelleBudget(min: number | null, max: number | null): string {
   return ''
 }
 
+/** « Appartement, Maison (ancien, neuf) » ; vide si aucun type n'est choisi. */
+export function libelleTypesRecherches(
+  projet: Pick<ProjetAcquereur, 'types_biens' | 'categories_biens'>,
+): string {
+  const types = projet.types_biens.map(libelleType).join(', ')
+  const categories = projet.categories_biens
+    .map((categorie) => (libelleCategorie(categorie) ?? categorie).toLowerCase())
+    .join(', ')
+  if (categories === '') return types
+  return types === '' ? categories : `${types} (${categories})`
+}
+
 /** Ce qu'il cherche, sur une ligne : « Ancien · Villefictive · jusqu'à 280 000 € · 3 p. ». */
 export function resumeRecherche(
   projet: Pick<
     ProjetAcquereur,
-    'types_biens' | 'secteurs' | 'budget_min' | 'budget_max' | 'surface_min' | 'pieces_min'
+    | 'types_biens'
+    | 'categories_biens'
+    | 'secteurs'
+    | 'budget_min'
+    | 'budget_max'
+    | 'surface_min'
+    | 'pieces_min'
   >,
 ): string {
-  const types = projet.types_biens.map(libelleType).join(', ')
   const morceaux = [
-    types,
+    libelleTypesRecherches(projet),
     projet.secteurs.join(', '),
     libelleBudget(projet.budget_min, projet.budget_max),
     projet.surface_min === null ? '' : `${formaterNombre(projet.surface_min)} m² min.`,
@@ -225,6 +249,8 @@ export type BrouillonPassageAcquereur = {
   budgetMin: string
   budgetMax: string
   typesBiens: TypeBien[]
+  /** Ancien, neuf, viager : vide, indifférent. */
+  categoriesBiens: CategorieBien[]
   secteurs: string[]
   financement: Financement | ''
   accordPrincipe: boolean
@@ -245,6 +271,11 @@ export function typesConnus(types: readonly string[]): TypeBien[] {
   return TYPES_BIEN.map((type) => type.valeur).filter((type) => types.includes(type))
 }
 
+/** Les types secondaires connus, dans l'ordre de la liste. */
+export function categoriesConnues(categories: readonly string[]): CategorieBien[] {
+  return CATEGORIES_BIEN.map((c) => c.valeur).filter((categorie) => categories.includes(categorie))
+}
+
 export function brouillonPassageAcquereur(projet: ProjetAcquereur): BrouillonPassageAcquereur {
   return {
     origine: parmi(ORIGINES_DEMANDE, projet.origine),
@@ -252,6 +283,7 @@ export function brouillonPassageAcquereur(projet: ProjetAcquereur): BrouillonPas
     budgetMin: texteMontant(projet.budget_min),
     budgetMax: texteMontant(projet.budget_max),
     typesBiens: typesConnus(projet.types_biens),
+    categoriesBiens: categoriesConnues(projet.categories_biens),
     secteurs: [...projet.secteurs],
     financement: parmi(FINANCEMENTS, projet.financement),
     accordPrincipe: projet.accord_principe,
@@ -267,6 +299,7 @@ export type PassageAcquereur = Pick<
   | 'budget_min'
   | 'budget_max'
   | 'types_biens'
+  | 'categories_biens'
   | 'secteurs'
   | 'financement'
   | 'accord_principe'
@@ -334,7 +367,10 @@ export function preparerPassageAcquereur(
   }
   if (manquantes.has('types_biens')) {
     if (saisie.typesBiens.length === 0) erreurs.typesBiens = 'Quel type de bien cherche-t-il ?'
-    else passage.types_biens = [...saisie.typesBiens]
+    else {
+      passage.types_biens = [...saisie.typesBiens]
+      passage.categories_biens = [...saisie.categoriesBiens]
+    }
   }
   if (manquantes.has('secteurs')) {
     if (saisie.secteurs.length === 0)
@@ -504,6 +540,7 @@ export type ValeursRecherche = Pick<
   | 'budget_min'
   | 'budget_max'
   | 'types_biens'
+  | 'categories_biens'
   | 'secteurs'
   | 'financement'
   | 'accord_principe'
@@ -570,6 +607,7 @@ export function preparerRecherche(
       budget_min: budget.min,
       budget_max: budget.max,
       types_biens: [...brouillon.typesBiens],
+      categories_biens: [...brouillon.categoriesBiens],
       secteurs: [...brouillon.secteurs],
       financement: brouillon.financement === '' ? null : brouillon.financement,
       // L'accord de principe n'a de sens que pour un prêt.

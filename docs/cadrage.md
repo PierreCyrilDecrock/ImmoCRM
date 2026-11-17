@@ -40,7 +40,7 @@ Douze domaines couvrent l'ensemble de l'activité. La colonne Priorité indique 
 | Domaine | Besoin | Fonctions clés | Priorité |
 | --- | --- | --- | --- |
 | Contacts | Retrouver n'importe qui en 5 secondes, avec tout l'historique | Fiche unique par personne, rôles multiples (vendeur, acquéreur, notaire, prescripteur), origine du contact, étiquettes, détection des doublons, recherche instantanée | P1 |
-| Biens | Connaître chaque bien suivi, en mandat ou non, quel que soit son type | Adresse, type (ancien, neuf, viager, commerce, terrain) avec ses champs propres, surface, prix, photos, propriétaires liés, historique de prix, DPE | P1 |
+| Biens | Connaître chaque bien suivi, en mandat ou non, quel que soit son type | Adresse, type (appartement, maison, terrain, commerce) et type secondaire (ancien, neuf, viager) avec leurs champs propres, surface, prix, photos, propriétaires liés, historique de prix, DPE | P1 |
 | Projets vendeurs | Transformer un contact en mandat | Pipeline du premier contact à la signature, estimation, motif et échéance du projet, concurrence | P1 |
 | Projets acquéreurs | Proposer le bon bien à la bonne personne | Critères de recherche, budget, financement validé ou non, rapprochement automatique avec les biens | P1 |
 | Tâches et agenda | Ne rien oublier | Tâches liées à un contact ou un bien, relances datées, récurrences, synchronisation avec l'agenda du téléphone | P1 |
@@ -241,6 +241,7 @@ Les réponses du 16 novembre 2026 fixent le cadre : un outil personnel et léger
 | Outils du réseau | Aucun réseau désigné pour le projet ; périmètre figé en l'état | Mandats, annonces, signature et facturation restent hors périmètre |
 | Utilisateurs | Usage strictement personnel | Un seul compte, pas de droits ni de partage |
 | Activité | Toutes les transactions (ancien, neuf, viager, commerces, terrains), ni location ni gestion | La fiche Bien s'adapte au type de bien |
+| Types de bien (17 novembre) | Type principal : appartement, maison, terrain, commerce ; type secondaire : ancien, neuf, viager | Un appartement peut être ancien, neuf ou en viager ; la fiche Bien et la recherche des acquéreurs utilisent les deux niveaux |
 | Volume | Zéro aujourd'hui ; à terme, l'ordre de grandeur d'une ville comme Oullins, soit quelques dizaines de milliers de fiches | Aucun chargement en masse : contacts et adresses se créent au fur et à mesure. Recherche et listes doivent rester rapides quand la base grossit |
 | Données existantes | Aucune | Pas d'import en V1 ; la saisie rapide est la seule porte d'entrée |
 | Point de douleur | Pas encore identifié | V1 généraliste ; bilan après 4 à 6 semaines d'usage pour choisir quoi approfondir |

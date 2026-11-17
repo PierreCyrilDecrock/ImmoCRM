@@ -29,7 +29,12 @@ import {
   preparerActivite,
 } from '../features/activites/activites'
 import { bienEssai } from '../features/biens/bien-essai'
-import { brouillonBienDepuis, preparerBien, TYPES_BIEN } from '../features/biens/biens'
+import {
+  brouillonBienDepuis,
+  CATEGORIES_BIEN,
+  preparerBien,
+  TYPES_BIEN,
+} from '../features/biens/biens'
 import { brouillonTacheVide, preparerTache } from '../features/taches/taches'
 import { vueDe } from '../features/taches/echeances'
 import { fauxClient } from './faux-client'
@@ -171,9 +176,12 @@ describe('biens fictifs', () => {
     }
   })
 
-  it('couvrent tous les types de bien', () => {
+  it('couvrent tous les types de bien, principaux et secondaires', () => {
     expect(new Set(biens.map((bien) => bien.type))).toEqual(
       new Set(TYPES_BIEN.map((type) => type.valeur)),
+    )
+    expect(new Set(biens.map((bien) => bien.categorie).filter(Boolean))).toEqual(
+      new Set(CATEGORIES_BIEN.map((categorie) => categorie.valeur)),
     )
   })
 

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { listerPage, type Resultat } from '../../lib/donnees'
 import { dateDuJour, formaterDate } from '../../lib/dates'
-import { adresseBien, libelleType } from '../biens/biens'
+import { adresseBien, libelleTypes } from '../biens/biens'
 import { formaterQuotePart, listerBiensDuContact, type BienDuContact } from '../biens/proprietaires'
 import {
   libelleMotifAppel,
@@ -51,6 +51,7 @@ import {
   libelleEtapeAcquereur,
   libelleEtatAcquereur,
   libelleFinancement,
+  libelleTypesRecherches,
   libelleMotifPerteAcquereur,
   libelleUrgence,
   resumeOrigine,
@@ -328,10 +329,7 @@ function resumeProjetAcquereurExport(
     ['origine', resumeOrigine(projet) || null],
     ['reçue le', date(projet.recue_le)],
     ['bien concerné', bienOrigine === null ? null : adresseBien(bienOrigine)],
-    [
-      'types',
-      projet.types_biens.length === 0 ? null : projet.types_biens.map(libelleType).join(', '),
-    ],
+    ['types', libelleTypesRecherches(projet) || null],
     ['secteurs', projet.secteurs.length === 0 ? null : projet.secteurs.join(', ')],
     ['budget', libelleBudget(projet.budget_min, projet.budget_max) || null],
     ['surface minimum', projet.surface_min === null ? null : `${projet.surface_min} m²`],
@@ -389,7 +387,7 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
   for (const { lien, bien } of biens) {
     const morceaux = [
       adresseBien(bien),
-      libelleType(bien.type),
+      libelleTypes(bien),
       lien.quote_part === null ? null : `quote-part : ${formaterQuotePart(lien.quote_part)}`,
       lien.archived_at === null ? null : `lien retiré le ${formaterDate(lien.archived_at)}`,
     ]

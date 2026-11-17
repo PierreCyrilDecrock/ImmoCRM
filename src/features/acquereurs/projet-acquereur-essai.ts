@@ -18,6 +18,7 @@ export function projetAcquereurEssai(valeurs: Partial<ProjetAcquereur> = {}): Pr
     bien_origine_id: null,
     recue_le: null,
     types_biens: [],
+    categories_biens: [],
     secteurs: [],
     budget_min: null,
     budget_max: null,

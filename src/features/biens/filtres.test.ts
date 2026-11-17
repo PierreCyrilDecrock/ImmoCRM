@@ -33,19 +33,21 @@ describe('conditionsBiens', () => {
   it('combine recherche, type, statut et fourchette de prix', () => {
     const filtres = {
       recherche: 'Exemple',
-      type: 'ancien',
+      type: 'appartement',
+      categorie: 'ancien',
       statut: 'en_mandat',
       prixMin: '200 000',
       prixMax: '300000 €',
     } as const
     expect(conditionsBiens(filtres)).toEqual([
       { colonne: 'recherche', genre: 'contient', valeur: 'exemple' },
-      { colonne: 'type', genre: 'egal', valeur: 'ancien' },
+      { colonne: 'type', genre: 'egal', valeur: 'appartement' },
+      { colonne: 'categorie', genre: 'egal', valeur: 'ancien' },
       { colonne: 'statut', genre: 'egal', valeur: 'en_mandat' },
       { colonne: 'prix', genre: 'min', valeur: 200000 },
       { colonne: 'prix', genre: 'max', valeur: 300000 },
     ])
-    expect(nombreFiltresBiens(filtres)).toBe(4)
+    expect(nombreFiltresBiens(filtres)).toBe(5)
     expect(listeBiensRestreinte(filtres)).toBe(true)
   })
 

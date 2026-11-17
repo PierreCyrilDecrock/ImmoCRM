@@ -26,6 +26,7 @@ import {
   libelleEtapeAcquereur,
   libelleEtatAcquereur,
   libelleFinancement,
+  libelleTypesRecherches,
   libelleMotifPerteAcquereur,
   libelleUrgence,
   rangEtapeAcquereur,
@@ -41,7 +42,7 @@ import {
 } from '../features/acquereurs/projets-acquereurs'
 import SortieProjetAcquereur from '../features/acquereurs/SortieProjetAcquereur'
 import SectionJournal from '../features/activites/SectionJournal'
-import { adresseBien, libelleType } from '../features/biens/biens'
+import { adresseBien } from '../features/biens/biens'
 import { nomComplet, type Contact } from '../features/contacts/contacts'
 import SelecteurContact from '../features/contacts/SelecteurContact'
 import { ancienneteEtape } from '../features/projets/pipeline-vendeur'
@@ -183,10 +184,7 @@ export default function FicheProjetAcquereur() {
   }
 
   const recherche: [string, string | null][] = [
-    [
-      'Types de biens',
-      projet.types_biens.length === 0 ? null : projet.types_biens.map(libelleType).join(', '),
-    ],
+    ['Types de biens', libelleTypesRecherches(projet) || null],
     ['Secteurs', projet.secteurs.length === 0 ? null : projet.secteurs.join(', ')],
     ['Budget', libelleBudget(projet.budget_min, projet.budget_max) || null],
     [

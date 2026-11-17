@@ -2,7 +2,7 @@ import ChampEtiquettes from '../../components/ChampEtiquettes'
 import ChampSaisie from '../../components/ChampSaisie'
 import ChoixMultiple from '../../components/ChoixMultiple'
 import Pastille from '../../components/Pastille'
-import { TYPES_BIEN } from '../biens/biens'
+import { CATEGORIES_BIEN, TYPES_BIEN } from '../biens/biens'
 import {
   ajouterSecteur,
   FINANCEMENTS,
@@ -122,6 +122,13 @@ export default function ChampsRecherche({ saisie, erreurs, rubriques, onChange }
                 />
                 <Erreur texte={erreurs.typesBiens} />
               </div>
+              <ChoixMultiple
+                libelle="Ancien, neuf ou viager"
+                options={CATEGORIES_BIEN}
+                valeurs={saisie.categoriesBiens}
+                onChange={(categories) => onChange('categoriesBiens', categories)}
+                aide="Rien de coché : indifférent."
+              />
               <div className="flex flex-col gap-1">
                 <ChampEtiquettes
                   libelle="Secteurs ou communes"

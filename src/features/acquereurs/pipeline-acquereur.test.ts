@@ -66,7 +66,7 @@ describe('informationsManquantesAcquereur', () => {
     const selection = projetAcquereurEssai({
       ...qualifie,
       etape: 'selection',
-      types_biens: ['ancien'],
+      types_biens: ['appartement'],
       secteurs: ['Villefictive'],
       financement: 'comptant',
     })
@@ -131,7 +131,8 @@ describe('preparerPassageAcquereur', () => {
   it('n’enregistre l’accord de principe que pour un prêt', () => {
     const preparation = preparerPassageAcquereur(qualifie, 0, 'selection', {
       ...brouillonPassageAcquereur(qualifie),
-      typesBiens: ['ancien', 'neuf'],
+      typesBiens: ['appartement', 'maison'],
+      categoriesBiens: ['neuf'],
       secteurs: ['Villefictive'],
       financement: 'comptant',
       accordPrincipe: true,
@@ -141,7 +142,8 @@ describe('preparerPassageAcquereur', () => {
       ok: true,
       passage: {
         etape: 'selection',
-        types_biens: ['ancien', 'neuf'],
+        types_biens: ['appartement', 'maison'],
+        categories_biens: ['neuf'],
         secteurs: ['Villefictive'],
         financement: 'comptant',
         accord_principe: false,
@@ -154,7 +156,7 @@ describe('preparerPassageAcquereur', () => {
     const selection = projetAcquereurEssai({
       ...qualifie,
       etape: 'selection',
-      types_biens: ['ancien'],
+      types_biens: ['appartement'],
       secteurs: ['Villefictive'],
       financement: 'pret',
     })
@@ -251,7 +253,7 @@ describe('preparerRecherche', () => {
       etape: 'selection',
       origine: 'appel',
       budget_max: 250000,
-      types_biens: ['ancien'],
+      types_biens: ['appartement'],
       secteurs: ['Villefictive'],
       financement: 'pret',
     })
@@ -305,12 +307,13 @@ describe('résumés', () => {
     expect(
       resumeRecherche(
         projetAcquereurEssai({
-          types_biens: ['ancien'],
+          types_biens: ['appartement'],
+          categories_biens: ['ancien'],
           secteurs: ['Villefictive'],
           pieces_min: 3,
         }),
       ),
-    ).toBe('Ancien · Villefictive · 3 p. min.')
+    ).toBe('Appartement (ancien) · Villefictive · 3 p. min.')
     expect(resumeOrigine(projetAcquereurEssai({ origine: 'portail', portail: 'SeLoger' }))).toBe(
       'Portail SeLoger',
     )

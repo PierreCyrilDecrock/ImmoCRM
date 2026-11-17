@@ -156,6 +156,7 @@ export type Database = {
           adresse: string
           annee_construction: number | null
           archived_at: string | null
+          categorie: string | null
           chambres: number | null
           charges_annuelles: number | null
           code_postal: string
@@ -201,6 +202,7 @@ export type Database = {
           adresse: string
           annee_construction?: number | null
           archived_at?: string | null
+          categorie?: string | null
           chambres?: number | null
           charges_annuelles?: number | null
           code_postal?: string
@@ -246,6 +248,7 @@ export type Database = {
           adresse?: string
           annee_construction?: number | null
           archived_at?: string | null
+          categorie?: string | null
           chambres?: number | null
           charges_annuelles?: number | null
           code_postal?: string
@@ -614,6 +617,7 @@ export type Database = {
           bien_origine_id: string | null
           budget_max: number | null
           budget_min: number | null
+          categories_biens: string[]
           co_acquereur_id: string | null
           contact_id: string
           created_at: string
@@ -649,6 +653,7 @@ export type Database = {
           bien_origine_id?: string | null
           budget_max?: number | null
           budget_min?: number | null
+          categories_biens?: string[]
           co_acquereur_id?: string | null
           contact_id: string
           created_at?: string
@@ -684,6 +689,7 @@ export type Database = {
           bien_origine_id?: string | null
           budget_max?: number | null
           budget_min?: number | null
+          categories_biens?: string[]
           co_acquereur_id?: string | null
           contact_id?: string
           created_at?: string

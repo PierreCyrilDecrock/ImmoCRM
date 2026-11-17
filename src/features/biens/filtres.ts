@@ -1,7 +1,14 @@
 import type { Filtre } from '../../lib/donnees'
 import { lireNombre } from '../../lib/nombres'
 import { MAX_TERMES, normaliserRecherche } from '../../lib/recherche'
-import { STATUTS_BIEN, TYPES_BIEN, type StatutBien, type TypeBien } from './biens'
+import {
+  CATEGORIES_BIEN,
+  STATUTS_BIEN,
+  TYPES_BIEN,
+  type CategorieBien,
+  type StatutBien,
+  type TypeBien,
+} from './biens'
 
 /**
  * Recherche et filtres de la liste des biens. Ils se combinent (toutes les conditions à la
@@ -11,6 +18,7 @@ export type FiltresBiens = {
   /** Ce qui est tapé dans le champ de recherche : un morceau d'adresse. */
   recherche: string
   type: TypeBien | ''
+  categorie: CategorieBien | ''
   statut: StatutBien | ''
   /** Fourchette de prix, telle qu'elle est saisie. */
   prixMin: string
@@ -20,6 +28,7 @@ export type FiltresBiens = {
 export const FILTRES_BIENS_VIDES: FiltresBiens = {
   recherche: '',
   type: '',
+  categorie: '',
   statut: '',
   prixMin: '',
   prixMax: '',
@@ -52,6 +61,7 @@ export function prixIllisible(saisie: string): boolean {
 export function nombreFiltresBiens(filtres: FiltresBiens): number {
   return [
     filtres.type !== '',
+    filtres.categorie !== '',
     filtres.statut !== '',
     prixFiltre(filtres.prixMin) !== null,
     prixFiltre(filtres.prixMax) !== null,
@@ -71,6 +81,9 @@ export function conditionsBiens(filtres: FiltresBiens): Filtre<'biens'>[] {
     valeur: terme,
   }))
   if (filtres.type !== '') conditions.push({ colonne: 'type', genre: 'egal', valeur: filtres.type })
+  if (filtres.categorie !== '') {
+    conditions.push({ colonne: 'categorie', genre: 'egal', valeur: filtres.categorie })
+  }
   if (filtres.statut !== '') {
     conditions.push({ colonne: 'statut', genre: 'egal', valeur: filtres.statut })
   }
@@ -104,6 +117,7 @@ export function lireFiltresBiens(memoire: string | null): FiltresBiens {
   return {
     recherche: texte(valeurs.recherche, 200),
     type: parmi(TYPES_BIEN, valeurs.type),
+    categorie: parmi(CATEGORIES_BIEN, valeurs.categorie),
     statut: parmi(STATUTS_BIEN, valeurs.statut),
     prixMin: texte(valeurs.prixMin, 20),
     prixMax: texte(valeurs.prixMax, 20),

@@ -165,10 +165,14 @@ const JEU_CONTACTS: JeuFictif = {
   },
 }
 
-/** Ce qui change d'un bien fictif à l'autre : un exemple de chaque type, à des statuts variés. */
+/**
+ * Ce qui change d'un bien fictif à l'autre : un exemple de chaque type principal et de chaque
+ * type secondaire, à des statuts variés.
+ */
 const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
   {
-    type: 'ancien',
+    type: 'appartement',
+    categorie: 'ancien',
     statut: 'en_mandat',
     prix: 285000,
     etage: 2,
@@ -188,8 +192,10 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
     taxe_fonciere: 950,
   },
   {
-    type: 'neuf',
+    type: 'appartement',
+    categorie: 'neuf',
     statut: 'en_veille',
+    etage: 2,
     prix: 340000,
     surface: 64,
     pieces: 3,
@@ -199,7 +205,8 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
     date_livraison: '2027-09-30',
   },
   {
-    type: 'viager',
+    type: 'maison',
+    categorie: 'viager',
     statut: 'en_estimation',
     prix: 120000,
     surface: 95,
@@ -214,6 +221,7 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
   },
   {
     type: 'commerce',
+    categorie: null,
     statut: 'repere',
     prix: 195000,
     etage: 0,
@@ -225,13 +233,22 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
   },
   {
     type: 'terrain',
+    categorie: null,
     statut: 'sous_offre',
     prix: 89000,
     surface_terrain: 640,
     constructible: true,
     viabilise: false,
   },
-  { type: 'ancien', statut: 'vendu', prix: 410000, surface: 128, pieces: 6, chambres: 4 },
+  {
+    type: 'maison',
+    categorie: 'ancien',
+    statut: 'vendu',
+    prix: 410000,
+    surface: 128,
+    pieces: 6,
+    chambres: 4,
+  },
 ]
 
 /** Nombre de biens du lot fictif : au moins un de chaque type. */
@@ -244,7 +261,7 @@ export function bienFictif(rang: number): Creation<'biens'> {
     code_postal: CODE_POSTAL_FICTIF,
     ville: VILLE_FICTIVE,
     description: 'Bien fictif, créé pour les essais.',
-    type: 'ancien',
+    type: 'appartement',
     ...MODELES_BIENS[rang % MODELES_BIENS.length],
   }
 }
@@ -656,7 +673,8 @@ const MODELES_PROJETS_ACQUEREURS: readonly {
     valeurs: {
       etape: 'selection',
       origine: 'appel',
-      types_biens: ['ancien'],
+      types_biens: ['appartement', 'maison'],
+      categories_biens: ['ancien'],
       secteurs: ['Villefictive', 'Quartier du Test'],
       budget_min: 180000,
       budget_max: 240000,
@@ -677,7 +695,8 @@ const MODELES_PROJETS_ACQUEREURS: readonly {
     valeurs: {
       etape: 'visites',
       origine: 'recommandation',
-      types_biens: ['ancien', 'neuf'],
+      types_biens: ['maison'],
+      categories_biens: ['ancien', 'neuf'],
       secteurs: ['Villefictive'],
       budget_max: 420000,
       surface_min: 90,

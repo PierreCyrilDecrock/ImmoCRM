@@ -229,7 +229,9 @@ describe('texteExportContact', () => {
     expect(texte).toContain(
       '- 20 novembre 2026, 10 h – 11 h — Visite — Visite du bien — à faire — lieu : 3 impasse Fictive — motif : Deuxième visite',
     )
-    expect(texte).toContain('- 3 impasse Fictive, Villefictive — Ancien — quote-part : 50 %')
+    expect(texte).toContain(
+      '- 3 impasse Fictive, Villefictive — Appartement ancien — quote-part : 50 %',
+    )
     expect(texte).toContain(
       '- 10 novembre 2026 — 06 39 98 00 01 — motif : Appel entrant — Rappel demandé',
     )
@@ -271,7 +273,7 @@ describe('projets d’achat dans l’export', () => {
       etape: 'selection',
       origine: 'portail',
       portail: 'Leboncoin',
-      types_biens: ['ancien'],
+      types_biens: ['appartement'],
       secteurs: ['Villefictive'],
       budget_max: 280000,
       financement: 'pret',
