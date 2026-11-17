@@ -21,6 +21,7 @@ export function tacheEssai(valeurs: Partial<Tache> = {}): Tache {
     contact_id: null,
     bien_id: null,
     projet_vendeur_id: null,
+    projet_acquereur_id: null,
     recurrence: null,
     recurrence_ancre: null,
     recurrence_rang: 0,

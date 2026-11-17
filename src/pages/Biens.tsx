@@ -23,6 +23,7 @@ import {
   resumeBien,
   STATUTS_BIEN,
   TYPES_BIEN,
+  CATEGORIES_BIEN,
   type ErreursBien,
 } from '../features/biens/biens'
 import {
@@ -180,6 +181,18 @@ export default function Biens() {
               onChange={(evenement) =>
                 changerFiltres({
                   type: TYPES_BIEN.find((t) => t.valeur === evenement.target.value)?.valeur ?? '',
+                })
+              }
+            />
+            <ChampChoix
+              libelle="Ancien, neuf ou viager"
+              optionVide="Tous"
+              options={CATEGORIES_BIEN}
+              value={filtres.categorie}
+              onChange={(evenement) =>
+                changerFiltres({
+                  categorie:
+                    CATEGORIES_BIEN.find((c) => c.valeur === evenement.target.value)?.valeur ?? '',
                 })
               }
             />

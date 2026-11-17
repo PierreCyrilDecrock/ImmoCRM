@@ -23,11 +23,16 @@ export type Database = {
           duree: number | null
           heure: string
           id: string
+          projet_acquereur_id: string | null
           projet_vendeur_id: string | null
           resultat: string | null
           type: string
           updated_at: string
           user_id: string
+          visite_interet: string | null
+          visite_points_negatifs: string
+          visite_points_positifs: string
+          visite_suite: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -39,11 +44,16 @@ export type Database = {
           duree?: number | null
           heure?: string
           id?: string
+          projet_acquereur_id?: string | null
           projet_vendeur_id?: string | null
           resultat?: string | null
           type: string
           updated_at?: string
           user_id?: string
+          visite_interet?: string | null
+          visite_points_negatifs?: string
+          visite_points_positifs?: string
+          visite_suite?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -55,11 +65,16 @@ export type Database = {
           duree?: number | null
           heure?: string
           id?: string
+          projet_acquereur_id?: string | null
           projet_vendeur_id?: string | null
           resultat?: string | null
           type?: string
           updated_at?: string
           user_id?: string
+          visite_interet?: string | null
+          visite_points_negatifs?: string
+          visite_points_positifs?: string
+          visite_suite?: string | null
         }
         Relationships: [
           {
@@ -74,6 +89,13 @@ export type Database = {
             columns: ['user_id', 'contact_id']
             isOneToOne: false
             referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'activites_projet_acquereur_fk'
+            columns: ['user_id', 'projet_acquereur_id']
+            isOneToOne: false
+            referencedRelation: 'projets_acquereurs'
             referencedColumns: ['user_id', 'id']
           },
           {
@@ -134,6 +156,7 @@ export type Database = {
           adresse: string
           annee_construction: number | null
           archived_at: string | null
+          categorie: string | null
           chambres: number | null
           charges_annuelles: number | null
           code_postal: string
@@ -179,6 +202,7 @@ export type Database = {
           adresse: string
           annee_construction?: number | null
           archived_at?: string | null
+          categorie?: string | null
           chambres?: number | null
           charges_annuelles?: number | null
           code_postal?: string
@@ -224,6 +248,7 @@ export type Database = {
           adresse?: string
           annee_construction?: number | null
           archived_at?: string | null
+          categorie?: string | null
           chambres?: number | null
           charges_annuelles?: number | null
           code_postal?: string
@@ -345,6 +370,60 @@ export type Database = {
             columns: ['user_id', 'bien_id']
             isOneToOne: false
             referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
+      biens_proposes: {
+        Row: {
+          archived_at: string | null
+          bien_id: string
+          created_at: string
+          id: string
+          projet_acquereur_id: string
+          propose_le: string
+          raison_refus: string
+          reaction: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          bien_id: string
+          created_at?: string
+          id?: string
+          projet_acquereur_id: string
+          propose_le?: string
+          raison_refus?: string
+          reaction?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          bien_id?: string
+          created_at?: string
+          id?: string
+          projet_acquereur_id?: string
+          propose_le?: string
+          raison_refus?: string
+          reaction?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'biens_proposes_bien_fk'
+            columns: ['user_id', 'bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'biens_proposes_projet_fk'
+            columns: ['user_id', 'projet_acquereur_id']
+            isOneToOne: false
+            referencedRelation: 'projets_acquereurs'
             referencedColumns: ['user_id', 'id']
           },
         ]
@@ -529,6 +608,146 @@ export type Database = {
           },
         ]
       }
+      projets_acquereurs: {
+        Row: {
+          accord_principe: boolean
+          apport: number | null
+          archived_at: string | null
+          bien_a_vendre: boolean
+          bien_origine_id: string | null
+          budget_max: number | null
+          budget_min: number | null
+          categories_biens: string[]
+          co_acquereur_id: string | null
+          contact_id: string
+          created_at: string
+          criteres_indispensables: string
+          criteres_souhaites: string
+          etape: string
+          etape_le: string
+          etat: string
+          financement: string | null
+          id: string
+          motif_perte: string | null
+          motif_perte_detail: string
+          notes: string
+          offre_bien_id: string | null
+          offre_le: string | null
+          origine: string | null
+          pieces_min: number | null
+          portail: string
+          recontacter_le: string | null
+          recue_le: string | null
+          secteurs: string[]
+          surface_min: number | null
+          types_biens: string[]
+          updated_at: string
+          urgence: string | null
+          user_id: string
+        }
+        Insert: {
+          accord_principe?: boolean
+          apport?: number | null
+          archived_at?: string | null
+          bien_a_vendre?: boolean
+          bien_origine_id?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          categories_biens?: string[]
+          co_acquereur_id?: string | null
+          contact_id: string
+          created_at?: string
+          criteres_indispensables?: string
+          criteres_souhaites?: string
+          etape?: string
+          etape_le?: string
+          etat?: string
+          financement?: string | null
+          id?: string
+          motif_perte?: string | null
+          motif_perte_detail?: string
+          notes?: string
+          offre_bien_id?: string | null
+          offre_le?: string | null
+          origine?: string | null
+          pieces_min?: number | null
+          portail?: string
+          recontacter_le?: string | null
+          recue_le?: string | null
+          secteurs?: string[]
+          surface_min?: number | null
+          types_biens?: string[]
+          updated_at?: string
+          urgence?: string | null
+          user_id?: string
+        }
+        Update: {
+          accord_principe?: boolean
+          apport?: number | null
+          archived_at?: string | null
+          bien_a_vendre?: boolean
+          bien_origine_id?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          categories_biens?: string[]
+          co_acquereur_id?: string | null
+          contact_id?: string
+          created_at?: string
+          criteres_indispensables?: string
+          criteres_souhaites?: string
+          etape?: string
+          etape_le?: string
+          etat?: string
+          financement?: string | null
+          id?: string
+          motif_perte?: string | null
+          motif_perte_detail?: string
+          notes?: string
+          offre_bien_id?: string | null
+          offre_le?: string | null
+          origine?: string | null
+          pieces_min?: number | null
+          portail?: string
+          recontacter_le?: string | null
+          recue_le?: string | null
+          secteurs?: string[]
+          surface_min?: number | null
+          types_biens?: string[]
+          updated_at?: string
+          urgence?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'projets_acquereurs_bien_origine_fk'
+            columns: ['user_id', 'bien_origine_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'projets_acquereurs_co_acquereur_fk'
+            columns: ['user_id', 'co_acquereur_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'projets_acquereurs_contact_fk'
+            columns: ['user_id', 'contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'projets_acquereurs_offre_bien_fk'
+            columns: ['user_id', 'offre_bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
       projets_vendeurs: {
         Row: {
           agences_consultees: string
@@ -683,6 +902,7 @@ export type Database = {
           lieu: string
           motif: string
           priorite: number
+          projet_acquereur_id: string | null
           projet_vendeur_id: string | null
           recurrence: string | null
           recurrence_ancre: string | null
@@ -706,6 +926,7 @@ export type Database = {
           lieu?: string
           motif?: string
           priorite?: number
+          projet_acquereur_id?: string | null
           projet_vendeur_id?: string | null
           recurrence?: string | null
           recurrence_ancre?: string | null
@@ -729,6 +950,7 @@ export type Database = {
           lieu?: string
           motif?: string
           priorite?: number
+          projet_acquereur_id?: string | null
           projet_vendeur_id?: string | null
           recurrence?: string | null
           recurrence_ancre?: string | null
@@ -750,6 +972,13 @@ export type Database = {
             columns: ['user_id', 'contact_id']
             isOneToOne: false
             referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'taches_projet_acquereur_fk'
+            columns: ['user_id', 'projet_acquereur_id']
+            isOneToOne: false
+            referencedRelation: 'projets_acquereurs'
             referencedColumns: ['user_id', 'id']
           },
           {
@@ -781,6 +1010,10 @@ export type Database = {
           p_suivante_rang?: number
           p_temperature?: string
           p_type: string
+          p_visite_interet?: string
+          p_visite_points_negatifs?: string
+          p_visite_points_positifs?: string
+          p_visite_suite?: string
         }
         Returns: {
           archived_at: string | null
@@ -797,6 +1030,7 @@ export type Database = {
           lieu: string
           motif: string
           priorite: number
+          projet_acquereur_id: string | null
           projet_vendeur_id: string | null
           recurrence: string | null
           recurrence_ancre: string | null
@@ -834,6 +1068,7 @@ export type Database = {
           lieu: string
           motif: string
           priorite: number
+          projet_acquereur_id: string | null
           projet_vendeur_id: string | null
           recurrence: string | null
           recurrence_ancre: string | null
@@ -967,6 +1202,89 @@ export type Database = {
         Args: { p_bien_id: string; p_ids: string[] }
         Returns: undefined
       }
+      planifier_visite: {
+        Args: {
+          p_bien: string
+          p_duree?: number
+          p_echeance: string
+          p_heure: string
+          p_lieu?: string
+          p_motif?: string
+          p_projet: string
+          p_titre?: string
+        }
+        Returns: {
+          archived_at: string | null
+          bien_id: string | null
+          categorie: string
+          cloturee_le: string | null
+          contact_id: string | null
+          created_at: string
+          duree: number | null
+          echeance: string
+          etat: string
+          heure: string | null
+          id: string
+          lieu: string
+          motif: string
+          priorite: number
+          projet_acquereur_id: string | null
+          projet_vendeur_id: string | null
+          recurrence: string | null
+          recurrence_ancre: string | null
+          recurrence_rang: number
+          titre: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'taches'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      sortir_projet_acquereur: {
+        Args: {
+          p_etat: string
+          p_id: string
+          p_motif_perte?: string
+          p_motif_perte_detail?: string
+          p_recontacter_le?: string
+          p_relance_motif?: string
+          p_relance_titre?: string
+        }
+        Returns: {
+          archived_at: string | null
+          bien_id: string | null
+          categorie: string
+          cloturee_le: string | null
+          contact_id: string | null
+          created_at: string
+          duree: number | null
+          echeance: string
+          etat: string
+          heure: string | null
+          id: string
+          lieu: string
+          motif: string
+          priorite: number
+          projet_acquereur_id: string | null
+          projet_vendeur_id: string | null
+          recurrence: string | null
+          recurrence_ancre: string | null
+          recurrence_rang: number
+          titre: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'taches'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       sortir_projet_vendeur: {
         Args: {
           p_etat: string
@@ -994,6 +1312,7 @@ export type Database = {
           lieu: string
           motif: string
           priorite: number
+          projet_acquereur_id: string | null
           projet_vendeur_id: string | null
           recurrence: string | null
           recurrence_ancre: string | null

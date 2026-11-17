@@ -1,0 +1,42 @@
+import type { ProjetAcquereur } from './pipeline-acquereur'
+
+/** Fabrique un projet acquéreur complet pour les tests ; `valeurs` remplace ce qui diffère. */
+export function projetAcquereurEssai(valeurs: Partial<ProjetAcquereur> = {}): ProjetAcquereur {
+  return {
+    id: '00000000-0000-4000-8000-0000000000e1',
+    user_id: '00000000-0000-4000-8000-0000000000aa',
+    created_at: '2026-11-10T09:00:00Z',
+    updated_at: '2026-11-10T09:00:00Z',
+    archived_at: null,
+    contact_id: '00000000-0000-4000-8000-000000000001',
+    co_acquereur_id: null,
+    etape: 'demande',
+    etape_le: '2026-11-10',
+    etat: 'actif',
+    origine: null,
+    portail: '',
+    bien_origine_id: null,
+    recue_le: null,
+    types_biens: [],
+    categories_biens: [],
+    secteurs: [],
+    budget_min: null,
+    budget_max: null,
+    surface_min: null,
+    pieces_min: null,
+    criteres_indispensables: '',
+    criteres_souhaites: '',
+    urgence: null,
+    financement: null,
+    accord_principe: false,
+    apport: null,
+    bien_a_vendre: false,
+    recontacter_le: null,
+    motif_perte: null,
+    motif_perte_detail: '',
+    offre_bien_id: null,
+    offre_le: null,
+    notes: '',
+    ...valeurs,
+  }
+}

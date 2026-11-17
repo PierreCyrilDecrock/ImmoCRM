@@ -9,22 +9,28 @@ import { adresseBien, type Bien } from '../biens/biens'
 import SelecteurBien from '../biens/SelecteurBien'
 import { nomComplet, type Contact } from '../contacts/contacts'
 import SelecteurContact from '../contacts/SelecteurContact'
+import { libelleEtapeAcquereur, resumeRecherche } from '../acquereurs/pipeline-acquereur'
+import { listerProjetsAcquereursDuContact } from '../acquereurs/projets-acquereurs'
 import { libelleEtape } from '../projets/pipeline-vendeur'
-import { listerProjetsVendeursLies, type ProjetVendeurAffiche } from '../projets/projets-vendeurs'
+import { listerProjetsVendeursLies } from '../projets/projets-vendeurs'
+import { adresseProjet, libelleGenreProjet, type LienProjet } from './lien-projet'
+
+/** Un projet choisi : son lien et, pour un projet de vente, son bien. */
+export type ChoixProjet = { lien: LienProjet; bien: Bien | null }
 
 type Props = {
   /** Titre de la rubrique : « Liée à », « Lié à »… */
   legende: string
   contact: Contact | null
   bien: Bien | null
-  /** Projet vendeur lié (identifiant), ou `null`. */
-  projetVendeurId: string | null
+  /** Projet (de vente ou d'achat) lié, ou `null`. */
+  projet: LienProjet | null
   /** Lien fixé par la fiche d'où l'on vient : il ne se retire pas ici. */
   verrouiller?: 'contact' | 'bien' | 'projet'
   onContact: (contact: Contact | null) => void
   onBien: (bien: Bien | null) => void
   /** Choix du projet : avec son bien, à reprendre si aucun bien n'est encore choisi. */
-  onProjetVendeur: (projet: ProjetVendeurAffiche | null) => void
+  onProjet: (projet: ChoixProjet | null) => void
 }
 
 const CLASSES_LIEN =
@@ -38,11 +44,11 @@ export default function ChoixLiens({
   legende,
   contact,
   bien,
-  projetVendeurId,
+  projet,
   verrouiller,
   onContact,
   onBien,
-  onProjetVendeur,
+  onProjet,
 }: Props) {
   const [choix, setChoix] = useState<'contact' | 'bien' | 'projet' | null>(null)
 
@@ -107,20 +113,20 @@ export default function ChoixLiens({
           }}
         />
       )}
-      {(projetVendeurId !== null || contact !== null) && (
+      {(projet !== null || contact !== null) && (
         <div className="flex min-h-11 flex-wrap items-center gap-2">
           <span className="w-16 text-sm text-encre-douce">Projet</span>
-          {projetVendeurId === null ? (
+          {projet === null ? (
             <Bouton variante="discret" icone="ajouter" onClick={() => setChoix('projet')}>
-              Lier à un projet de vente
+              Lier à un projet
             </Bouton>
           ) : (
             <>
-              <Link to={`/pipelines/vendeurs/${projetVendeurId}`} className={CLASSES_LIEN}>
-                Projet de vente
+              <Link to={adresseProjet(projet)} className={CLASSES_LIEN}>
+                {libelleGenreProjet(projet.genre)}
               </Link>
               {verrouiller !== 'projet' && (
-                <Bouton variante="discret" onClick={() => onProjetVendeur(null)}>
+                <Bouton variante="discret" onClick={() => onProjet(null)}>
                   Retirer
                 </Bouton>
               )}
@@ -128,11 +134,11 @@ export default function ChoixLiens({
           )}
         </div>
       )}
-      {choix === 'projet' && contact !== null && projetVendeurId === null && (
+      {choix === 'projet' && contact !== null && projet === null && (
         <ProjetsDuContact
           contact={contact}
-          onChoisir={(projet) => {
-            onProjetVendeur(projet)
+          onChoisir={(choisi) => {
+            onProjet(choisi)
             setChoix(null)
           }}
         />
@@ -141,30 +147,52 @@ export default function ChoixLiens({
   )
 }
 
+/** Un projet du contact, tel qu'il est proposé dans la liste. */
+type ProjetPropose = { choix: ChoixProjet; titre: string; detail: string }
+
 type Projets =
   | { phase: 'chargement' }
   | { phase: 'erreur'; message: string }
-  | { phase: 'pret'; projets: ProjetVendeurAffiche[] }
+  | { phase: 'pret'; projets: ProjetPropose[] }
 
-/** Les projets vendeurs du contact choisi, à toucher pour lier. */
+/** Les projets de vente et d'achat du contact choisi, à toucher pour lier. */
 function ProjetsDuContact({
   contact,
   onChoisir,
 }: {
   contact: Contact
-  onChoisir: (projet: ProjetVendeurAffiche) => void
+  onChoisir: (projet: ChoixProjet) => void
 }) {
   const [etat, setEtat] = useState<Projets>({ phase: 'chargement' })
 
   useEffect(() => {
     let actif = true
-    void listerProjetsVendeursLies(exigerSupabase(), { contactId: contact.id }).then((resultat) => {
+    const client = exigerSupabase()
+    void Promise.all([
+      listerProjetsVendeursLies(client, { contactId: contact.id }),
+      listerProjetsAcquereursDuContact(client, contact.id),
+    ]).then(([ventes, achats]) => {
       if (!actif) return
-      setEtat(
-        resultat.ok
-          ? { phase: 'pret', projets: resultat.donnees }
-          : { phase: 'erreur', message: resultat.erreur.message },
-      )
+      if (!ventes.ok || !achats.ok) {
+        const echec = !ventes.ok ? ventes.erreur.message : !achats.ok ? achats.erreur.message : ''
+        setEtat({ phase: 'erreur', message: echec })
+        return
+      }
+      setEtat({
+        phase: 'pret',
+        projets: [
+          ...ventes.donnees.map(({ id, projet, bien }) => ({
+            choix: { lien: { genre: 'vendeur' as const, id }, bien },
+            titre: `Vente : ${bien === null ? 'bien introuvable' : adresseBien(bien)}`,
+            detail: libelleEtape(projet.etape),
+          })),
+          ...achats.donnees.map(({ id, projet }) => ({
+            choix: { lien: { genre: 'acquereur' as const, id }, bien: null },
+            titre: `Achat : ${resumeRecherche(projet) || 'recherche à préciser'}`,
+            detail: libelleEtapeAcquereur(projet.etape),
+          })),
+        ],
+      })
     })
     return () => {
       actif = false
@@ -178,19 +206,19 @@ function ProjetsDuContact({
   if (etat.projets.length === 0) {
     return (
       <p className="text-sm text-encre-douce">
-        {nomComplet(contact)} n'a aucun projet de vente. Il se crée depuis sa fiche, rubrique «
-        Projets ».
+        {nomComplet(contact)} n'a aucun projet. Un projet de vente ou d'achat se crée depuis sa
+        fiche.
       </p>
     )
   }
   return (
     <Liste>
-      {etat.projets.map(({ id, projet, bien }) => (
+      {etat.projets.map(({ choix, titre, detail }) => (
         <LigneListe
-          key={id}
-          titre={bien === null ? 'Projet de vente' : adresseBien(bien)}
-          detail={libelleEtape(projet.etape)}
-          onAction={() => onChoisir({ id, projet, bien, contact, prochaine: null })}
+          key={choix.lien.id}
+          titre={titre}
+          detail={detail}
+          onAction={() => onChoisir(choix)}
         />
       ))}
     </Liste>

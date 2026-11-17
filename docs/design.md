@@ -76,6 +76,8 @@ Des composants propres à un domaine vivent dans `src/features/<domaine>` et se 
 | `Information` | Une information d'une fiche : son nom, sa valeur. À placer dans une liste `<dl className="divide-y divide-bord">`. | `nom`, valeur en contenu |
 | `SuiteListe` | Bas d'une liste lue page par page : charge la suite à l'approche du bas de l'écran, avec un bouton de secours. Se branche sur `useListePaginee` (`src/lib/liste-paginee.ts`). | `resteALire`, `suiteEnCours`, `erreurSuite`, `chargerSuite` |
 | `CadreConnexion` | Cadre des écrans hors session (connexion, mot de passe). | `titre` |
+| `TableauPipeline` | Tableau d'un pipeline : liste groupée par étape sur téléphone, une colonne par étape sur tablette et ordinateur, cartes à glisser par leur poignée vers une autre colonne. Sans logique métier : sert aux pipelines vendeur et acquéreur. | `colonnes` (`{ etape, libelle, critere, projets }`), `cle`, `etapeDe`, `estEtape`, `nomGlisse`, `carte(projet, { estompee, onSaisir? })`, `onDeposer`, `enCours` |
+| `CartePipeline` | Carte d'un projet dans un pipeline : titre, détails, ancienneté dans l'étape (en alerte si elle traîne), prochaine action (en rouge si en retard), poignée sur grand écran. | `vers`, `titre`, `details`, `etape`, `action` (`{ texte, alerte }`), `onSaisir?`, `estompee?` |
 
 Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="…">`, puis déclarer sa route dans `App.tsx`, sous `MiseEnPage`. Une sous-page (`/plus/reglages`) garde l'entrée parente allumée dans la navigation et reçoit un `retour`.
 

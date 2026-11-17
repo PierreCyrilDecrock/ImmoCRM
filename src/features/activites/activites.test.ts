@@ -5,6 +5,8 @@ import { activiteEssai } from './activite-essai'
 import {
   brouillonActiviteDepuis,
   brouillonActiviteVide,
+  colonnesVisite,
+  lignesCompteRenduVisite,
   compteCommeContact,
   conditionsJournal,
   horaireActivite,
@@ -34,7 +36,8 @@ describe('brouillonActiviteVide', () => {
       duree: '',
       contact,
       bien: null,
-      projetVendeurId: null,
+      projet: null,
+      visite: { pointsPositifs: '', pointsNegatifs: '', interet: '', suite: '' },
     })
   })
 })
@@ -65,6 +68,11 @@ describe('preparerActivite', () => {
         contact_id: contact.id,
         bien_id: bien.id,
         projet_vendeur_id: null,
+        projet_acquereur_id: null,
+        visite_points_positifs: '',
+        visite_points_negatifs: '',
+        visite_interet: null,
+        visite_suite: null,
       },
     })
   })
@@ -135,6 +143,11 @@ describe('brouillonActiviteDepuis', () => {
         contact_id: contact.id,
         bien_id: null,
         projet_vendeur_id: null,
+        projet_acquereur_id: null,
+        visite_points_positifs: '',
+        visite_points_negatifs: '',
+        visite_interet: null,
+        visite_suite: null,
       },
     })
   })
@@ -142,9 +155,18 @@ describe('brouillonActiviteDepuis', () => {
   it('garde le lien vers un projet vendeur', () => {
     const activite = activiteEssai({ projet_vendeur_id: 'p1' })
     const repris = brouillonActiviteDepuis({ id: activite.id, activite, contact: null, bien: null })
-    expect(repris.projetVendeurId).toBe('p1')
+    expect(repris.projet).toEqual({ genre: 'vendeur', id: 'p1' })
     const preparation = preparerActivite(repris, AUJOURDHUI)
     expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBe('p1')
+  })
+
+  it('garde le lien vers un projet acquéreur', () => {
+    const activite = activiteEssai({ projet_acquereur_id: 'a1' })
+    const repris = brouillonActiviteDepuis({ id: activite.id, activite, contact: null, bien: null })
+    expect(repris.projet).toEqual({ genre: 'acquereur', id: 'a1' })
+    const preparation = preparerActivite(repris, AUJOURDHUI)
+    expect(preparation.ok && preparation.valeurs.projet_acquereur_id).toBe('a1')
+    expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBeNull()
   })
 })
 
@@ -205,5 +227,56 @@ describe('conditionsJournal', () => {
       { colonne: 'bien_id', genre: 'egal', valeur: 'b1' },
     ])
     expect(conditionsJournal({})).toEqual([])
+  })
+})
+
+describe('compte rendu de visite', () => {
+  const saisie = {
+    pointsPositifs: ' Lumineux, calme ',
+    pointsNegatifs: 'Pas de parking',
+    interet: 'fort' as const,
+    suite: 'contre_visite' as const,
+  }
+
+  it('est enregistré pour une visite', () => {
+    const preparation = preparerActivite(brouillon({ type: 'visite', visite: saisie }), AUJOURDHUI)
+    expect(preparation.ok && preparation.valeurs).toMatchObject({
+      visite_points_positifs: 'Lumineux, calme',
+      visite_points_negatifs: 'Pas de parking',
+      visite_interet: 'fort',
+      visite_suite: 'contre_visite',
+    })
+  })
+
+  it('est vidé pour tout autre type (la base le refuserait)', () => {
+    expect(colonnesVisite('appel', saisie)).toEqual({
+      visite_points_positifs: '',
+      visite_points_negatifs: '',
+      visite_interet: null,
+      visite_suite: null,
+    })
+  })
+
+  it('se relit ligne par ligne, sans les rubriques vides', () => {
+    const activite = activiteEssai({
+      type: 'visite',
+      visite_points_positifs: 'Lumineux',
+      visite_interet: 'moyen',
+    })
+    expect(lignesCompteRenduVisite(activite)).toEqual([
+      ['Points positifs', 'Lumineux'],
+      ['Intérêt', 'Moyen'],
+    ])
+  })
+
+  it('est repris quand on rouvre la visite', () => {
+    const activite = activiteEssai({ type: 'visite', visite_suite: 'offre' })
+    const repris = brouillonActiviteDepuis({ id: activite.id, activite, contact: null, bien: null })
+    expect(repris.visite).toEqual({
+      pointsPositifs: '',
+      pointsNegatifs: '',
+      interet: '',
+      suite: 'offre',
+    })
   })
 })

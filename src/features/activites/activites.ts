@@ -15,6 +15,7 @@ import { estDateValide, estHeureValide, formaterDuree, formaterHeure } from '../
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import { filtreLien, lireFichesLiees, type LienFiche } from '../liens/fiches-liees'
+import { colonnesProjet, lienProjetDe, type LienProjet } from '../liens/lien-projet'
 import type { Bornes } from './periodes'
 
 /**
@@ -77,6 +78,91 @@ export const DUREES_ACTIVITE: readonly Option<string>[] = [5, 10, 15, 30, 45, 60
 )
 
 export const LONGUEUR_MAX_COMPTE_RENDU = 5000
+
+// ---------------------------------------------------------------------------
+// Compte rendu de visite
+// ---------------------------------------------------------------------------
+
+export type InteretVisite = 'fort' | 'moyen' | 'faible' | 'aucun'
+export type SuiteVisite = 'offre' | 'contre_visite' | 'reflexion' | 'autres_biens' | 'abandon'
+
+export const INTERETS_VISITE: readonly Option<InteretVisite>[] = [
+  { valeur: 'fort', libelle: 'Fort' },
+  { valeur: 'moyen', libelle: 'Moyen' },
+  { valeur: 'faible', libelle: 'Faible' },
+  { valeur: 'aucun', libelle: 'Aucun' },
+]
+
+export const SUITES_VISITE: readonly Option<SuiteVisite>[] = [
+  { valeur: 'offre', libelle: 'Offre envisagée' },
+  { valeur: 'contre_visite', libelle: 'Contre-visite' },
+  { valeur: 'reflexion', libelle: 'Réfléchit' },
+  { valeur: 'autres_biens', libelle: 'Voir d’autres biens' },
+  { valeur: 'abandon', libelle: 'Ne donne pas suite' },
+]
+
+export const LONGUEUR_MAX_POINTS_VISITE = 2000
+
+export const libelleInteretVisite = (interet: string | null) =>
+  INTERETS_VISITE.find((option) => option.valeur === interet)?.libelle ?? null
+export const libelleSuiteVisite = (suite: string | null) =>
+  SUITES_VISITE.find((option) => option.valeur === suite)?.libelle ?? null
+
+/** Le compte rendu structuré d'une visite, tel qu'il est saisi. */
+export type CompteRenduVisite = {
+  pointsPositifs: string
+  pointsNegatifs: string
+  interet: InteretVisite | ''
+  suite: SuiteVisite | ''
+}
+
+export const COMPTE_RENDU_VISITE_VIDE: CompteRenduVisite = {
+  pointsPositifs: '',
+  pointsNegatifs: '',
+  interet: '',
+  suite: '',
+}
+
+/** Colonnes du compte rendu de visite d'une activité. */
+export type ColonnesVisite = Pick<
+  Activite,
+  'visite_points_positifs' | 'visite_points_negatifs' | 'visite_interet' | 'visite_suite'
+>
+
+/** Les colonnes à enregistrer : vides pour tout autre type qu'une visite (règle de la base). */
+export function colonnesVisite(type: string, saisie: CompteRenduVisite): ColonnesVisite {
+  const visite = type === 'visite'
+  return {
+    visite_points_positifs: visite
+      ? saisie.pointsPositifs.trim().slice(0, LONGUEUR_MAX_POINTS_VISITE)
+      : '',
+    visite_points_negatifs: visite
+      ? saisie.pointsNegatifs.trim().slice(0, LONGUEUR_MAX_POINTS_VISITE)
+      : '',
+    visite_interet: visite && saisie.interet !== '' ? saisie.interet : null,
+    visite_suite: visite && saisie.suite !== '' ? saisie.suite : null,
+  }
+}
+
+export function compteRenduVisiteDepuis(activite: ColonnesVisite): CompteRenduVisite {
+  return {
+    pointsPositifs: activite.visite_points_positifs,
+    pointsNegatifs: activite.visite_points_negatifs,
+    interet: INTERETS_VISITE.find((o) => o.valeur === activite.visite_interet)?.valeur ?? '',
+    suite: SUITES_VISITE.find((o) => o.valeur === activite.visite_suite)?.valeur ?? '',
+  }
+}
+
+/** Le compte rendu structuré, ligne par ligne, pour le fil et l'export (vide s'il n'y a rien). */
+export function lignesCompteRenduVisite(activite: ColonnesVisite): [string, string][] {
+  const lignes: [string, string | null][] = [
+    ['Points positifs', activite.visite_points_positifs || null],
+    ['Points négatifs', activite.visite_points_negatifs || null],
+    ['Intérêt', libelleInteretVisite(activite.visite_interet)],
+    ['Suite envisagée', libelleSuiteVisite(activite.visite_suite)],
+  ]
+  return lignes.filter((ligne): ligne is [string, string] => ligne[1] !== null)
+}
 
 export const TAILLE_PAGE_ACTIVITES = 50
 
@@ -169,8 +255,10 @@ export type BrouillonActivite = {
   duree: string
   contact: Contact | null
   bien: Bien | null
-  /** Projet vendeur lié, ou `null`. */
-  projetVendeurId: string | null
+  /** Projet (de vente ou d'achat) lié, ou `null`. */
+  projet: LienProjet | null
+  /** Compte rendu structuré, pour une visite. */
+  visite: CompteRenduVisite
 }
 
 export type ErreursActivite = Partial<Record<'compteRendu' | 'date' | 'heure' | 'duree', string>>
@@ -179,7 +267,7 @@ export type ErreursActivite = Partial<Record<'compteRendu' | 'date' | 'heure' | 
 export function brouillonActiviteVide(
   type: TypeActivite,
   maintenant: { date: string; heure: string },
-  liens: { contact?: Contact | null; bien?: Bien | null; projetVendeurId?: string | null } = {},
+  liens: { contact?: Contact | null; bien?: Bien | null; projet?: LienProjet | null } = {},
 ): BrouillonActivite {
   return {
     type,
@@ -190,7 +278,8 @@ export function brouillonActiviteVide(
     duree: '',
     contact: liens.contact ?? null,
     bien: liens.bien ?? null,
-    projetVendeurId: liens.projetVendeurId ?? null,
+    projet: liens.projet ?? null,
+    visite: COMPTE_RENDU_VISITE_VIDE,
   }
 }
 
@@ -208,7 +297,8 @@ export function brouillonActiviteDepuis({
     duree: activite.duree === null ? '' : String(activite.duree),
     contact,
     bien,
-    projetVendeurId: activite.projet_vendeur_id,
+    projet: lienProjetDe(activite),
+    visite: compteRenduVisiteDepuis(activite),
   }
 }
 
@@ -259,7 +349,8 @@ export function preparerActivite(
       duree,
       contact_id: brouillon.contact?.id ?? null,
       bien_id: brouillon.bien?.id ?? null,
-      projet_vendeur_id: brouillon.projetVendeurId,
+      ...colonnesProjet(brouillon.projet),
+      ...colonnesVisite(brouillon.type, brouillon.visite),
     },
   }
 }

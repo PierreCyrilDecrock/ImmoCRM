@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { listerPage, type Resultat } from '../../lib/donnees'
 import { dateDuJour, formaterDate } from '../../lib/dates'
-import { adresseBien, libelleType } from '../biens/biens'
+import { adresseBien, libelleTypes } from '../biens/biens'
 import { formaterQuotePart, listerBiensDuContact, type BienDuContact } from '../biens/proprietaires'
 import {
   libelleMotifAppel,
@@ -36,10 +36,30 @@ import { listerProjetsVendeursLies, type ProjetVendeurAffiche } from '../projets
 import { formaterPrix } from '../../lib/nombres'
 import {
   horaireActivite,
+  lignesCompteRenduVisite,
   listerToutJournalContact,
   titreActivite,
   type ActiviteAffichee,
 } from '../activites/activites'
+import {
+  libelleReaction,
+  listerBiensProposes,
+  type BienProposeAffiche,
+} from '../acquereurs/biens-proposes'
+import {
+  libelleBudget,
+  libelleEtapeAcquereur,
+  libelleEtatAcquereur,
+  libelleFinancement,
+  libelleTypesRecherches,
+  libelleMotifPerteAcquereur,
+  libelleUrgence,
+  resumeOrigine,
+} from '../acquereurs/pipeline-acquereur'
+import {
+  listerProjetsAcquereursDuContact,
+  type ProjetAcquereurAffiche,
+} from '../acquereurs/projets-acquereurs'
 
 /**
  * Export d'un contact (droit d'accès) : un fichier texte lisible par tous, qui contient
@@ -62,6 +82,11 @@ export type DonneesContact = {
   activites: ActiviteAffichee[]
   /** Ses projets de vente, archivés compris. */
   projetsVendeurs: ProjetVendeurAffiche[]
+  /**
+   * Ses projets d'achat (comme acquéreur ou co-acquéreur), archivés compris, chacun avec les
+   * biens qui lui ont été proposés.
+   */
+  projetsAcquereurs: { affiche: ProjetAcquereurAffiche; proposes: BienProposeAffiche[] }[]
 }
 
 const ouiNon = (valeur: boolean) => (valeur ? 'Oui' : 'Non')
@@ -284,9 +309,62 @@ function resumeProjetExport(
     .join(' — ')
 }
 
+/** Un projet d'achat sur une ligne, avec tout ce qui est enregistré. */
+function resumeProjetAcquereurExport(
+  { projet, contact, coAcquereur, bienOrigine }: ProjetAcquereurAffiche,
+  idFiche: string,
+) {
+  const montant = (valeur: number | null) => (valeur === null ? null : formaterPrix(valeur))
+  const date = (valeur: string | null) => (valeur === null ? null : formaterDate(valeur))
+  const autre = projet.contact_id === idFiche ? coAcquereur : contact
+  const morceaux: [string, string | null][] = [
+    ['rôle', projet.contact_id === idFiche ? 'acquéreur' : 'co-acquéreur'],
+    [
+      projet.contact_id === idFiche ? 'co-acquéreur' : 'acquéreur',
+      autre === null ? null : nomComplet(autre),
+    ],
+    ['étape', libelleEtapeAcquereur(projet.etape)],
+    ['état', libelleEtatAcquereur(projet.etat)],
+    ['ouvert le', formaterDate(projet.created_at)],
+    ['origine', resumeOrigine(projet) || null],
+    ['reçue le', date(projet.recue_le)],
+    ['bien concerné', bienOrigine === null ? null : adresseBien(bienOrigine)],
+    ['types', libelleTypesRecherches(projet) || null],
+    ['secteurs', projet.secteurs.length === 0 ? null : projet.secteurs.join(', ')],
+    ['budget', libelleBudget(projet.budget_min, projet.budget_max) || null],
+    ['surface minimum', projet.surface_min === null ? null : `${projet.surface_min} m²`],
+    ['pièces minimum', projet.pieces_min === null ? null : String(projet.pieces_min)],
+    ['indispensable', projet.criteres_indispensables || null],
+    ['souhaité', projet.criteres_souhaites || null],
+    ['urgence', projet.urgence === null ? null : libelleUrgence(projet.urgence)],
+    ['financement', projet.financement === null ? null : libelleFinancement(projet.financement)],
+    [
+      'accord de principe',
+      projet.financement === 'pret' ? (projet.accord_principe ? 'oui' : 'non') : null,
+    ],
+    ['apport', montant(projet.apport)],
+    ['bien à vendre avant', projet.bien_a_vendre ? 'oui' : null],
+    ['à recontacter le', date(projet.recontacter_le)],
+    [
+      'motif de perte',
+      projet.motif_perte === null ? null : libelleMotifPerteAcquereur(projet.motif_perte),
+    ],
+    ['précision', projet.motif_perte_detail || null],
+    ['offre acceptée le', date(projet.offre_le)],
+    ['notes', projet.notes || null],
+    ['archivé le', date(projet.archived_at)],
+  ]
+  return morceaux
+    .filter((morceau): morceau is [string, string] => morceau[1] !== null)
+    .map(([nom, valeur]) => `${nom} : ${valeur}`)
+    .join(' — ')
+}
+
 /** Le contenu du fichier d'export, en clair. `date` : le jour de l'export (`2026-11-16`). */
 export function texteExportContact(donnees: DonneesContact, date: string = dateDuJour()): string {
   const { contact, fichesFusionnees, appels, biens, taches, activites, projetsVendeurs } = donnees
+  const { projetsAcquereurs } = donnees
+  const idsFiches = new Set([contact.id, ...fichesFusionnees.map((fiche) => fiche.id)])
   const lignes = [
     `DONNÉES PERSONNELLES — ${nomComplet(contact)}`,
     `Document établi le ${formaterDate(date)} à partir du fichier de contacts ImmoCRM.`,
@@ -309,7 +387,7 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
   for (const { lien, bien } of biens) {
     const morceaux = [
       adresseBien(bien),
-      libelleType(bien.type),
+      libelleTypes(bien),
       lien.quote_part === null ? null : `quote-part : ${formaterQuotePart(lien.quote_part)}`,
       lien.archived_at === null ? null : `lien retiré le ${formaterDate(lien.archived_at)}`,
     ]
@@ -319,6 +397,25 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
   if (projetsVendeurs.length === 0) lignes.push('Aucun.')
   for (const { projet, bien } of projetsVendeurs)
     lignes.push(`- ${resumeProjetExport(projet, bien)}`)
+  lignes.push(...titre("Projets d'achat"))
+  if (projetsAcquereurs.length === 0) lignes.push('Aucun.')
+  for (const { affiche, proposes } of projetsAcquereurs) {
+    // La fiche (principale ou fusionnée) qui figure dans ce projet.
+    const idFiche =
+      [affiche.projet.contact_id, affiche.projet.co_acquereur_id].find(
+        (idLie) => idLie !== null && idsFiches.has(idLie),
+      ) ?? contact.id
+    lignes.push(`- ${resumeProjetAcquereurExport(affiche, idFiche)}`)
+    for (const { propose, bien } of proposes) {
+      const morceaux = [
+        bien === null ? 'bien introuvable' : adresseBien(bien),
+        `proposé le ${formaterDate(propose.propose_le)}`,
+        libelleReaction(propose.reaction).toLowerCase(),
+        propose.raison_refus === '' ? null : `raison : ${propose.raison_refus}`,
+      ]
+      lignes.push(`  · bien proposé : ${morceaux.filter((m) => m !== null).join(' — ')}`)
+    }
+  }
   lignes.push(...titre('Tâches et rendez-vous'))
   if (taches.length === 0) lignes.push('Aucun.')
   for (const { tache, bien } of taches) {
@@ -344,6 +441,9 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
       activite.archived_at === null
         ? null
         : `retirée du journal le ${formaterDate(activite.archived_at)}`,
+      ...lignesCompteRenduVisite(activite).map(
+        ([nom, valeur]) => `${nom.toLowerCase()} : ${valeur}`,
+      ),
       activite.compte_rendu === '' ? null : `compte rendu : ${activite.compte_rendu}`,
     ]
     lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
@@ -413,6 +513,7 @@ export async function rassemblerDonneesContact(
   const taches: TacheAffichee[] = []
   const activites: ActiviteAffichee[] = []
   const projetsVendeurs: ProjetVendeurAffiche[] = []
+  const projetsAcquereurs: DonneesContact['projetsAcquereurs'] = []
   for (const idFiche of [id, ...fichesFusionnees.map((f) => f.id)]) {
     const resultat = await listerAppelsSansAccord(client, idFiche)
     if (!resultat.ok) return resultat
@@ -429,6 +530,15 @@ export async function rassemblerDonneesContact(
     const projets = await listerProjetsVendeursLies(client, { contactId: idFiche }, 'avec')
     if (!projets.ok) return projets
     projetsVendeurs.push(...projets.donnees)
+    const achats = await listerProjetsAcquereursDuContact(client, idFiche, 'avec')
+    if (!achats.ok) return achats
+    for (const affiche of achats.donnees) {
+      // Deux fiches fusionnées peuvent figurer dans le même projet : il n'est écrit qu'une fois.
+      if (projetsAcquereurs.some((deja) => deja.affiche.id === affiche.id)) continue
+      const proposes = await listerBiensProposes(client, affiche.id)
+      if (!proposes.ok) return proposes
+      projetsAcquereurs.push({ affiche, proposes: proposes.donnees })
+    }
   }
   appels.sort((a, b) => b.created_at.localeCompare(a.created_at))
   // Le plus récent d'abord, toutes fiches confondues.
@@ -448,6 +558,7 @@ export async function rassemblerDonneesContact(
       taches,
       activites,
       projetsVendeurs,
+      projetsAcquereurs,
     },
   }
 }

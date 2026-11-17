@@ -21,7 +21,7 @@ import {
   libelleNatureCommerce,
   libelleOccupation,
   libelleStatut,
-  libelleType,
+  libelleTypes,
   lireBien,
   listerPrixBien,
   restaurerBien,
@@ -33,6 +33,7 @@ import PhotosBien from '../features/biens/PhotosBien'
 import ProprietairesBien from '../features/biens/ProprietairesBien'
 import SectionJournal from '../features/activites/SectionJournal'
 import SectionProjetsVendeurs from '../features/projets/SectionProjetsVendeurs'
+import SectionAcquereursDuBien from '../features/acquereurs/SectionAcquereursDuBien'
 import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { formaterNombre, formaterPrix, formaterSurface } from '../lib/nombres'
@@ -113,7 +114,7 @@ export default function FicheBien() {
 
   const { bien, prix } = etat
   const archive = bien.archived_at !== null
-  const utilise = (champ: ChampSelonType) => champUtilise(bien.type, champ)
+  const utilise = (champ: ChampSelonType) => champUtilise(bien, champ)
   const commune = communeBien(bien)
 
   async function changerArchivage() {
@@ -153,59 +154,63 @@ export default function FicheBien() {
     ['État', utilise('etat') ? libelleEtat(bien.etat) : null],
   ]
 
-  const propres: [string, string | null][] =
-    bien.type === 'ancien'
-      ? [
-          ['Copropriété', bien.copropriete === null ? null : ouiNon(bien.copropriete)],
-          [
-            'Charges',
-            bien.charges_annuelles === null ? null : montant(bien.charges_annuelles, ' par an'),
-          ],
-          [
-            'Taxe foncière',
-            bien.taxe_fonciere === null ? null : montant(bien.taxe_fonciere, ' par an'),
-          ],
-        ]
-      : bien.type === 'neuf'
-        ? [
-            ['Programme', bien.programme || null],
-            ['Lot', bien.lot || null],
-            ['Livraison', bien.date_livraison === null ? null : formaterDate(bien.date_livraison)],
-          ]
-        : bien.type === 'viager'
-          ? [
-              ['Bouquet', bien.viager_bouquet === null ? null : montant(bien.viager_bouquet)],
-              [
-                'Rente',
-                bien.viager_rente === null ? null : montant(bien.viager_rente, ' par mois'),
-              ],
-              ['Occupation', libelleOccupation(bien.viager_occupation)],
-              [
-                'Crédirentiers',
-                bien.viager_ages.length === 0
-                  ? null
-                  : `${bien.viager_ages.map((age) => `${age} ans`).join(' et ')} (âge noté à la saisie)`,
-              ],
-            ]
-          : bien.type === 'commerce'
-            ? [
-                ['Vente', libelleNatureCommerce(bien.commerce_nature)],
-                ['Activité', bien.commerce_activite || null],
-                ['Bail', bien.commerce_bail || null],
-                [
-                  'Loyer',
-                  bien.commerce_loyer === null ? null : montant(bien.commerce_loyer, ' par an'),
-                ],
-              ]
-            : bien.type === 'terrain'
-              ? [
-                  [
-                    'Constructible',
-                    bien.constructible === null ? null : ouiNon(bien.constructible),
-                  ],
-                  ['Viabilisé', bien.viabilise === null ? null : ouiNon(bien.viabilise)],
-                ]
-              : []
+  // Ce qui est propre au type principal (commerce, terrain) et au type secondaire (ancien,
+  // neuf, viager) : chaque ligne n'apparaît que si son champ concerne ce bien.
+  const lignesPropres: [ChampSelonType, string, string | null][] = [
+    ['copropriete', 'Copropriété', bien.copropriete === null ? null : ouiNon(bien.copropriete)],
+    [
+      'charges_annuelles',
+      'Charges',
+      bien.charges_annuelles === null ? null : montant(bien.charges_annuelles, ' par an'),
+    ],
+    [
+      'taxe_fonciere',
+      'Taxe foncière',
+      bien.taxe_fonciere === null ? null : montant(bien.taxe_fonciere, ' par an'),
+    ],
+    ['programme', 'Programme', bien.programme || null],
+    ['lot', 'Lot', bien.lot || null],
+    [
+      'date_livraison',
+      'Livraison',
+      bien.date_livraison === null ? null : formaterDate(bien.date_livraison),
+    ],
+    [
+      'viager_bouquet',
+      'Bouquet',
+      bien.viager_bouquet === null ? null : montant(bien.viager_bouquet),
+    ],
+    [
+      'viager_rente',
+      'Rente',
+      bien.viager_rente === null ? null : montant(bien.viager_rente, ' par mois'),
+    ],
+    ['viager_occupation', 'Occupation', libelleOccupation(bien.viager_occupation)],
+    [
+      'viager_ages',
+      'Crédirentiers',
+      bien.viager_ages.length === 0
+        ? null
+        : `${bien.viager_ages.map((age) => `${age} ans`).join(' et ')} (âge noté à la saisie)`,
+    ],
+    ['commerce_nature', 'Vente', libelleNatureCommerce(bien.commerce_nature)],
+    ['commerce_activite', 'Activité', bien.commerce_activite || null],
+    ['commerce_bail', 'Bail', bien.commerce_bail || null],
+    [
+      'commerce_loyer',
+      'Loyer',
+      bien.commerce_loyer === null ? null : montant(bien.commerce_loyer, ' par an'),
+    ],
+    [
+      'constructible',
+      'Constructible',
+      bien.constructible === null ? null : ouiNon(bien.constructible),
+    ],
+    ['viabilise', 'Viabilisé', bien.viabilise === null ? null : ouiNon(bien.viabilise)],
+  ]
+  const propres: [string, string | null][] = lignesPropres
+    .filter(([champ]) => utilise(champ))
+    .map(([, nom, valeur]) => [nom, valeur])
 
   const diagnostics: [string, string | null][] = utilise('dpe_classe')
     ? [
@@ -263,7 +268,7 @@ export default function FicheBien() {
         <div className="flex flex-wrap items-center gap-2">
           {archive && <Etiquette genre="alerte">Archivé</Etiquette>}
           <Etiquette genre={genreStatut(bien.statut)}>{libelleStatut(bien.statut)}</Etiquette>
-          <Etiquette genre="info">{libelleType(bien.type)}</Etiquette>
+          <Etiquette genre="info">{libelleTypes(bien)}</Etiquette>
         </div>
         <p className="text-2xl font-bold text-encre">
           {bien.prix === null ? (
@@ -276,7 +281,8 @@ export default function FicheBien() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {rubrique('Caractéristiques', caracteristiques, aCompleter)}
-        {rubrique(`Propre au type « ${libelleType(bien.type)} »`, propres, aCompleter)}
+        {propres.length > 0 &&
+          rubrique(`Propre au type « ${libelleTypes(bien)} »`, propres, aCompleter)}
         {diagnostics.length > 0 &&
           rubrique('Diagnostics', diagnostics, 'DPE et GES non renseignés.')}
 
@@ -284,6 +290,10 @@ export default function FicheBien() {
 
         <div className="min-w-0">
           <SectionProjetsVendeurs bien={bien} lectureSeule={bien.archived_at !== null} />
+        </div>
+
+        <div className="min-w-0">
+          <SectionAcquereursDuBien bien={bien} lectureSeule={bien.archived_at !== null} />
         </div>
 
         <div className="min-w-0">

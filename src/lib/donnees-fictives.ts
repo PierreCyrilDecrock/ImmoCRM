@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { ajouterJours, dateDuJour } from './dates'
-import { creer, listerPage, type Creation, type Resultat } from './donnees'
+import { creer, listerPage, modifier, type Creation, type Resultat } from './donnees'
 import type { Environnement } from './environnement'
 
 /**
@@ -165,10 +165,14 @@ const JEU_CONTACTS: JeuFictif = {
   },
 }
 
-/** Ce qui change d'un bien fictif à l'autre : un exemple de chaque type, à des statuts variés. */
+/**
+ * Ce qui change d'un bien fictif à l'autre : un exemple de chaque type principal et de chaque
+ * type secondaire, à des statuts variés.
+ */
 const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
   {
-    type: 'ancien',
+    type: 'appartement',
+    categorie: 'ancien',
     statut: 'en_mandat',
     prix: 285000,
     etage: 2,
@@ -188,8 +192,10 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
     taxe_fonciere: 950,
   },
   {
-    type: 'neuf',
+    type: 'appartement',
+    categorie: 'neuf',
     statut: 'en_veille',
+    etage: 2,
     prix: 340000,
     surface: 64,
     pieces: 3,
@@ -199,7 +205,8 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
     date_livraison: '2027-09-30',
   },
   {
-    type: 'viager',
+    type: 'maison',
+    categorie: 'viager',
     statut: 'en_estimation',
     prix: 120000,
     surface: 95,
@@ -214,6 +221,7 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
   },
   {
     type: 'commerce',
+    categorie: null,
     statut: 'repere',
     prix: 195000,
     etage: 0,
@@ -225,13 +233,22 @@ const MODELES_BIENS: readonly Partial<Creation<'biens'>>[] = [
   },
   {
     type: 'terrain',
+    categorie: null,
     statut: 'sous_offre',
     prix: 89000,
     surface_terrain: 640,
     constructible: true,
     viabilise: false,
   },
-  { type: 'ancien', statut: 'vendu', prix: 410000, surface: 128, pieces: 6, chambres: 4 },
+  {
+    type: 'maison',
+    categorie: 'ancien',
+    statut: 'vendu',
+    prix: 410000,
+    surface: 128,
+    pieces: 6,
+    chambres: 4,
+  },
 ]
 
 /** Nombre de biens du lot fictif : au moins un de chaque type. */
@@ -244,7 +261,7 @@ export function bienFictif(rang: number): Creation<'biens'> {
     code_postal: CODE_POSTAL_FICTIF,
     ville: VILLE_FICTIVE,
     description: 'Bien fictif, créé pour les essais.',
-    type: 'ancien',
+    type: 'appartement',
     ...MODELES_BIENS[rang % MODELES_BIENS.length],
   }
 }
@@ -613,6 +630,198 @@ const JEU_PROJETS_VENDEURS: JeuFictif = {
   },
 }
 
+/**
+ * Ce qui change d'un projet acquéreur fictif à l'autre : une demande entrante du jour (avec
+ * son bien concerné), une recherche en sélection avec un co-acquéreur, et une recherche aux
+ * visites menée par le même contact qu'un projet vendeur (une fiche, plusieurs projets).
+ * `contact` et `co` : rang de la fiche fictive ; `proposes` : rangs des biens proposés, avec
+ * la réaction ; `jours` : depuis combien de jours le projet est dans l'étape.
+ */
+const MODELES_PROJETS_ACQUEREURS: readonly {
+  jours: number
+  contact: number
+  co: number | null
+  bienOrigine: number | null
+  proposes: readonly { bien: number; reaction: 'interesse' | 'a_visiter' | 'refuse' | null }[]
+  valeurs: Omit<
+    Creation<'projets_acquereurs'>,
+    'contact_id' | 'co_acquereur_id' | 'bien_origine_id' | 'recue_le'
+  >
+}[] = [
+  {
+    jours: 0,
+    contact: 4,
+    co: null,
+    bienOrigine: 0,
+    proposes: [],
+    valeurs: {
+      etape: 'demande',
+      origine: 'portail',
+      portail: 'Leboncoin',
+      notes: 'Message reçu (fictif) : « Bonjour, ce bien est-il toujours disponible ? »',
+    },
+  },
+  {
+    jours: 6,
+    contact: 5,
+    co: 6,
+    bienOrigine: null,
+    proposes: [
+      { bien: 2, reaction: 'interesse' },
+      { bien: 3, reaction: 'refuse' },
+    ],
+    valeurs: {
+      etape: 'selection',
+      origine: 'appel',
+      types_biens: ['appartement', 'maison'],
+      categories_biens: ['ancien'],
+      secteurs: ['Villefictive', 'Quartier du Test'],
+      budget_min: 180000,
+      budget_max: 240000,
+      pieces_min: 3,
+      criteres_indispensables: 'Extérieur (fictif)',
+      urgence: 'trois_six_mois',
+      financement: 'pret',
+      accord_principe: true,
+      apport: 30000,
+    },
+  },
+  {
+    jours: 3,
+    contact: 0,
+    co: null,
+    bienOrigine: null,
+    proposes: [{ bien: 4, reaction: 'a_visiter' }],
+    valeurs: {
+      etape: 'visites',
+      origine: 'recommandation',
+      types_biens: ['maison'],
+      categories_biens: ['ancien', 'neuf'],
+      secteurs: ['Villefictive'],
+      budget_max: 420000,
+      surface_min: 90,
+      urgence: 'plus_6_mois',
+      financement: 'pret',
+      bien_a_vendre: true,
+      notes: 'Projet fictif : achète après la vente de son appartement.',
+    },
+  },
+]
+
+/** Nombre de projets acquéreurs du lot fictif. */
+export const NOMBRE_PROJETS_ACQUEREURS_FICTIFS = MODELES_PROJETS_ACQUEREURS.length
+
+/**
+ * Fabrique un projet acquéreur fictif. Il est créé à l'étape « Sélection » au plus : arriver
+ * aux visites demande un bien proposé, ajouté ensuite (voir le lot).
+ */
+export function projetAcquereurFictif(
+  rang: number,
+  aujourdhui: string,
+  liens: { contactId: string; coAcquereurId: string | null; bienOrigineId: string | null },
+): Creation<'projets_acquereurs'> {
+  const modele = MODELES_PROJETS_ACQUEREURS[rang % MODELES_PROJETS_ACQUEREURS.length]
+  if (modele === undefined) throw new Error('Aucun modèle de projet acquéreur fictif.')
+  const { jours, valeurs } = modele
+  return {
+    ...valeurs,
+    etape: valeurs.etape === 'visites' ? 'selection' : valeurs.etape,
+    etape_le: ajouterJours(aujourdhui, -jours),
+    contact_id: liens.contactId,
+    co_acquereur_id: liens.coAcquereurId,
+    bien_origine_id: liens.bienOrigineId,
+    recue_le:
+      valeurs.origine === 'portail' ? new Date(Date.now() - 2 * 3600 * 1000).toISOString() : null,
+  }
+}
+
+const JEU_PROJETS_ACQUEREURS: JeuFictif = {
+  libelle: 'Projets acquéreurs',
+  async inserer(client) {
+    const fiches = await fichesFictivesRecentes(client, NOMBRE_CONTACTS_FICTIFS)
+    if (!fiches.ok) return fiches
+    const aujourdhui = dateDuJour()
+    for (let rang = 0; rang < NOMBRE_PROJETS_ACQUEREURS_FICTIFS; rang += 1) {
+      const modele = MODELES_PROJETS_ACQUEREURS[rang]
+      if (modele === undefined) break
+      const contactId = fiches.donnees(modele.contact).contactId
+      if (contactId === null) return { ok: true, donnees: rang }
+      const coAcquereurId = modele.co === null ? null : fiches.donnees(modele.co).contactId
+      const bienOrigineId =
+        modele.bienOrigine === null ? null : fiches.donnees(modele.bienOrigine).bienId
+      const projet = await creer(
+        client,
+        'projets_acquereurs',
+        projetAcquereurFictif(rang, aujourdhui, {
+          contactId,
+          coAcquereurId: coAcquereurId === contactId ? null : coAcquereurId,
+          bienOrigineId,
+        }),
+      )
+      if (!projet.ok) return projet
+      const projetId = projet.donnees.id
+      for (const propose of modele.proposes) {
+        const bienId = fiches.donnees(propose.bien).bienId
+        if (bienId === null) continue
+        const resultat = await creer(client, 'biens_proposes', {
+          projet_acquereur_id: projetId,
+          bien_id: bienId,
+          propose_le: ajouterJours(aujourdhui, -modele.jours),
+          reaction: propose.reaction,
+          raison_refus: propose.reaction === 'refuse' ? 'Trop de travaux (fictif)' : '',
+        })
+        if (!resultat.ok) return resultat
+      }
+      if (modele.valeurs.etape === 'visites') {
+        const visites = await modifier(client, 'projets_acquereurs', projetId, { etape: 'visites' })
+        if (!visites.ok) return visites
+        const bienId = fiches.donnees(modele.proposes[0]?.bien ?? 0).bienId
+        // Une visite déjà faite, avec son compte rendu, et la suivante planifiée.
+        const faite = await creer(client, 'activites', {
+          type: 'visite',
+          date_activite: ajouterJours(aujourdhui, -2),
+          heure: '17:30',
+          duree: 45,
+          compte_rendu: 'Visite fictive avec son conjoint.',
+          visite_points_positifs: 'Lumineux, calme (fictif)',
+          visite_points_negatifs: 'Cuisine à refaire (fictif)',
+          visite_interet: 'fort',
+          visite_suite: 'contre_visite',
+          contact_id: contactId,
+          bien_id: bienId,
+          projet_acquereur_id: projetId,
+        })
+        if (!faite.ok) return faite
+        const prevue = await creer(client, 'taches', {
+          titre: 'Contre-visite (fictive)',
+          categorie: 'visite',
+          echeance: ajouterJours(aujourdhui, 2),
+          heure: '18:00',
+          duree: 45,
+          contact_id: contactId,
+          bien_id: bienId,
+          projet_acquereur_id: projetId,
+        })
+        if (!prevue.ok) return prevue
+      } else {
+        const tache = await creer(client, 'taches', {
+          titre:
+            modele.valeurs.etape === 'demande'
+              ? 'Qualifier la demande (fictive)'
+              : 'Envoyer de nouveaux biens (fictif)',
+          categorie: 'relance',
+          priorite: modele.valeurs.etape === 'demande' ? 1 : 2,
+          echeance: ajouterJours(aujourdhui, rang),
+          contact_id: contactId,
+          projet_acquereur_id: projetId,
+        })
+        if (!tache.ok) return tache
+      }
+    }
+    return { ok: true, donnees: NOMBRE_PROJETS_ACQUEREURS_FICTIFS }
+  },
+}
+
 /** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
 export const JEUX_FICTIFS: readonly JeuFictif[] = [
   JEU_CONTACTS,
@@ -620,6 +829,7 @@ export const JEUX_FICTIFS: readonly JeuFictif[] = [
   JEU_TACHES,
   JEU_ACTIVITES,
   JEU_PROJETS_VENDEURS,
+  JEU_PROJETS_ACQUEREURS,
 ]
 
 export type BilanFictif = { ok: true; lignes: number } | { ok: false; message: string }

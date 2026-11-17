@@ -5,6 +5,8 @@ import ChampSaisie from '../../components/ChampSaisie'
 import ChampTexteLong from '../../components/ChampTexteLong'
 import { dateDuJour } from '../../lib/dates'
 import {
+  aUneCategorie,
+  CATEGORIES_BIEN,
   champUtilise,
   CLASSES_ENERGIE,
   ETATS_BIEN,
@@ -37,13 +39,15 @@ type ChampListe = Exclude<keyof BrouillonBien, ChampTexte>
 const GRILLE = 'grid gap-4 md:grid-cols-2'
 
 /**
- * Champs du formulaire d'un bien. Seuls les champs du type choisi sont affichés : la règle
- * est dans `CHAMPS_PAR_TYPE` (`biens.ts`). Ne contient ni balise de formulaire ni bouton
+ * Champs du formulaire d'un bien. Seuls les champs des types choisis (principal et
+ * secondaire) sont affichés : la règle est dans `CHAMPS_PAR_TYPE` et `CHAMPS_PAR_CATEGORIE`
+ * (`biens.ts`). Ne contient ni balise de formulaire ni bouton
  * d'envoi : la page qui l'utilise s'en charge.
  */
 export default function FormulaireBien({ brouillon, erreurs, onChange, court = false }: Props) {
   const type = brouillon.type
-  const utilise = (champ: ChampSelonType) => type !== '' && champUtilise(type, champ)
+  const categorie = brouillon.categorie === '' ? null : brouillon.categorie
+  const utilise = (champ: ChampSelonType) => type !== '' && champUtilise({ type, categorie }, champ)
 
   // En création, le clavier s'ouvre tout de suite sur l'adresse. Le léger délai laisse la
   // fenêtre modale finir de s'ouvrir : sans lui, elle reprendrait la main.
@@ -121,6 +125,12 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
   )
   const champVille = saisie('ville', 'Ville', { maxLength: LONGUEURS_MAX_BIEN.ville })
   const champType = liste('type', 'Type de bien', TYPES_BIEN, 'Choisir…')
+  // Un terrain n'a pas de type secondaire : le champ disparaît, la valeur est vidée à
+  // l'enregistrement.
+  const champCategorie =
+    type === '' || aUneCategorie(type)
+      ? liste('categorie', 'Ancien, neuf ou viager', CATEGORIES_BIEN, 'Non précisé')
+      : null
 
   if (court) {
     return (
@@ -130,7 +140,10 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
           {champCodePostal}
           {champVille}
         </div>
-        {champType}
+        <div className="grid grid-cols-2 gap-4">
+          {champType}
+          {champCategorie}
+        </div>
       </div>
     )
   }
@@ -163,11 +176,12 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
             {champType}
             {type !== '' && (
               <p className="mt-1 text-sm text-encre-douce">
-                Le formulaire n'affiche que les champs de ce type. En changeant de type, les champs
-                qui disparaissent sont vidés à l'enregistrement.
+                Le formulaire n'affiche que les champs de ces types. En changeant de type, les
+                champs qui disparaissent sont vidés à l'enregistrement.
               </p>
             )}
           </div>
+          {champCategorie}
           {liste('statut', 'Statut', STATUTS_BIEN)}
           {saisie('prix', 'Prix affiché (€)', {
             genre: 'nombre',
@@ -187,7 +201,7 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
         </div>
       </Carte>
 
-      {type === 'ancien' && (
+      {utilise('copropriete') && (
         <Carte titre="Propre à l'ancien">
           <div className={GRILLE}>
             {liste('copropriete', 'En copropriété', OUI_NON, 'Non précisé')}
@@ -197,7 +211,7 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
         </Carte>
       )}
 
-      {type === 'neuf' && (
+      {utilise('programme') && (
         <Carte titre="Propre au neuf">
           <div className={GRILLE}>
             {saisie('programme', 'Programme', { maxLength: LONGUEURS_MAX_BIEN.programme })}
@@ -207,7 +221,7 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
         </Carte>
       )}
 
-      {type === 'viager' && (
+      {utilise('viager_rente') && (
         <Carte titre="Propre au viager">
           <div className={GRILLE}>
             {saisie('viager_bouquet', 'Bouquet (€)', { genre: 'nombre' })}
@@ -221,7 +235,7 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
         </Carte>
       )}
 
-      {type === 'commerce' && (
+      {utilise('commerce_nature') && (
         <Carte titre="Propre au commerce ou au local">
           <div className={GRILLE}>
             {liste('commerce_nature', 'Murs ou fonds', NATURES_COMMERCE, 'Non précisé')}
@@ -237,7 +251,7 @@ export default function FormulaireBien({ brouillon, erreurs, onChange, court = f
         </Carte>
       )}
 
-      {type === 'terrain' && (
+      {utilise('constructible') && (
         <Carte titre="Propre au terrain">
           <div className={GRILLE}>
             {liste('constructible', 'Constructible', OUI_NON, 'Non précisé')}

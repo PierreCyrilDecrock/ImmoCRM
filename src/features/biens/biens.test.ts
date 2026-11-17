@@ -5,18 +5,22 @@ import {
   adresseBien,
   brouillonBienDepuis,
   brouillonBienVide,
+  CATEGORIES_BIEN,
   champUtilise,
+  CHAMPS_PAR_CATEGORIE,
   CHAMPS_PAR_TYPE,
   chercherBiens,
   evolutionPrix,
   libelleEtage,
   lireAges,
+  libelleTypes,
   lireEtage,
   listerPrixBien,
   preparerBien,
   resumeBien,
   TYPES_BIEN,
   type BrouillonBien,
+  type ChampSelonType,
 } from './biens'
 
 // Le séparateur de milliers français est une espace insécable : on la ramène à une espace.
@@ -25,7 +29,8 @@ const lisible = (texte: string) => texte.replace(/\s/g, ' ')
 const brouillon = (valeurs: Partial<BrouillonBien>): BrouillonBien => ({
   ...brouillonBienVide(),
   adresse: "12 rue de l'Exemple",
-  type: 'ancien',
+  type: 'appartement',
+  categorie: 'ancien',
   ...valeurs,
 })
 
@@ -63,21 +68,44 @@ const TOUT_REMPLI: Partial<BrouillonBien> = {
 }
 
 describe('champs par type', () => {
-  it('réserve à chaque type ses champs propres', () => {
-    expect(champUtilise('ancien', 'taxe_fonciere')).toBe(true)
-    expect(champUtilise('neuf', 'taxe_fonciere')).toBe(false)
-    expect(champUtilise('neuf', 'programme')).toBe(true)
-    expect(champUtilise('viager', 'viager_rente')).toBe(true)
-    expect(champUtilise('commerce', 'commerce_bail')).toBe(true)
-    expect(champUtilise('commerce', 'chambres')).toBe(false)
-    expect(champUtilise('terrain', 'surface_terrain')).toBe(true)
-    expect(champUtilise('terrain', 'pieces')).toBe(false)
-    expect(champUtilise('terrain', 'dpe_classe')).toBe(false)
-    expect(champUtilise('inconnu', 'surface')).toBe(false)
+  const bien = (type: string, categorie: string | null = null) => ({ type, categorie })
+
+  it('réserve à chaque type principal ses champs propres', () => {
+    expect(champUtilise(bien('appartement'), 'etage')).toBe(true)
+    expect(champUtilise(bien('maison'), 'etage')).toBe(false)
+    expect(champUtilise(bien('maison'), 'chambres')).toBe(true)
+    expect(champUtilise(bien('commerce'), 'commerce_bail')).toBe(true)
+    expect(champUtilise(bien('commerce'), 'chambres')).toBe(false)
+    expect(champUtilise(bien('terrain'), 'surface_terrain')).toBe(true)
+    expect(champUtilise(bien('terrain'), 'pieces')).toBe(false)
+    expect(champUtilise(bien('terrain'), 'dpe_classe')).toBe(false)
+    expect(champUtilise(bien('inconnu'), 'surface')).toBe(false)
+  })
+
+  it('ajoute ceux du type secondaire', () => {
+    expect(champUtilise(bien('appartement', 'ancien'), 'taxe_fonciere')).toBe(true)
+    expect(champUtilise(bien('appartement', 'neuf'), 'taxe_fonciere')).toBe(false)
+    expect(champUtilise(bien('maison', 'neuf'), 'programme')).toBe(true)
+    expect(champUtilise(bien('maison', 'viager'), 'viager_rente')).toBe(true)
+    expect(champUtilise(bien('commerce', 'ancien'), 'copropriete')).toBe(true)
+    expect(champUtilise(bien('appartement'), 'copropriete')).toBe(false)
+    // Un terrain n'a pas de type secondaire.
+    expect(champUtilise(bien('terrain', 'viager'), 'viager_rente')).toBe(false)
   })
 
   it('connaît tous les types proposés', () => {
     expect(Object.keys(CHAMPS_PAR_TYPE).sort()).toEqual(TYPES_BIEN.map((t) => t.valeur).sort())
+    expect(Object.keys(CHAMPS_PAR_CATEGORIE).sort()).toEqual(
+      CATEGORIES_BIEN.map((c) => c.valeur).sort(),
+    )
+  })
+
+  it('nomme les deux types ensemble', () => {
+    expect(libelleTypes(bien('appartement', 'ancien'))).toBe('Appartement ancien')
+    expect(libelleTypes(bien('maison', 'neuf'))).toBe('Maison neuve')
+    expect(libelleTypes(bien('maison', 'viager'))).toBe('Maison en viager')
+    expect(libelleTypes(bien('terrain', 'ancien'))).toBe('Terrain')
+    expect(libelleTypes(bien('commerce'))).toBe('Commerce ou local')
   })
 })
 
@@ -91,7 +119,13 @@ describe('preparerBien', () => {
     const minimal = preparerBien(brouillon({ adresse: '  3 impasse Fictive ' }))
     expect(minimal).toMatchObject({
       ok: true,
-      valeurs: { adresse: '3 impasse Fictive', type: 'ancien', statut: 'repere', prix: null },
+      valeurs: {
+        adresse: '3 impasse Fictive',
+        type: 'appartement',
+        categorie: 'ancien',
+        statut: 'repere',
+        prix: null,
+      },
     })
   })
 
@@ -111,21 +145,33 @@ describe('preparerBien', () => {
     })
   })
 
-  it.each(TYPES_BIEN.map((type) => type.valeur))(
-    'ne garde que les champs du type « %s »',
-    (type) => {
-      const preparation = preparerBien(brouillon({ ...TOUT_REMPLI, type }), '2026-11-16')
-      if (!preparation.ok) throw new Error('le brouillon devrait être accepté')
-      const valeurs: Record<string, unknown> = preparation.valeurs
-      for (const champ of Object.keys(TOUT_REMPLI)) {
-        const vide = [null, '', []].some(
-          (rien) => JSON.stringify(rien) === JSON.stringify(valeurs[champ]),
-        )
-        // Rempli si le champ concerne ce type, vidé sinon.
-        expect([champ, vide]).toEqual([champ, !CHAMPS_PAR_TYPE[type].some((c) => c === champ)])
-      }
-    },
-  )
+  it.each(
+    TYPES_BIEN.flatMap((type) =>
+      ['', ...CATEGORIES_BIEN.map((c) => c.valeur)].map((categorie) => [type.valeur, categorie]),
+    ),
+  )('ne garde que les champs des types « %s » et « %s »', (type, categorie) => {
+    const preparation = preparerBien(
+      brouillon({
+        ...TOUT_REMPLI,
+        type: type as BrouillonBien['type'],
+        categorie: categorie as BrouillonBien['categorie'],
+      }),
+      '2026-11-16',
+    )
+    if (!preparation.ok) throw new Error('le brouillon devrait être accepté')
+    const valeurs: Record<string, unknown> = preparation.valeurs
+    const enregistree = valeurs.categorie as string | null
+    // Un terrain perd son type secondaire.
+    expect(enregistree).toBe(type === 'terrain' || categorie === '' ? null : categorie)
+    for (const champ of Object.keys(TOUT_REMPLI)) {
+      const vide = [null, '', []].some(
+        (rien) => JSON.stringify(rien) === JSON.stringify(valeurs[champ]),
+      )
+      // Rempli si le champ concerne ce bien, vidé sinon.
+      const concerne = champUtilise({ type, categorie: enregistree }, champ as ChampSelonType)
+      expect([champ, vide]).toEqual([champ, !concerne])
+    }
+  })
 
   it('ne signale pas d’erreur sur un champ que le type n’utilise pas', () => {
     const preparation = preparerBien(
@@ -161,14 +207,14 @@ describe('preparerBien', () => {
 
   it('accepte une date de livraison à venir', () => {
     const preparation = preparerBien(
-      brouillon({ type: 'neuf', date_livraison: '2028-01-15' }),
+      brouillon({ categorie: 'neuf', date_livraison: '2028-01-15' }),
       '2026-11-16',
     )
     expect(preparation).toMatchObject({ ok: true, valeurs: { date_livraison: '2028-01-15' } })
   })
 
   it('refuse des âges de crédirentiers illisibles', () => {
-    const preparation = preparerBien(brouillon({ type: 'viager', viager_ages: 'âgés' }))
+    const preparation = preparerBien(brouillon({ categorie: 'viager', viager_ages: 'âgés' }))
     expect(preparation).toMatchObject({ ok: false, erreurs: { viager_ages: expect.any(String) } })
   })
 })
@@ -176,7 +222,8 @@ describe('preparerBien', () => {
 describe('brouillonBienDepuis', () => {
   it('redonne les mêmes valeurs après un aller-retour', () => {
     const bien = bienEssai({
-      type: 'viager',
+      type: 'appartement',
+      categorie: 'viager',
       prix: 120000,
       surface: 95.5,
       etage: 0,
@@ -230,9 +277,14 @@ describe('affichage', () => {
   it('résume un bien pour la liste', () => {
     const logement = bienEssai({ ville: 'Villefictive', pieces: 3, surface: 72.5, prix: 285000 })
     expect(lisible(resumeBien(logement))).toBe(
-      'Villefictive · 285 000 € · Ancien · 72,5 m² · 3 pièces',
+      'Villefictive · 285 000 € · Appartement ancien · 72,5 m² · 3 pièces',
     )
-    const terrain = bienEssai({ type: 'terrain', surface: 10, surface_terrain: 640 })
+    const terrain = bienEssai({
+      type: 'terrain',
+      categorie: null,
+      surface: 10,
+      surface_terrain: 640,
+    })
     expect(lisible(resumeBien(terrain))).toBe('Terrain · 640 m²')
   })
 

@@ -5,6 +5,7 @@ import { nomComplet } from '../contacts/contacts'
 import {
   horaireActivite,
   iconeTypeActivite,
+  lignesCompteRenduVisite,
   parJour,
   titreActivite,
   type ActiviteAffichee,
@@ -65,6 +66,15 @@ export default function FilActivites({ activites, aujourdhui, masquer, onChangem
                         {liens.length > 0 && (
                           <span className="block truncate text-sm text-encre-douce">
                             {liens.join(' · ')}
+                          </span>
+                        )}
+                        {lignesCompteRenduVisite(activite).length > 0 && (
+                          <span className="mt-1 block text-sm text-encre">
+                            {lignesCompteRenduVisite(activite).map(([nom, valeur]) => (
+                              <span key={nom} className="block break-words">
+                                <span className="font-medium">{nom} :</span> {valeur}
+                              </span>
+                            ))}
                           </span>
                         )}
                         {activite.compte_rendu !== '' && (

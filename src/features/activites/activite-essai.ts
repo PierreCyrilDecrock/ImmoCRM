@@ -17,6 +17,11 @@ export function activiteEssai(valeurs: Partial<Activite> = {}): Activite {
     contact_id: null,
     bien_id: null,
     projet_vendeur_id: null,
+    projet_acquereur_id: null,
+    visite_points_positifs: '',
+    visite_points_negatifs: '',
+    visite_interet: null,
+    visite_suite: null,
     ...valeurs,
   }
 }

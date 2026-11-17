@@ -111,6 +111,7 @@ export default function FicheProjetVendeur() {
   const actif = projet.etat === 'actif' && !archive
   const dansLePipeline = (projet.etat === 'actif' || projet.etat === 'gagne') && !archive
   const suivante = etapeSuivante(projet.etape)
+  const origine = { lien: { genre: 'vendeur' as const, id: projet.id }, contact, bien }
 
   async function reprendre() {
     setEnvoi(true)
@@ -341,10 +342,10 @@ export default function FicheProjetVendeur() {
           </Carte>
         </div>
         <div className="min-w-0">
-          <SectionTaches projet={affiche} version={version} onChangement={toutRelire} />
+          <SectionTaches projet={origine} version={version} onChangement={toutRelire} />
         </div>
         <div className="min-w-0 lg:col-span-2">
-          <SectionJournal projet={affiche} version={version} onChangement={toutRelire} />
+          <SectionJournal projet={origine} version={version} onChangement={toutRelire} />
         </div>
       </div>
 

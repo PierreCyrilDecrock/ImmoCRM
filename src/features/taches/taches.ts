@@ -15,6 +15,7 @@ import { estDateValide, formaterDuree, formaterHeure, heureDeFin } from '../../l
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import { filtreLien, lireFichesLiees, type LienFiche } from '../liens/fiches-liees'
+import { colonnesProjet, lienProjetDe, type LienProjet } from '../liens/lien-projet'
 import { bornesVue, type Vue } from './echeances'
 import { estRecurrence, occurrenceSuivante, type Recurrence } from './recurrence'
 
@@ -117,15 +118,15 @@ export type BrouillonTache = {
   recurrence: Recurrence | ''
   contact: Contact | null
   bien: Bien | null
-  /** Projet vendeur lié, ou `null`. */
-  projetVendeurId: string | null
+  /** Projet (de vente ou d'achat) lié, ou `null`. */
+  projet: LienProjet | null
 }
 
 export type ErreursTache = Partial<Record<'titre' | 'echeance' | 'heure' | 'duree', string>>
 
 export function brouillonTacheVide(
   echeance: string,
-  liens: { contact?: Contact | null; bien?: Bien | null; projetVendeurId?: string | null } = {},
+  liens: { contact?: Contact | null; bien?: Bien | null; projet?: LienProjet | null } = {},
 ): BrouillonTache {
   const contact = liens.contact ?? null
   return {
@@ -141,7 +142,7 @@ export function brouillonTacheVide(
     recurrence: '',
     contact,
     bien: liens.bien ?? null,
-    projetVendeurId: liens.projetVendeurId ?? null,
+    projet: liens.projet ?? null,
   }
 }
 
@@ -163,7 +164,7 @@ export function brouillonTacheDepuis({ tache, contact, bien }: TacheAffichee): B
     recurrence: estRecurrence(tache.recurrence) ? tache.recurrence : '',
     contact,
     bien,
-    projetVendeurId: tache.projet_vendeur_id,
+    projet: lienProjetDe(tache),
   }
 }
 
@@ -229,7 +230,7 @@ export function preparerTache(
       recurrence_rang: garderSerie ? existante.recurrence_rang : 0,
       contact_id: brouillon.contact?.id ?? null,
       bien_id: brouillon.bien?.id ?? null,
-      projet_vendeur_id: brouillon.projetVendeurId,
+      ...colonnesProjet(brouillon.projet),
     },
   }
 }

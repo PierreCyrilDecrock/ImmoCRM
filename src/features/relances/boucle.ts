@@ -1,10 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { appeler, type Resultat } from '../../lib/donnees'
-import { estDateValide, estHeureValide } from '../../lib/dates'
+import { ajouterJours, estDateValide, estHeureValide } from '../../lib/dates'
 import type { Database } from '../../lib/types-base'
 import {
+  colonnesVisite,
+  COMPTE_RENDU_VISITE_VIDE,
   LONGUEUR_MAX_COMPTE_RENDU,
   RESULTATS_APPEL,
+  type CompteRenduVisite,
   type ResultatAppel,
   type TypeActivite,
 } from '../activites/activites'
@@ -45,6 +48,14 @@ export function typeActiviteDeTache(categorie: string): TypeActivite {
 /** Titre proposé pour la prochaine relance : « Relancer Camille Fictif ». */
 export function titreRelance(contact: Contact): string {
   return `Relancer ${nomComplet(contact)}`.slice(0, LONGUEURS_MAX_TACHE.titre)
+}
+
+/** Après une visite, l'acquéreur est rappelé le lendemain (cadrage, automatisations). */
+export const JOURS_RAPPEL_APRES_VISITE = 1
+
+/** Titre proposé après une visite : « Rappeler Camille Fictif après la visite ». */
+export function titreRappelVisite(contact: Contact): string {
+  return `Rappeler ${nomComplet(contact)} après la visite`.slice(0, LONGUEURS_MAX_TACHE.titre)
 }
 
 /** Une action déjà prévue pour le contact une fois la tâche close. */
@@ -93,6 +104,8 @@ export type BrouillonBoucle = {
   /** `HH:MM`, ou vide. */
   heure: string
   motif: string
+  /** Compte rendu structuré, quand ce qui a été fait est une visite. */
+  visite: CompteRenduVisite
 }
 
 export type ErreursBoucle = Partial<
@@ -114,17 +127,22 @@ export function brouillonBoucle(
   contexte: { aujourdhui: string; delais: DelaisRelance; suite: SuitePrevue | null },
 ): BrouillonBoucle {
   const temperature = temperatureConnue(contact.temperature)
+  const visite = tache.categorie === 'visite'
   return {
     type: typeActiviteDeTache(tache.categorie),
     resultat: '',
     compteRendu: '',
     mode: contexte.suite === null ? 'planifier' : 'deja_prevue',
     temperature,
-    titre: titreRelance(contact),
+    // Après une visite : rappeler l'acquéreur dès le lendemain, quelle que soit sa température.
+    titre: visite ? titreRappelVisite(contact) : titreRelance(contact),
     categorie: 'relance',
-    echeance: proposerRelance(contexte.aujourdhui, temperature || null, contexte.delais).echeance,
+    echeance: visite
+      ? ajouterJours(contexte.aujourdhui, JOURS_RAPPEL_APRES_VISITE)
+      : proposerRelance(contexte.aujourdhui, temperature || null, contexte.delais).echeance,
     heure: '',
     motif: '',
+    visite: COMPTE_RENDU_VISITE_VIDE,
   }
 }
 
@@ -169,6 +187,7 @@ export function preparerBoucle(
   if (Object.keys(erreurs).length > 0) return { ok: false, erreurs }
 
   const serie = suivanteDeSerie(tache, aujourdhui)
+  const visite = colonnesVisite(brouillon.type, brouillon.visite)
   const temperature =
     brouillon.temperature !== '' && brouillon.temperature !== contact.temperature
       ? brouillon.temperature
@@ -197,6 +216,14 @@ export function preparerBoucle(
         : {}),
       ...(temperature === undefined ? {} : { p_temperature: temperature }),
       p_sans_prochaine_action: brouillon.mode === 'aucune',
+      ...(brouillon.type === 'visite'
+        ? {
+            p_visite_points_positifs: visite.visite_points_positifs,
+            p_visite_points_negatifs: visite.visite_points_negatifs,
+            ...(visite.visite_interet === null ? {} : { p_visite_interet: visite.visite_interet }),
+            ...(visite.visite_suite === null ? {} : { p_visite_suite: visite.visite_suite }),
+          }
+        : {}),
     },
   }
 }
