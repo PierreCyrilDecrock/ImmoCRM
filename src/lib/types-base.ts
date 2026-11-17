@@ -23,6 +23,7 @@ export type Database = {
           duree: number | null
           heure: string
           id: string
+          projet_vendeur_id: string | null
           resultat: string | null
           type: string
           updated_at: string
@@ -38,6 +39,7 @@ export type Database = {
           duree?: number | null
           heure?: string
           id?: string
+          projet_vendeur_id?: string | null
           resultat?: string | null
           type: string
           updated_at?: string
@@ -53,6 +55,7 @@ export type Database = {
           duree?: number | null
           heure?: string
           id?: string
+          projet_vendeur_id?: string | null
           resultat?: string | null
           type?: string
           updated_at?: string
@@ -71,6 +74,13 @@ export type Database = {
             columns: ['user_id', 'contact_id']
             isOneToOne: false
             referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'activites_projet_vendeur_fk'
+            columns: ['user_id', 'projet_vendeur_id']
+            isOneToOne: false
+            referencedRelation: 'projets_vendeurs'
             referencedColumns: ['user_id', 'id']
           },
         ]
@@ -519,6 +529,108 @@ export type Database = {
           },
         ]
       }
+      projets_vendeurs: {
+        Row: {
+          agences_consultees: string
+          archived_at: string | null
+          avis_remis_le: string | null
+          bien_id: string
+          contact_id: string
+          created_at: string
+          echeance_souhaitee: string | null
+          estimation_basse: number | null
+          estimation_haute: number | null
+          estimation_le: string | null
+          etape: string
+          etape_le: string
+          etat: string
+          id: string
+          mandat_ailleurs: boolean
+          mandat_ailleurs_fin: string | null
+          mandat_le: string | null
+          mandat_type: string | null
+          motif_perte: string | null
+          motif_perte_detail: string
+          motif_vente: string
+          notes: string
+          prix_espere: number | null
+          recontacter_le: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agences_consultees?: string
+          archived_at?: string | null
+          avis_remis_le?: string | null
+          bien_id: string
+          contact_id: string
+          created_at?: string
+          echeance_souhaitee?: string | null
+          estimation_basse?: number | null
+          estimation_haute?: number | null
+          estimation_le?: string | null
+          etape?: string
+          etape_le?: string
+          etat?: string
+          id?: string
+          mandat_ailleurs?: boolean
+          mandat_ailleurs_fin?: string | null
+          mandat_le?: string | null
+          mandat_type?: string | null
+          motif_perte?: string | null
+          motif_perte_detail?: string
+          motif_vente?: string
+          notes?: string
+          prix_espere?: number | null
+          recontacter_le?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          agences_consultees?: string
+          archived_at?: string | null
+          avis_remis_le?: string | null
+          bien_id?: string
+          contact_id?: string
+          created_at?: string
+          echeance_souhaitee?: string | null
+          estimation_basse?: number | null
+          estimation_haute?: number | null
+          estimation_le?: string | null
+          etape?: string
+          etape_le?: string
+          etat?: string
+          id?: string
+          mandat_ailleurs?: boolean
+          mandat_ailleurs_fin?: string | null
+          mandat_le?: string | null
+          mandat_type?: string | null
+          motif_perte?: string | null
+          motif_perte_detail?: string
+          motif_vente?: string
+          notes?: string
+          prix_espere?: number | null
+          recontacter_le?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'projets_vendeurs_bien_fk'
+            columns: ['user_id', 'bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'projets_vendeurs_contact_fk'
+            columns: ['user_id', 'contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
       reglages: {
         Row: {
           created_at: string
@@ -571,6 +683,7 @@ export type Database = {
           lieu: string
           motif: string
           priorite: number
+          projet_vendeur_id: string | null
           recurrence: string | null
           recurrence_ancre: string | null
           recurrence_rang: number
@@ -593,6 +706,7 @@ export type Database = {
           lieu?: string
           motif?: string
           priorite?: number
+          projet_vendeur_id?: string | null
           recurrence?: string | null
           recurrence_ancre?: string | null
           recurrence_rang?: number
@@ -615,6 +729,7 @@ export type Database = {
           lieu?: string
           motif?: string
           priorite?: number
+          projet_vendeur_id?: string | null
           recurrence?: string | null
           recurrence_ancre?: string | null
           recurrence_rang?: number
@@ -635,6 +750,13 @@ export type Database = {
             columns: ['user_id', 'contact_id']
             isOneToOne: false
             referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'taches_projet_vendeur_fk'
+            columns: ['user_id', 'projet_vendeur_id']
+            isOneToOne: false
+            referencedRelation: 'projets_vendeurs'
             referencedColumns: ['user_id', 'id']
           },
         ]
@@ -675,6 +797,7 @@ export type Database = {
           lieu: string
           motif: string
           priorite: number
+          projet_vendeur_id: string | null
           recurrence: string | null
           recurrence_ancre: string | null
           recurrence_rang: number
@@ -711,6 +834,7 @@ export type Database = {
           lieu: string
           motif: string
           priorite: number
+          projet_vendeur_id: string | null
           recurrence: string | null
           recurrence_ancre: string | null
           recurrence_rang: number
@@ -842,6 +966,48 @@ export type Database = {
       ordonner_photos_bien: {
         Args: { p_bien_id: string; p_ids: string[] }
         Returns: undefined
+      }
+      sortir_projet_vendeur: {
+        Args: {
+          p_etat: string
+          p_id: string
+          p_mandat_ailleurs_fin?: string
+          p_motif_perte?: string
+          p_motif_perte_detail?: string
+          p_recontacter_le?: string
+          p_relance_le?: string
+          p_relance_motif?: string
+          p_relance_titre?: string
+        }
+        Returns: {
+          archived_at: string | null
+          bien_id: string | null
+          categorie: string
+          cloturee_le: string | null
+          contact_id: string | null
+          created_at: string
+          duree: number | null
+          echeance: string
+          etat: string
+          heure: string | null
+          id: string
+          lieu: string
+          motif: string
+          priorite: number
+          projet_vendeur_id: string | null
+          recurrence: string | null
+          recurrence_ancre: string | null
+          recurrence_rang: number
+          titre: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'taches'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       supprimer_contact_definitivement: {
         Args: { p_id: string }

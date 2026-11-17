@@ -44,6 +44,7 @@ export const TABLES: Record<NomTable, { archivable: boolean }> = {
   biens_prix: { archivable: true },
   biens_proprietaires: { archivable: true },
   contacts: { archivable: true },
+  projets_vendeurs: { archivable: true },
   reglages: { archivable: false },
   taches: { archivable: true },
 }

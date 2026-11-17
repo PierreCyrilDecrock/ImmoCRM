@@ -501,12 +501,125 @@ const JEU_ACTIVITES: JeuFictif = {
   },
 }
 
+/**
+ * Ce qui change d'un projet vendeur fictif à l'autre : un projet à chacune des quatre
+ * premières étapes, avec les informations que demande l'étape. Les deux premiers sont du
+ * même vendeur (deux biens). `jours` : depuis combien de jours le projet est dans l'étape.
+ */
+const MODELES_PROJETS_VENDEURS: readonly (Omit<
+  Creation<'projets_vendeurs'>,
+  'contact_id' | 'bien_id'
+> & { jours: number; contact: number; bien: number })[] = [
+  { etape: 'premier_contact', jours: 2, contact: 0, bien: 0, notes: 'Projet fictif.' },
+  {
+    etape: 'decouverte',
+    jours: 9,
+    contact: 0,
+    bien: 1,
+    prix_espere: 350000,
+    notes: 'Projet fictif : second bien du même vendeur.',
+  },
+  {
+    etape: 'estimation',
+    jours: 40,
+    contact: 1,
+    bien: 2,
+    motif_vente: 'Mutation fictive',
+    echeance_souhaitee: '2027-06-30',
+    prix_espere: 140000,
+    agences_consultees: 'Agence fictive du Centre',
+  },
+  {
+    etape: 'suivi',
+    jours: 12,
+    contact: 2,
+    bien: 3,
+    motif_vente: 'Agrandissement fictif',
+    echeance_souhaitee: '2027-03-31',
+    prix_espere: 210000,
+    estimation_basse: 185000,
+    estimation_haute: 200000,
+    notes: 'Objection fictive : trouve l’estimation basse.',
+  },
+]
+
+/** Nombre de projets vendeurs du lot fictif. */
+export const NOMBRE_PROJETS_VENDEURS_FICTIFS = MODELES_PROJETS_VENDEURS.length
+
+/** Fabrique un projet vendeur fictif, lié au contact et au bien donnés. */
+export function projetVendeurFictif(
+  rang: number,
+  aujourdhui: string,
+  liens: { contactId: string; bienId: string },
+): Creation<'projets_vendeurs'> {
+  const modele = MODELES_PROJETS_VENDEURS[rang % MODELES_PROJETS_VENDEURS.length]
+  if (modele === undefined) throw new Error('Aucun modèle de projet fictif.')
+  const valeurs: Creation<'projets_vendeurs'> = { ...modele, contact_id: '', bien_id: '' }
+  delete (valeurs as Partial<typeof modele>).jours
+  delete (valeurs as Partial<typeof modele>).contact
+  delete (valeurs as Partial<typeof modele>).bien
+  const jours = modele.jours
+  const avecAvis = valeurs.etape === 'suivi'
+  return {
+    ...valeurs,
+    etape_le: ajouterJours(aujourdhui, -jours),
+    ...(avecAvis
+      ? {
+          estimation_le: ajouterJours(aujourdhui, -20),
+          avis_remis_le: ajouterJours(aujourdhui, -jours),
+        }
+      : {}),
+    contact_id: liens.contactId,
+    bien_id: liens.bienId,
+  }
+}
+
+const JEU_PROJETS_VENDEURS: JeuFictif = {
+  libelle: 'Projets vendeurs',
+  async inserer(client) {
+    // Les projets portent sur les biens fictifs les plus récents (ceux du lot Biens) :
+    // un bien n'a qu'un projet en cours à la fois.
+    const fiches = await fichesFictivesRecentes(client, NOMBRE_BIENS_FICTIFS)
+    if (!fiches.ok) return fiches
+    const aujourdhui = dateDuJour()
+    for (let rang = 0; rang < NOMBRE_PROJETS_VENDEURS_FICTIFS; rang += 1) {
+      const modele = MODELES_PROJETS_VENDEURS[rang]
+      const contactId = fiches.donnees(modele?.contact ?? 0).contactId
+      const bienId = fiches.donnees(modele?.bien ?? 0).bienId
+      if (contactId === null || bienId === null) {
+        return { ok: true, donnees: rang }
+      }
+      const projet = await creer(
+        client,
+        'projets_vendeurs',
+        projetVendeurFictif(rang, aujourdhui, { contactId, bienId }),
+      )
+      if (!projet.ok) return projet
+      // Une prochaine action liée au projet, sauf pour le premier : la carte l'annonce.
+      if (rang > 0) {
+        const tache = await creer(client, 'taches', {
+          titre: 'Relancer le vendeur (fictif)',
+          categorie: 'relance',
+          echeance: ajouterJours(aujourdhui, rang * 3),
+          motif: 'Tâche fictive liée au projet.',
+          contact_id: contactId,
+          bien_id: bienId,
+          projet_vendeur_id: projet.donnees.id,
+        })
+        if (!tache.ok) return tache
+      }
+    }
+    return { ok: true, donnees: NOMBRE_PROJETS_VENDEURS_FICTIFS }
+  },
+}
+
 /** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
 export const JEUX_FICTIFS: readonly JeuFictif[] = [
   JEU_CONTACTS,
   JEU_BIENS,
   JEU_TACHES,
   JEU_ACTIVITES,
+  JEU_PROJETS_VENDEURS,
 ]
 
 export type BilanFictif = { ok: true; lignes: number } | { ok: false; message: string }

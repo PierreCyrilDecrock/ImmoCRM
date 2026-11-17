@@ -37,9 +37,14 @@ type Props = {
   /** Activité à modifier ; absente : nouvelle activité. */
   affichee?: ActiviteAffichee
   /** Valeurs de départ d'une nouvelle activité : le type choisi et la fiche d'où l'on vient. */
-  depart?: { type?: TypeActivite; contact?: Contact | null; bien?: Bien | null }
+  depart?: {
+    type?: TypeActivite
+    contact?: Contact | null
+    bien?: Bien | null
+    projetVendeurId?: string | null
+  }
   /** Lien fixé par la fiche d'où l'on vient : il ne se retire pas ici. */
-  verrouiller?: 'contact' | 'bien'
+  verrouiller?: 'contact' | 'bien' | 'projet'
   onFermer: () => void
   /** Appelé après tout enregistrement : le fil se relit. */
   onChangement: () => void
@@ -266,9 +271,17 @@ export default function FormulaireActivite({
           legende="Liée à"
           contact={brouillon.contact}
           bien={brouillon.bien}
+          projetVendeurId={brouillon.projetVendeurId}
           verrouiller={verrouiller}
           onContact={(contact) => changer('contact', contact)}
           onBien={(bien) => changer('bien', bien)}
+          onProjetVendeur={(projet) =>
+            setBrouillon((actuel) => ({
+              ...actuel,
+              projetVendeurId: projet?.id ?? null,
+              bien: actuel.bien ?? projet?.bien ?? null,
+            }))
+          }
         />
         {brouillon.contact === null && brouillon.type !== 'note' && (
           <p className="-mt-2 text-sm text-encre-douce">

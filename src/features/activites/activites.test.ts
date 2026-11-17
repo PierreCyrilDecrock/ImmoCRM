@@ -34,6 +34,7 @@ describe('brouillonActiviteVide', () => {
       duree: '',
       contact,
       bien: null,
+      projetVendeurId: null,
     })
   })
 })
@@ -63,6 +64,7 @@ describe('preparerActivite', () => {
         duree: 15,
         contact_id: contact.id,
         bien_id: bien.id,
+        projet_vendeur_id: null,
       },
     })
   })
@@ -132,8 +134,17 @@ describe('brouillonActiviteDepuis', () => {
         duree: 5,
         contact_id: contact.id,
         bien_id: null,
+        projet_vendeur_id: null,
       },
     })
+  })
+
+  it('garde le lien vers un projet vendeur', () => {
+    const activite = activiteEssai({ projet_vendeur_id: 'p1' })
+    const repris = brouillonActiviteDepuis({ id: activite.id, activite, contact: null, bien: null })
+    expect(repris.projetVendeurId).toBe('p1')
+    const preparation = preparerActivite(repris, AUJOURDHUI)
+    expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBe('p1')
   })
 })
 

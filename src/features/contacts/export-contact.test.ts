@@ -1,3 +1,4 @@
+import { formaterPrix } from '../../lib/nombres'
 import { describe, expect, it } from 'vitest'
 import { activiteEssai } from '../activites/activite-essai'
 import { bienEssai } from '../biens/bien-essai'
@@ -42,7 +43,15 @@ describe('texteExportContact', () => {
 
   it('écrit les données en clair, rubrique par rubrique', () => {
     const texte = texteExportContact(
-      { contact, fichesFusionnees: [], appels: [], biens: [], taches: [], activites: [] },
+      {
+        contact,
+        fichesFusionnees: [],
+        appels: [],
+        biens: [],
+        taches: [],
+        activites: [],
+        projetsVendeurs: [],
+      },
       '2026-11-16',
     )
     expect(texte).toContain('DONNÉES PERSONNELLES — Camille Fictif')
@@ -70,6 +79,7 @@ describe('texteExportContact', () => {
       biens: [],
       taches: [],
       activites: [],
+      projetsVendeurs: [],
     })
     expect(texte).toContain('Adresse : non renseigné')
     expect(texte).toContain('Recommandé par : non renseigné')
@@ -83,6 +93,7 @@ describe('texteExportContact', () => {
       biens: [],
       taches: [],
       activites: [],
+      projetsVendeurs: [],
     })
     expect(texte).toContain('Recommandé par : un autre contact du fichier')
     expect(texte).not.toContain('00000000-0000-4000-8000-000000000009')
@@ -161,7 +172,47 @@ describe('texteExportContact', () => {
           bien: null,
         },
       ],
+      projetsVendeurs: [
+        {
+          id: 'p1',
+          projet: {
+            id: 'p1',
+            user_id: 'u',
+            created_at: '2026-11-01T10:00:00Z',
+            updated_at: '2026-11-10T10:00:00Z',
+            archived_at: null,
+            contact_id: contact.id,
+            bien_id: 'b1',
+            etape: 'decouverte',
+            etape_le: '2026-11-05',
+            etat: 'perdu',
+            motif_vente: 'Mutation',
+            echeance_souhaitee: '2027-06-30',
+            prix_espere: 300000,
+            estimation_basse: null,
+            estimation_haute: null,
+            estimation_le: null,
+            avis_remis_le: null,
+            agences_consultees: '',
+            mandat_ailleurs: true,
+            mandat_ailleurs_fin: '2027-03-01',
+            mandat_type: null,
+            mandat_le: null,
+            recontacter_le: null,
+            motif_perte: 'mandat_ailleurs',
+            motif_perte_detail: '',
+            notes: '',
+          },
+          contact,
+          bien: bienEssai({ adresse: '3 impasse Fictive', ville: 'Villefictive' }),
+          prochaine: null,
+        },
+      ],
     })
+    expect(texte).toContain('PROJETS DE VENTE\n')
+    expect(texte).toContain(
+      `- bien : 3 impasse Fictive, Villefictive — étape : Découverte — état : Perdu — ouvert le : 1 novembre 2026 — motif de vente : Mutation — échéance souhaitée : 30 juin 2027 — prix espéré : ${formaterPrix(300000)} — mandat signé ailleurs : oui — fin du mandat ailleurs : 1 mars 2027 — motif de perte : Mandat signé ailleurs`,
+    )
     expect(texte).toContain("JOURNAL D'ACTIVITÉ\n")
     expect(texte).toContain(
       '- 12 novembre 2026, 18 h 05 · 10 min — Appel · Joint — bien : 3 impasse Fictive, Villefictive — compte rendu : Projet de vente au printemps',

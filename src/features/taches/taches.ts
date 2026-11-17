@@ -14,7 +14,7 @@ import {
 import { estDateValide, formaterDuree, formaterHeure, heureDeFin } from '../../lib/dates'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
-import { lireFichesLiees } from '../liens/fiches-liees'
+import { filtreLien, lireFichesLiees, type LienFiche } from '../liens/fiches-liees'
 import { bornesVue, type Vue } from './echeances'
 import { estRecurrence, occurrenceSuivante, type Recurrence } from './recurrence'
 
@@ -117,13 +117,15 @@ export type BrouillonTache = {
   recurrence: Recurrence | ''
   contact: Contact | null
   bien: Bien | null
+  /** Projet vendeur lié, ou `null`. */
+  projetVendeurId: string | null
 }
 
 export type ErreursTache = Partial<Record<'titre' | 'echeance' | 'heure' | 'duree', string>>
 
 export function brouillonTacheVide(
   echeance: string,
-  liens: { contact?: Contact | null; bien?: Bien | null } = {},
+  liens: { contact?: Contact | null; bien?: Bien | null; projetVendeurId?: string | null } = {},
 ): BrouillonTache {
   const contact = liens.contact ?? null
   return {
@@ -139,6 +141,7 @@ export function brouillonTacheVide(
     recurrence: '',
     contact,
     bien: liens.bien ?? null,
+    projetVendeurId: liens.projetVendeurId ?? null,
   }
 }
 
@@ -160,6 +163,7 @@ export function brouillonTacheDepuis({ tache, contact, bien }: TacheAffichee): B
     recurrence: estRecurrence(tache.recurrence) ? tache.recurrence : '',
     contact,
     bien,
+    projetVendeurId: tache.projet_vendeur_id,
   }
 }
 
@@ -225,6 +229,7 @@ export function preparerTache(
       recurrence_rang: garderSerie ? existante.recurrence_rang : 0,
       contact_id: brouillon.contact?.id ?? null,
       bien_id: brouillon.bien?.id ?? null,
+      projet_vendeur_id: brouillon.projetVendeurId,
     },
   }
 }
@@ -318,19 +323,16 @@ export async function compterVues(
 }
 
 /**
- * Les tâches liées à un contact ou à un bien. `etat: 'a_faire'` (par défaut) : celles qui
- * restent à faire, par date ; `'toutes'` : y compris les closes et archivées (export).
+ * Les tâches liées à un contact, un bien ou un projet. `etat: 'a_faire'` (par défaut) :
+ * celles qui restent à faire, par date ; `'toutes'` : y compris les closes et archivées
+ * (export).
  */
 export async function listerTachesLiees(
   client: SupabaseClient,
-  lien: { contactId: string } | { bienId: string },
+  lien: LienFiche,
   etat: 'a_faire' | 'toutes' = 'a_faire',
 ): Promise<Resultat<TacheAffichee[]>> {
-  const filtres: Filtre<'taches'>[] = [
-    'contactId' in lien
-      ? { colonne: 'contact_id', genre: 'egal', valeur: lien.contactId }
-      : { colonne: 'bien_id', genre: 'egal', valeur: lien.bienId },
-  ]
+  const filtres: Filtre<'taches'>[] = [filtreLien(lien)]
   if (etat === 'a_faire') filtres.push({ colonne: 'etat', genre: 'egal', valeur: 'a_faire' })
   const page = await listerPage(client, 'taches', {
     archives: etat === 'toutes' ? 'avec' : 'sans',

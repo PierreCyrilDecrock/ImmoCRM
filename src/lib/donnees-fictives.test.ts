@@ -1,3 +1,4 @@
+import { exigencesEtape, type EtapeVendeur } from '../features/projets/pipeline-vendeur'
 import { describe, expect, it, vi } from 'vitest'
 import {
   activiteFictive,
@@ -8,6 +9,8 @@ import {
   NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
   NOMBRE_TACHES_FICTIVES,
+  NOMBRE_PROJETS_VENDEURS_FICTIFS,
+  projetVendeurFictif,
   tacheFictive,
   personneFictive,
   personnesFictives,
@@ -249,5 +252,38 @@ describe('activités fictives', () => {
       if (activite.type !== 'appel') expect(activite.resultat ?? null).toBeNull()
     }
     expect(activites.some((activite) => activite.contact_id === null)).toBe(true)
+  })
+})
+
+describe('projets vendeurs fictifs', () => {
+  const aujourdhui = '2026-11-17'
+  const projets = Array.from({ length: NOMBRE_PROJETS_VENDEURS_FICTIFS }, (_, rang) =>
+    projetVendeurFictif(rang, aujourdhui, { contactId: 'c', bienId: `b${rang}` }),
+  )
+
+  it('couvrent les quatre étapes en cours, avec ce que chaque étape exige', () => {
+    expect(projets.map((projet) => projet.etape)).toEqual([
+      'premier_contact',
+      'decouverte',
+      'estimation',
+      'suivi',
+    ])
+    for (const projet of projets) {
+      const exigences = exigencesEtape(projet.etape as EtapeVendeur).filter(
+        (info) => info !== 'source',
+      )
+      for (const info of exigences) {
+        const valeur = projet[info]
+        expect(valeur === undefined || valeur === null || valeur === '').toBe(false)
+      }
+    }
+  })
+
+  it('sont datés dans le passé et ne gardent que des colonnes de la table', () => {
+    for (const projet of projets) {
+      expect(projet.etape_le !== undefined && projet.etape_le < aujourdhui).toBe(true)
+      expect(Object.keys(projet)).not.toContain('jours')
+      expect(Object.keys(projet)).not.toContain('contact')
+    }
   })
 })
