@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { dateDuJour, estDateValide, formaterDate } from './dates'
+import {
+  ajouterJours,
+  ajouterMois,
+  dateDuJour,
+  ecartJours,
+  estDateValide,
+  finDeSemaine,
+  formaterDate,
+  formaterDuree,
+  formaterHeure,
+  formaterJourCourt,
+  heureDeFin,
+  jourDeSemaine,
+} from './dates'
 
 describe('formaterDate', () => {
   it('écrit la date en toutes lettres, à la française', () => {
@@ -38,5 +51,89 @@ describe('estDateValide', () => {
     expect(estDateValide('')).toBe(false)
     expect(estDateValide('16/11/2026')).toBe(false)
     expect(estDateValide('2026-02-30')).toBe(false)
+  })
+})
+
+describe('dateDuJour et les changements d’heure', () => {
+  it('reste sur le bon jour la nuit du passage à l’heure d’été (29 mars 2026)', () => {
+    // 0 h 30 à Paris, encore en heure d'hiver (UTC+1).
+    expect(dateDuJour(new Date('2026-03-28T23:30:00Z'))).toBe('2026-03-29')
+    // 23 h 30 à Paris, déjà en heure d'été (UTC+2).
+    expect(dateDuJour(new Date('2026-03-29T21:30:00Z'))).toBe('2026-03-29')
+    expect(dateDuJour(new Date('2026-03-29T22:30:00Z'))).toBe('2026-03-30')
+  })
+
+  it('reste sur le bon jour la nuit du passage à l’heure d’hiver (25 octobre 2026)', () => {
+    expect(dateDuJour(new Date('2026-10-24T22:30:00Z'))).toBe('2026-10-25')
+    expect(dateDuJour(new Date('2026-10-25T22:30:00Z'))).toBe('2026-10-25')
+    expect(dateDuJour(new Date('2026-10-25T23:30:00Z'))).toBe('2026-10-26')
+  })
+})
+
+describe('ajouterJours', () => {
+  it('passe les fins de mois et d’année', () => {
+    expect(ajouterJours('2027-01-31', 1)).toBe('2027-02-01')
+    expect(ajouterJours('2026-12-31', 1)).toBe('2027-01-01')
+    expect(ajouterJours('2028-02-28', 1)).toBe('2028-02-29')
+    expect(ajouterJours('2027-02-28', 1)).toBe('2027-03-01')
+    expect(ajouterJours('2027-03-01', -1)).toBe('2027-02-28')
+  })
+
+  it('ne saute ni ne double aucun jour aux changements d’heure', () => {
+    expect(ajouterJours('2026-03-28', 1)).toBe('2026-03-29')
+    expect(ajouterJours('2026-03-29', 1)).toBe('2026-03-30')
+    expect(ajouterJours('2026-10-25', 1)).toBe('2026-10-26')
+    expect(ajouterJours('2026-10-24', 7)).toBe('2026-10-31')
+    expect(ecartJours('2026-03-28', '2026-03-30')).toBe(2)
+    expect(ecartJours('2026-10-30', '2026-10-24')).toBe(-6)
+  })
+})
+
+describe('ajouterMois', () => {
+  it('garde le jour quand il existe', () => {
+    expect(ajouterMois('2026-11-15', 1)).toBe('2026-12-15')
+    expect(ajouterMois('2026-11-15', 2)).toBe('2027-01-15')
+    expect(ajouterMois('2026-11-15', -11)).toBe('2025-12-15')
+  })
+
+  it('prend le dernier jour du mois quand le jour n’existe pas', () => {
+    expect(ajouterMois('2027-01-31', 1)).toBe('2027-02-28')
+    expect(ajouterMois('2028-01-31', 1)).toBe('2028-02-29')
+    expect(ajouterMois('2027-03-31', 1)).toBe('2027-04-30')
+    expect(ajouterMois('2028-02-29', 12)).toBe('2029-02-28')
+  })
+})
+
+describe('semaine', () => {
+  it('compte du lundi (1) au dimanche (7)', () => {
+    expect(jourDeSemaine('2026-11-16')).toBe(1)
+    expect(jourDeSemaine('2026-11-22')).toBe(7)
+    expect(finDeSemaine('2026-11-17')).toBe('2026-11-22')
+    expect(finDeSemaine('2026-11-22')).toBe('2026-11-22')
+    expect(finDeSemaine('2026-12-30')).toBe('2027-01-03')
+  })
+})
+
+describe('formats courts', () => {
+  it('écrit un jour en abrégé, avec l’année seulement si elle change', () => {
+    expect(formaterJourCourt('2026-11-18', '2026-11-17')).toBe('mer. 18 nov.')
+    expect(formaterJourCourt('2027-01-04', '2026-11-17')).toBe('lun. 4 janv. 2027')
+    expect(formaterJourCourt('pas une date', '2026-11-17')).toBe('')
+  })
+
+  it('écrit une heure et une durée à la française', () => {
+    expect(formaterHeure('09:30:00')).toBe('9 h 30')
+    expect(formaterHeure('14:00:00')).toBe('14 h')
+    expect(formaterHeure(null)).toBe('')
+    expect(formaterDuree(30)).toBe('30 min')
+    expect(formaterDuree(60)).toBe('1 h')
+    expect(formaterDuree(90)).toBe('1 h 30')
+    expect(formaterDuree(125)).toBe('2 h 05')
+  })
+
+  it('calcule l’heure de fin, sans dépasser minuit', () => {
+    expect(heureDeFin('09:30:00', 90)).toBe('11:00')
+    expect(heureDeFin('23:00', 30)).toBe('23:30')
+    expect(heureDeFin('23:30', 60)).toBeNull()
   })
 })

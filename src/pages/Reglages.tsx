@@ -27,6 +27,7 @@ import {
   insererDonneesFictives,
   NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
+  NOMBRE_TACHES_FICTIVES,
   personnesFictives,
 } from '../lib/donnees-fictives'
 import { accorder, formaterPoids } from '../lib/nombres'
@@ -278,8 +279,9 @@ function CarteDonneesFictives() {
           ))}
         </Liste>
         <p className="text-sm text-encre-douce">
-          Chaque appui ajoute {NOMBRE_CONTACTS_FICTIFS} contacts et {NOMBRE_BIENS_FICTIFS} biens
-          fictifs, même s'ils existent déjà : pratique pour essayer les doublons, à éviter sinon.
+          Chaque appui ajoute {NOMBRE_CONTACTS_FICTIFS} contacts, {NOMBRE_BIENS_FICTIFS} biens et{' '}
+          {NOMBRE_TACHES_FICTIVES} tâches fictifs (datées à partir d'aujourd'hui), même s'ils
+          existent déjà : pratique pour essayer les doublons, à éviter sinon.
         </p>
         <div className="md:self-start">
           <Bouton

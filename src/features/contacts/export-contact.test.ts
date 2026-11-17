@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bienEssai } from '../biens/bien-essai'
+import { tacheEssai } from '../taches/tache-essai'
 import { contactEssai } from './contact-essai'
 import {
   COLONNES_NON_EXPORTEES,
@@ -40,7 +41,7 @@ describe('texteExportContact', () => {
 
   it('écrit les données en clair, rubrique par rubrique', () => {
     const texte = texteExportContact(
-      { contact, fichesFusionnees: [], appels: [], biens: [] },
+      { contact, fichesFusionnees: [], appels: [], biens: [], taches: [] },
       '2026-11-16',
     )
     expect(texte).toContain('DONNÉES PERSONNELLES — Camille Fictif')
@@ -66,6 +67,7 @@ describe('texteExportContact', () => {
       fichesFusionnees: [],
       appels: [],
       biens: [],
+      taches: [],
     })
     expect(texte).toContain('Adresse : non renseigné')
     expect(texte).toContain('Recommandé par : non renseigné')
@@ -77,6 +79,7 @@ describe('texteExportContact', () => {
       fichesFusionnees: [],
       appels: [],
       biens: [],
+      taches: [],
     })
     expect(texte).toContain('Recommandé par : un autre contact du fichier')
     expect(texte).not.toContain('00000000-0000-4000-8000-000000000009')
@@ -114,7 +117,27 @@ describe('texteExportContact', () => {
           bien: bienEssai({ adresse: '3 impasse Fictive', ville: 'Villefictive' }),
         },
       ],
+      taches: [
+        {
+          id: 't1',
+          tache: tacheEssai({
+            titre: 'Visite du bien',
+            categorie: 'visite',
+            echeance: '2026-11-20',
+            heure: '10:00:00',
+            duree: 60,
+            lieu: '3 impasse Fictive',
+            motif: 'Deuxième visite',
+          }),
+          contact,
+          bien: null,
+        },
+      ],
     })
+    expect(texte).toContain('TÂCHES ET RENDEZ-VOUS\n')
+    expect(texte).toContain(
+      '- 20 novembre 2026, 10 h – 11 h — Visite — Visite du bien — à faire — lieu : 3 impasse Fictive — motif : Deuxième visite',
+    )
     expect(texte).toContain('- 3 impasse Fictive, Villefictive — Ancien — quote-part : 50 %')
     expect(texte).toContain(
       '- 10 novembre 2026 — 06 39 98 00 01 — motif : Appel entrant — Rappel demandé',

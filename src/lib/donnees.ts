@@ -44,6 +44,7 @@ export const TABLES: Record<NomTable, { archivable: boolean }> = {
   biens_proprietaires: { archivable: true },
   contacts: { archivable: true },
   reglages: { archivable: false },
+  taches: { archivable: true },
 }
 
 /** Résultat d'un accès aux données : les données, ou une erreur expliquée en français. */
@@ -67,9 +68,9 @@ export type Filtre<T extends NomTable> = { colonne: keyof Ligne<T> & string } & 
   | { genre: 'comprend'; valeur: string[] }
   /** La colonne vaut l'une de ces valeurs (liste d'identifiants, par exemple). */
   | { genre: 'parmi'; valeur: string[] }
-  /** La colonne, un nombre, vaut au moins / au plus cette valeur. */
-  | { genre: 'min'; valeur: number }
-  | { genre: 'max'; valeur: number }
+  /** La colonne vaut au moins / au plus cette valeur : un nombre, ou une date `AAAA-MM-JJ`. */
+  | { genre: 'min'; valeur: number | string }
+  | { genre: 'max'; valeur: number | string }
 )
 
 export type OptionsPage<T extends NomTable> = {

@@ -46,6 +46,7 @@ import {
 import SelecteurContact from '../features/contacts/SelecteurContact'
 import SuppressionContact from '../features/contacts/SuppressionContact'
 import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
+import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
 import { telechargerTexte } from '../lib/telechargement'
@@ -469,9 +470,10 @@ export default function FicheContact() {
             )}
           </Carte>
         </div>
-        <Emplacement titre="Tâches">
-          Les relances et les rendez-vous à venir s'afficheront ici.
-        </Emplacement>
+        {/* `min-w-0` : un titre ou une adresse longue est coupé au lieu d'élargir la page. */}
+        <div className="min-w-0">
+          <SectionTaches contact={contact} />
+        </div>
         <Emplacement titre="Journal">
           Les appels, messages, visites et notes passés s'afficheront ici.
         </Emplacement>

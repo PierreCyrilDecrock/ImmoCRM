@@ -5,6 +5,8 @@ import {
   insererDonneesFictives,
   NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
+  NOMBRE_TACHES_FICTIVES,
+  tacheFictive,
   personneFictive,
   personnesFictives,
   telephoneFictif,
@@ -12,6 +14,8 @@ import {
 } from './donnees-fictives'
 import { bienEssai } from '../features/biens/bien-essai'
 import { brouillonBienDepuis, preparerBien, TYPES_BIEN } from '../features/biens/biens'
+import { brouillonTacheVide, preparerTache } from '../features/taches/taches'
+import { vueDe } from '../features/taches/echeances'
 import { fauxClient } from './faux-client'
 
 describe('personnes fictives', () => {
@@ -130,7 +134,7 @@ describe('contacts fictifs', () => {
   it('font partie des lots insérés sur le projet de test', async () => {
     const { client, appels } = fauxClient({ data: { id: 'x' }, error: null })
     const bilan = await insererDonneesFictives(client, 'test')
-    const attendues = NOMBRE_CONTACTS_FICTIFS + NOMBRE_BIENS_FICTIFS
+    const attendues = NOMBRE_CONTACTS_FICTIFS + NOMBRE_BIENS_FICTIFS + NOMBRE_TACHES_FICTIVES
     expect(bilan).toEqual({ ok: true, lignes: attendues })
     expect(appels.filter((appel) => appel[0] === 'insert')).toHaveLength(attendues)
   })
@@ -159,5 +163,42 @@ describe('biens fictifs', () => {
       const preparation = preparerBien(brouillon)
       expect(preparation).toMatchObject({ ok: true, valeurs: bien })
     }
+  })
+})
+
+describe('tâches fictives', () => {
+  const liens = { contactId: 'c1', bienId: 'b1' }
+  const taches = Array.from({ length: NOMBRE_TACHES_FICTIVES }, (_, rang) =>
+    tacheFictive(rang, '2026-11-17', liens),
+  )
+
+  it('sont acceptées par les règles de saisie', () => {
+    for (const tache of taches) {
+      const resultat = preparerTache({
+        ...brouillonTacheVide(tache.echeance),
+        titre: tache.titre,
+        heure: tache.heure ?? '',
+        duree: tache.duree === null || tache.duree === undefined ? '' : String(tache.duree),
+      })
+      expect(resultat.ok).toBe(true)
+      expect(tache.motif).toContain('fictive')
+    }
+  })
+
+  it('couvrent les vues, un rendez-vous avec lieu et une récurrence', () => {
+    const vues = new Set(taches.map((tache) => vueDe(tache.echeance, '2026-11-17')))
+    expect([...vues].sort()).toEqual(['aujourdhui', 'en_retard', 'plus_tard', 'semaine'])
+    expect(taches.some((t) => t.heure !== undefined && t.lieu !== undefined)).toBe(true)
+    const mensuelle = taches.find((t) => t.recurrence === 'mois')
+    expect(mensuelle?.recurrence_ancre).toBe(mensuelle?.echeance)
+    expect(
+      taches.filter((t) => t.recurrence === undefined).every((t) => t.recurrence_ancre === null),
+    ).toBe(true)
+  })
+
+  it('se lient au contact et au bien donnés', () => {
+    expect(taches[0]).toMatchObject({ contact_id: 'c1', bien_id: null })
+    expect(taches[3]).toMatchObject({ contact_id: 'c1', bien_id: 'b1' })
+    expect(tacheFictive(0, '2026-11-17', { contactId: null, bienId: null }).contact_id).toBeNull()
   })
 })
