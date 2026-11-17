@@ -225,8 +225,9 @@ describe('preparerContact', () => {
 
 describe('preparerContact — consentement', () => {
   const AUJOURDHUI = '2026-11-16'
+  // Le brouillon part de la même date fixe : le test donne le même résultat quel que soit le jour.
   const preparer = (valeurs: Partial<BrouillonContact>) =>
-    preparerContact(brouillon({ nom: 'Fictif', ...valeurs }), AUJOURDHUI)
+    preparerContact({ ...brouillonVide(AUJOURDHUI), nom: 'Fictif', ...valeurs }, AUJOURDHUI)
 
   it('part d’un accord inconnu et de données collectées aujourd’hui', () => {
     const preparation = preparerContact({ ...brouillonVide(AUJOURDHUI), nom: 'Fictif' }, AUJOURDHUI)
