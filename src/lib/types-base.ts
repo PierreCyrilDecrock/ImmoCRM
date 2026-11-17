@@ -194,6 +194,50 @@ export type Database = {
         }
         Relationships: []
       }
+      biens_photos: {
+        Row: {
+          bien_id: string
+          chemin: string
+          chemin_vignette: string
+          created_at: string
+          id: string
+          rang: number
+          taille: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bien_id: string
+          chemin: string
+          chemin_vignette: string
+          created_at?: string
+          id?: string
+          rang?: number
+          taille: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          bien_id?: string
+          chemin?: string
+          chemin_vignette?: string
+          created_at?: string
+          id?: string
+          rang?: number
+          taille?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'biens_photos_bien_fk'
+            columns: ['user_id', 'bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
       biens_prix: {
         Row: {
           archived_at: string | null
@@ -485,6 +529,13 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      espace_photos: {
+        Args: never
+        Returns: {
+          octets: number
+          photos: number
+        }[]
+      }
       etiquettes_contacts: {
         Args: never
         Returns: {
@@ -538,6 +589,10 @@ export type Database = {
         }
       }
       normaliser_recherche: { Args: { texte: string }; Returns: string }
+      ordonner_photos_bien: {
+        Args: { p_bien_id: string; p_ids: string[] }
+        Returns: undefined
+      }
       supprimer_contact_definitivement: {
         Args: { p_id: string }
         Returns: number

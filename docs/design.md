@@ -68,7 +68,7 @@ Tous sont dans `src/components`, un par fichier.
 | `Navigation` | Barre du bas ou colonne de gauche. Les entrées sont dans `src/lib/navigation.ts` (six au maximum). | — |
 | `Page` | Gabarit de **toute** page : titre, lien de retour, actions, contenu. Met aussi à jour le titre de l'onglet. | `titre`, `retour?` (`{ vers, libelle }`), `actions?` |
 | `Carte` | Bloc de contenu sur fond `surface`. | `titre?` |
-| `Liste` + `LigneListe` | Liste de lignes séparées par un filet. Une ligne ouvre une page (`vers`), lance une action (`onAction`) ou reste inerte. | `titre`, `detail?`, `icone?`, `fin?`, `vers?`, `onAction?` |
+| `Liste` + `LigneListe` | Liste de lignes séparées par un filet. Une ligne ouvre une page (`vers`), lance une action (`onAction`) ou reste inerte. | `titre`, `detail?`, `icone?`, `vignette?` (petite photo carrée à gauche ; `null` : le dessin `icone` tient la place), `fin?`, `vers?`, `onAction?` |
 | `Information` | Une information d'une fiche : son nom, sa valeur. À placer dans une liste `<dl className="divide-y divide-bord">`. | `nom`, valeur en contenu |
 | `SuiteListe` | Bas d'une liste lue page par page : charge la suite à l'approche du bas de l'écran, avec un bouton de secours. Se branche sur `useListePaginee` (`src/lib/liste-paginee.ts`). | `resteALire`, `suiteEnCours`, `erreurSuite`, `chargerSuite` |
 | `CadreConnexion` | Cadre des écrans hors session (connexion, mot de passe). | `titre` |
@@ -147,7 +147,7 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Installation sur l'écran d'accueil
 

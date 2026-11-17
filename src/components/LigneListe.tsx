@@ -8,6 +8,11 @@ type Props = {
   detail?: string
   /** Dessin affiché à gauche. */
   icone?: NomIcone
+  /**
+   * Petite image carrée affichée à gauche (photo d'un bien). `null` : pas d'image, la place
+   * est tenue par le dessin `icone`, pour que toutes les lignes restent alignées.
+   */
+  vignette?: string | null
   /** Élément affiché à droite (une date, un badge…). */
   fin?: ReactNode
   /** Adresse de la page à ouvrir, par exemple « /contacts ». */
@@ -21,10 +26,21 @@ const CLASSES_ACTIVE =
   'hover:bg-creux focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent'
 
 /** Ligne d'une `Liste`. Toute la ligne est touchable si elle a `vers` ou `onAction`. */
-export default function LigneListe({ titre, detail, icone, fin, vers, onAction }: Props) {
+export default function LigneListe({ titre, detail, icone, vignette, fin, vers, onAction }: Props) {
   const contenu = (
     <>
-      {icone !== undefined && <Icone nom={icone} className="size-6 text-encre-douce" />}
+      {vignette !== undefined ? (
+        <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-creux text-encre-douce">
+          {vignette !== null ? (
+            // Image décorative : le titre de la ligne dit déjà de quoi il s'agit.
+            <img src={vignette} alt="" loading="lazy" className="size-full object-cover" />
+          ) : (
+            icone !== undefined && <Icone nom={icone} className="size-6" />
+          )}
+        </span>
+      ) : (
+        icone !== undefined && <Icone nom={icone} className="size-6 text-encre-douce" />
+      )}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-base font-medium text-encre">{titre}</span>
         {detail !== undefined && (
