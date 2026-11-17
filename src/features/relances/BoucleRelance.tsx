@@ -9,6 +9,7 @@ import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import Pastille from '../../components/Pastille'
 import ChampsCompteRenduVisite from '../activites/ChampsCompteRenduVisite'
+import { REACTIONS } from '../acquereurs/biens-proposes'
 import { formaterJourCourt } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import {
@@ -38,8 +39,10 @@ import {
   bouclerTache,
   brouillonBoucle,
   preparerBoucle,
+  reactionBienRetenue,
   RESULTATS_RELANCE,
   suitePrevue,
+  visiteDeProjetAcquereur,
   type BrouillonBoucle,
   type ErreursBoucle,
   type SuitePrevue,
@@ -283,6 +286,34 @@ export default function BoucleRelance({
               valeur={brouillon.visite}
               onChange={(visite) => changer('visite', visite)}
             />
+          )}
+          {visiteDeProjetAcquereur(tache, brouillon.type) && (
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-2 text-sm font-medium text-encre">
+                Réaction au bien, dans la sélection
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {[{ valeur: 'inchangee' as const, libelle: 'Inchangée' }, ...REACTIONS].map(
+                  (option) => (
+                    <Pastille
+                      key={option.valeur}
+                      choisie={reactionBienRetenue(brouillon) === option.valeur}
+                      onClick={() => changer('reactionBien', option.valeur)}
+                    >
+                      {option.libelle}
+                    </Pastille>
+                  ),
+                )}
+              </div>
+              <p className="text-sm text-encre-douce">
+                {brouillon.reactionBien === null
+                  ? 'Proposée d’après la suite envisagée et l’intérêt. '
+                  : ''}
+                {reactionBienRetenue(brouillon) === 'refuse'
+                  ? 'Les points négatifs deviennent la raison du refus.'
+                  : ''}
+              </p>
+            </fieldset>
           )}
           <ChampTexteLong
             libelle={brouillon.type === 'visite' ? 'Autres remarques' : 'Compte rendu'}

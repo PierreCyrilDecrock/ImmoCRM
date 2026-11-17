@@ -6,6 +6,7 @@ import {
   bouclerTache,
   brouillonBoucle,
   preparerBoucle,
+  reactionBienRetenue,
   RESULTATS_RELANCE,
   suitePrevue,
   titreRelance,
@@ -310,5 +311,74 @@ describe('boucle d’une visite', () => {
       { tache: visite, contact, aujourdhui, suite: null },
     )
     expect(preparation.ok && 'p_visite_interet' in preparation.parametres).toBe(false)
+  })
+})
+
+describe('réaction au bien après une visite', () => {
+  const visite = tacheEssai({
+    id: 't3',
+    contact_id: 'c1',
+    bien_id: 'b1',
+    categorie: 'visite',
+    heure: '14:00:00',
+    projet_acquereur_id: 'a1',
+  })
+  const depart = brouillonBoucle(visite, contact, {
+    aujourdhui,
+    delais: DELAIS_PAR_DEFAUT,
+    suite: null,
+  })
+  const preparer = (valeurs: Partial<BrouillonBoucle>) =>
+    preparerBoucle({ ...depart, ...valeurs }, { tache: visite, contact, aujourdhui, suite: null })
+
+  it('suit le compte rendu : une contre-visite rend le bien « intéressé »', () => {
+    const preparation = preparer({ visite: { ...depart.visite, suite: 'contre_visite' } })
+    expect(preparation.ok && preparation.parametres).toMatchObject({ p_reaction_bien: 'interesse' })
+    expect(preparation.ok && 'p_raison_refus' in preparation.parametres).toBe(false)
+  })
+
+  it('refuse le bien avec les points négatifs pour raison', () => {
+    const preparation = preparer({
+      visite: { ...depart.visite, suite: 'abandon', pointsNegatifs: 'Trop de travaux' },
+    })
+    expect(preparation.ok && preparation.parametres).toMatchObject({
+      p_reaction_bien: 'refuse',
+      p_raison_refus: 'Trop de travaux',
+    })
+  })
+
+  it('n’envoie rien quand la réaction reste inchangée', () => {
+    const autres = preparer({
+      visite: { ...depart.visite, suite: 'autres_biens', interet: 'fort' },
+    })
+    expect(autres.ok && 'p_reaction_bien' in autres.parametres).toBe(false)
+    const forcee = preparer({
+      visite: { ...depart.visite, suite: 'offre' },
+      reactionBien: 'inchangee',
+    })
+    expect(forcee.ok && 'p_reaction_bien' in forcee.parametres).toBe(false)
+  })
+
+  it('garde le choix fait à la main', () => {
+    const preparation = preparer({
+      visite: { ...depart.visite, suite: 'abandon' },
+      reactionBien: 'a_visiter',
+    })
+    expect(reactionBienRetenue({ ...depart, reactionBien: 'a_visiter' })).toBe('a_visiter')
+    expect(preparation.ok && preparation.parametres).toMatchObject({ p_reaction_bien: 'a_visiter' })
+  })
+
+  it('ne touche à aucune sélection hors d’un projet d’achat', () => {
+    const sansProjet = tacheEssai({
+      id: 't4',
+      contact_id: 'c1',
+      bien_id: 'b1',
+      categorie: 'visite',
+    })
+    const preparation = preparerBoucle(
+      { ...depart, visite: { ...depart.visite, suite: 'offre' } },
+      { tache: sansProjet, contact, aujourdhui, suite: null },
+    )
+    expect(preparation.ok && 'p_reaction_bien' in preparation.parametres).toBe(false)
   })
 })

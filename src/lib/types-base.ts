@@ -1004,6 +1004,8 @@ export type Database = {
           p_prochaine_heure?: string
           p_prochaine_motif?: string
           p_prochaine_titre?: string
+          p_raison_refus?: string
+          p_reaction_bien?: string
           p_resultat?: string
           p_sans_prochaine_action?: boolean
           p_suivante_echeance?: string

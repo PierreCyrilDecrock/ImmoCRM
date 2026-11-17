@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fauxClient } from '../../lib/faux-client'
+import type { CompteRenduVisite } from '../activites/activites'
 import { bienEssai } from '../biens/bien-essai'
 import {
   libelleReaction,
@@ -7,6 +8,8 @@ import {
   preparerReaction,
   preparerVisite,
   proposerBien,
+  raisonRefusApresVisite,
+  reactionApresVisite,
   titreVisite,
 } from './biens-proposes'
 
@@ -99,5 +102,39 @@ describe('accès à la base', () => {
     expect(resultat.ok).toBe(true)
     expect(appels[0]?.[0]).toBe('rpc')
     expect(appels[0]?.[1]).toBe('planifier_visite')
+  })
+})
+
+describe('reactionApresVisite', () => {
+  const visite = (valeurs: Partial<CompteRenduVisite> = {}): CompteRenduVisite => ({
+    pointsPositifs: '',
+    pointsNegatifs: '',
+    interet: '',
+    suite: '',
+    ...valeurs,
+  })
+
+  it('suit d’abord la suite envisagée', () => {
+    expect(reactionApresVisite(visite({ suite: 'offre', interet: 'aucun' }))).toBe('interesse')
+    expect(reactionApresVisite(visite({ suite: 'contre_visite' }))).toBe('interesse')
+    expect(reactionApresVisite(visite({ suite: 'reflexion' }))).toBe('interesse')
+    expect(reactionApresVisite(visite({ suite: 'abandon', interet: 'fort' }))).toBe('refuse')
+  })
+
+  it('laisse la réaction inchangée pour « voir d’autres biens »', () => {
+    expect(reactionApresVisite(visite({ suite: 'autres_biens', interet: 'fort' }))).toBeNull()
+  })
+
+  it('suit l’intérêt quand la suite n’est pas renseignée', () => {
+    expect(reactionApresVisite(visite({ interet: 'fort' }))).toBe('interesse')
+    expect(reactionApresVisite(visite({ interet: 'moyen' }))).toBe('interesse')
+    expect(reactionApresVisite(visite({ interet: 'aucun' }))).toBe('refuse')
+    expect(reactionApresVisite(visite({ interet: 'faible' }))).toBeNull()
+    expect(reactionApresVisite(visite())).toBeNull()
+  })
+
+  it('prend les points négatifs pour raison du refus', () => {
+    expect(raisonRefusApresVisite(visite({ pointsNegatifs: ' Trop sombre ' }))).toBe('Trop sombre')
+    expect(raisonRefusApresVisite(visite({ pointsNegatifs: 'x'.repeat(600) }))).toHaveLength(500)
   })
 })
