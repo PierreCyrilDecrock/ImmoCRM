@@ -1,4 +1,8 @@
 import { exigencesEtape, type EtapeVendeur } from '../features/projets/pipeline-vendeur'
+import {
+  exigencesEtapeAcquereur,
+  type EtapeAcquereur,
+} from '../features/acquereurs/pipeline-acquereur'
 import { describe, expect, it, vi } from 'vitest'
 import {
   activiteFictive,
@@ -10,6 +14,8 @@ import {
   NOMBRE_CONTACTS_FICTIFS,
   NOMBRE_TACHES_FICTIVES,
   NOMBRE_PROJETS_VENDEURS_FICTIFS,
+  NOMBRE_PROJETS_ACQUEREURS_FICTIFS,
+  projetAcquereurFictif,
   projetVendeurFictif,
   tacheFictive,
   personneFictive,
@@ -285,5 +291,40 @@ describe('projets vendeurs fictifs', () => {
       expect(Object.keys(projet)).not.toContain('jours')
       expect(Object.keys(projet)).not.toContain('contact')
     }
+  })
+})
+
+describe('projets acquéreurs fictifs', () => {
+  const aujourdhui = '2026-11-17'
+  const projets = Array.from({ length: NOMBRE_PROJETS_ACQUEREURS_FICTIFS }, (_, rang) =>
+    projetAcquereurFictif(rang, aujourdhui, {
+      contactId: 'c',
+      coAcquereurId: null,
+      bienOrigineId: null,
+    }),
+  )
+
+  it('sont créés au plus en sélection, avec ce que l’étape exige', () => {
+    // Le projet « Visites » est créé en sélection : un bien lui est proposé avant d'y passer.
+    expect(projets.map((projet) => projet.etape)).toEqual(['demande', 'selection', 'selection'])
+    for (const projet of projets) {
+      const exigences = exigencesEtapeAcquereur(projet.etape as EtapeAcquereur)
+      for (const info of exigences) {
+        if (info === 'biens_proposes') continue
+        const valeur = projet[info]
+        const vide =
+          valeur === undefined || valeur === null || (Array.isArray(valeur) && valeur.length === 0)
+        expect(vide).toBe(false)
+      }
+    }
+  })
+
+  it('ne gardent que des colonnes de la table, et une demande de portail a son heure', () => {
+    for (const projet of projets) {
+      expect(Object.keys(projet)).not.toContain('jours')
+      expect(Object.keys(projet)).not.toContain('proposes')
+      expect(projet.etape_le !== undefined && projet.etape_le <= aujourdhui).toBe(true)
+    }
+    expect(projets[0]?.recue_le).not.toBeNull()
   })
 })

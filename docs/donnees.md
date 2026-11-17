@@ -104,7 +104,7 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | `archiver` / `restaurer(client, table, id)` | Archive une ligne, ou annule l'archivage |
 | `supprimer(client, table, id)` | Supprime une ligne pour de bon. Réservé aux photos (`biens_photos`) : voir « Photos des biens » |
 | `enregistrerUnique(client, table, valeurs, colonne)` | Crée ou met à jour la ligne unique (réglages) |
-| `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive, clôture d'une tâche, boucle de relance, sortie d'un projet du pipeline) |
+| `appeler(client, fonction, parametres)` | Appelle une fonction de la base (doublons, fusion, étiquettes, suppression définitive, clôture d'une tâche, boucle de relance, sortie d'un projet du pipeline, planification d'une visite) |
 
 Chaque fonction renvoie soit `{ ok: true, donnees }`, soit `{ ok: false, erreur }`, sans jamais lever d'erreur. `erreur.message` est une phrase en français, affichable telle quelle ; `erreur.genre` permet à un écran de réagir (`reseau`, `session`, `droits`, `doublon`, `lien`, `invalide`, `introuvable`, `inconnue`). La traduction est dans `src/lib/erreurs-donnees.ts`.
 
@@ -137,7 +137,7 @@ Ces fonctions s'exécutent avec les droits du compte connecté : les règles d'a
 
 Conséquence à connaître : avec les règles d'accès par ligne, la base ne peut pas s'appuyer sur un index pour une recherche « contient ». Elle lit les fiches du compte une à une (20 ms pour 30 000 fiches, mesures dans `docs/avancement.md`). Inutile donc de créer ce type d'index.
 
-**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord`, `biens_proprietaires`, `taches`, `activites` et `projets_vendeurs`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
+**Fusion.** Rien ne se perd : téléphones, courriels, rôles et étiquettes sont réunis ; là où les deux fiches se contredisent, l'utilisateur choisit et la valeur écartée est recopiée dans les notes ; la fiche absorbée est archivée telle quelle, avec un lien vers la fiche gardée. Les règles sont dans `src/features/contacts/fusion.ts`. Toute nouvelle table liée aux contacts doit ajouter, dans sa migration, le transfert de ses lignes à la fonction `fusionner_contacts` (c'est fait pour `appels_sans_accord`, `biens_proprietaires`, `taches`, `activites`, `projets_vendeurs` et `projets_acquereurs`) ; toute nouvelle colonne des contacts doit y être ajoutée aussi. Le consentement est réuni par prudence (`reunirConsentement`) : la réponse la plus récente sur l'accord l'emporte, un refus l'emporte si les dates ne départagent pas, une opposition notée sur l'une des fiches vaut pour la fiche réunie.
 
 ### Biens, propriétaires et historique des prix
 
@@ -197,7 +197,7 @@ Une tâche est toute action à venir, avec une date et un motif (table `taches`)
 | `heure`, `duree` | Heure de début (heure de Paris, telle qu'affichée) et durée en minutes, facultatives ; pas de durée sans heure |
 | `lieu` | Texte libre ; proposé d'office à l'adresse du bien choisi |
 | `etat`, `cloturee_le` | `a_faire`, `faite` ou `annulee`, et le moment de la clôture. Une tâche ne se supprime pas : elle est faite ou annulée, et peut être rouverte |
-| `contact_id`, `bien_id`, `projet_vendeur_id` | Liens facultatifs, vers des fiches du même compte |
+| `contact_id`, `bien_id`, `projet_vendeur_id`, `projet_acquereur_id` | Liens facultatifs, vers des fiches du même compte ; un seul projet à la fois (de vente ou d'achat) |
 | `recurrence`, `recurrence_ancre`, `recurrence_rang` | Fréquence (`jour`, `semaine`, `deux_semaines`, `mois`, `an`), date de la première occurrence de la série, place de cette occurrence dans la série |
 | Fonction `cloturer_tache(id, etat, suivante_echeance, suivante_rang)` | Marque la tâche faite ou annulée et, si une date est donnée, crée l'occurrence suivante, en une seule opération. Refuse une tâche déjà close : un double appui ne crée pas deux suites |
 
@@ -222,7 +222,8 @@ Une activité est tout événement passé : appel, message, visite, note, docume
 | `compte_rendu` | Ce qui a été dit ou fait (5 000 caractères au plus). Obligatoire pour une note seulement, vérifié par l'application |
 | `date_activite`, `heure` | Jour et heure de l'activité, à l'heure de Paris (heure affichée sur la montre). Valent maintenant si rien n'est envoyé. L'application refuse une date à venir : pour l'avenir, on crée une tâche |
 | `duree` | Minutes, facultative |
-| `contact_id`, `bien_id`, `projet_vendeur_id` | Liens facultatifs, vers des fiches du même compte. Une visite liée aux deux apparaît sur les deux fiches |
+| `contact_id`, `bien_id`, `projet_vendeur_id`, `projet_acquereur_id` | Liens facultatifs, vers des fiches du même compte ; un seul projet à la fois. Une visite liée au contact, au bien et au projet apparaît sur les trois fiches |
+| `visite_points_positifs`, `visite_points_negatifs`, `visite_interet`, `visite_suite` | Compte rendu structuré d'une visite : ce qui a plu, ce qui a déplu, intérêt (`fort`, `moyen`, `faible`, `aucun`), suite envisagée (`offre`, `contre_visite`, `reflexion`, `autres_biens`, `abandon`). La base refuse ces champs sur un autre type que `visite` |
 
 **Ordre.** Du plus récent au plus ancien : par date, puis par heure, puis par ordre de saisie. Les fils (fiches et page Journal) sont lus 50 activités à la fois, regroupés par jour.
 
@@ -243,7 +244,7 @@ Deux règles du cadrage : **clôturer une tâche crée une activité et propose 
 | Colonnes `relance_chaud`, `relance_tiede`, `relance_froid`, `relance_veille` (table `reglages`) | Délai de relance par défaut de chaque température : un nombre de 1 à 99 suivi de `j`, `s` ou `m` (`1s`, `1m`, `3m`, `6m` par défaut). Modifiables dans Réglages, « Rythme des relances » |
 | Colonne `contacts.prochaine_action_le` | Échéance de la plus proche des tâches à faire liées au contact ; vide : rien n'est prévu. **Calculée par la base** (déclencheurs `contacts_maj_prochaine_action` et `taches_maj_contact`) ; l'application ne l'envoie jamais |
 | Colonne `contacts.sans_prochaine_action_le` | Moment où l'absence de prochaine action a été confirmée. Vidée par la base dès qu'une tâche est de nouveau prévue |
-| Fonction `boucler_tache(...)` | Une tâche liée à un contact est faite : clôture (et occurrence suivante d'une série, avec les contrôles de `cloturer_tache`), activité au journal (liée au contact et au bien de la tâche), température mise à jour si elle a changé, puis prochaine action créée (même contact, même bien) ou refus confirmé. Tout ou rien. Sans prochaine action ni refus, la base exige qu'une autre tâche reste prévue pour le contact |
+| Fonction `boucler_tache(...)` | Une tâche liée à un contact est faite : clôture (et occurrence suivante d'une série, avec les contrôles de `cloturer_tache`), activité au journal (liée au contact, au bien et au projet de la tâche ; pour une visite, avec son compte rendu structuré), température mise à jour si elle a changé, puis prochaine action créée (même contact, même bien) ou refus confirmé. Tout ou rien. Sans prochaine action ni refus, la base exige qu'une autre tâche reste prévue pour le contact |
 
 **Date proposée** (`src/features/relances/delais.ts`, testé) : aujourd'hui plus le délai de la température du contact ; les semaines comptent 7 jours, les mois suivent le calendrier (le 31 janvier + 1 mois = le 28 ou 29 février). Sans température, le délai d'un contact tiède. La date se change au cas par cas dans l'écran (champ Date, raccourcis, ou changement de température). L'écran et ses règles sont dans `src/features/relances/` (`boucle.ts`, testé).
 
@@ -280,6 +281,37 @@ Un projet vendeur est **l'intention de vendre un bien donné** (table `projets_v
 
 Code : `src/features/projets/` (règles, saisie, lecture, écrans du pipeline) ; fiche du projet `src/pages/FicheProjetVendeur.tsx`, adresse `#/pipelines/vendeurs/<id>`.
 
+### Projets acquéreurs et pipeline acquéreur
+
+Un projet acquéreur est **une recherche** (table `projets_acquereurs`) : critères, budget, financement, urgence. Un même contact peut avoir plusieurs recherches, et être aussi vendeur : sa fiche montre ses projets de vente et ses projets d'achat.
+
+| Élément | Rôle |
+| --- | --- |
+| `contact_id`, `co_acquereur_id` | L'acquéreur (contact principal, obligatoire) et un co-acquéreur facultatif, distinct |
+| `etape`, `etape_le` | `demande`, `qualification`, `selection`, `visites`, et le jour d'entrée dans l'étape, **tenu par la base** (déclencheur `projets_acquereurs_maj_etape_le`) |
+| `etat` | `actif`, `a_recontacter` (avec `recontacter_le`), `perdu` (avec `motif_perte`, `motif_perte_detail`), `gagne` (offre acceptée : `offre_le`, `offre_bien_id`, seulement depuis l'étape « Visites ») |
+| Origine de la demande | `origine` (`appel`, `portail`, `courriel`, `site`, `recommandation`, `autre`), `portail` (texte), `bien_origine_id` (bien concerné), `recue_le` (moment de réception) |
+| Recherche | `types_biens` (types de bien de la base : `ancien`, `neuf`, `viager`, `commerce`, `terrain`), `secteurs` (communes ou quartiers, 20 au plus), `budget_min`, `budget_max` (la base refuse un budget inversé), `surface_min`, `pieces_min`, `criteres_indispensables`, `criteres_souhaites`, `urgence` (`moins_3_mois`, `trois_six_mois`, `plus_6_mois`, `sans_date`) |
+| Financement | `financement` (`comptant`, `pret`), `accord_principe` (n'a de sens que pour un prêt), `apport`, `bien_a_vendre` (doit vendre avant d'acheter) |
+| Motifs de perte | `achat_confrere`, `achat_particuliers`, `abandon`, `financement` (refusé), `autre` |
+| Table `biens_proposes` | Les biens proposés à un projet : `bien_id`, `propose_le`, `reaction` (vide : sans réponse ; `interesse`, `a_visiter`, `refuse`) et `raison_refus` (seulement pour un refus). Un bien n'est proposé qu'une fois à un même projet ; le retirer l'archive |
+| Fonction `planifier_visite(projet, bien, jour, heure, ...)` | Un rendez-vous (tâche de catégorie `visite`, avec une heure, à l'adresse du bien) lié à l'acquéreur, au bien et au projet ; le bien entre dans la sélection, noté « à visiter ». En une seule opération |
+| Fonction `sortir_projet_acquereur(...)` | « À recontacter » (état, date et tâche de relance liée à l'acquéreur et au projet) ou « Perdu » (motif). Refuse un projet qui n'est pas actif |
+
+**Critères de sortie** (`src/features/acquereurs/pipeline-acquereur.ts`, testé ; la base vérifie les mêmes) : quitter « Demande » demande l'origine de la demande et **le budget maximum** (on ne qualifie pas une recherche sans budget : c'est ce que demande la rubrique « À tester ») ; quitter « Qualification » demande au moins un type de bien, un secteur et le mode de financement ; quitter « Sélection » demande au moins un bien proposé ; l'offre acceptée demande au moins une visite consignée au journal du projet (critère « comptes rendus »). Les deux derniers portent sur d'autres tables : ils sont vérifiés par le déclencheur `projets_acquereurs_verifier`. Sauter des étapes demande tout ce qui manque ; revenir en arrière ne demande rien.
+
+**Demande entrante** (`src/features/acquereurs/demande-entrante.ts`, testé) : un seul écran, depuis Pipelines → Acquéreurs (« Demande entrante »), la fiche d'un contact (« Nouveau projet d'achat ») ou celle d'un bien (« Demande sur ce bien »). Un nouveau contact demande un nom et un téléphone ou un courriel ; avant de le créer, les fiches ressemblantes sont proposées. Il est créé avec le rôle Acquéreur, la source « Demande entrante » (détail : canal et bien) et l'origine de la collecte. « Demande à être rappelé » note l'accord pour être appelé, avec la demande pour preuve (règle à faire valider avec les autres règles de consentement). Un contact existant reçoit le rôle Acquéreur s'il ne l'avait pas. Le projet est créé à l'étape « Demande » ; le message reçu va dans ses notes ; un appel de qualification, priorité haute, est prévu le jour même (case cochée d'office).
+
+**Visites.** Planifier une visite crée un rendez-vous ; le cocher ouvre la boucle de relance, où l'activité est une visite avec son compte rendu structuré, et la prochaine action proposée est de rappeler l'acquéreur **le lendemain** (`JOURS_RAPPEL_APRES_VISITE`), quelle que soit sa température. Une visite peut aussi se consigner directement au journal (type Visite). Le compte rendu apparaît sur la fiche du contact, du bien et du projet.
+
+**Sorties**, à toute étape d'un projet actif, sans suppression : « À recontacter » (raccourcis 1, 3, 6 mois, 1 an ; 3 mois par défaut) crée la relance ; « Perdu » garde le motif. « Remettre dans le pipeline » reprend un projet à recontacter, perdu ou gagné (l'offre est alors effacée) à l'étape où il était ; l'archivage est réservé aux projets saisis par erreur.
+
+**Tableau.** Les projets actifs (200 au plus) et les offres acceptées depuis moins de 30 jours (colonne « Visites ») ; une offre acceptée ne se déplace pas. La carte montre l'acquéreur (et le co-acquéreur), la recherche (ou l'origine tant qu'elle n'est pas précisée), le nombre de biens proposés, l'ancienneté dans l'étape et la prochaine action (tâche liée au projet, à défaut celle du contact). Le tableau et la carte sont des composants communs aux deux pipelines (`TableauPipeline`, `CartePipeline`).
+
+**Liens et RGPD.** Tâches et activités ont une colonne `projet_acquereur_id` (un seul projet par ligne, de vente ou d'achat ; la base le vérifie). La clôture d'une tâche récurrente et la boucle de relance la recopient. Supprimer définitivement un contact supprime ses projets d'achat (et leur sélection) ; s'il était co-acquéreur, le lien seul est vidé ; une tâche ou une activité liée au projet mais pas au contact garde sa ligne, son lien vers le projet est vidé. La fusion transfère les projets (acquéreur principal ou co-acquéreur ; une fiche ne peut pas être son propre co-acquéreur). L'export d'un contact contient ses projets d'achat, avec les biens proposés et leur réaction, et les comptes rendus de visite.
+
+Code : `src/features/acquereurs/` (règles, demande entrante, sélection, visites, écrans) ; fiche du projet `src/pages/FicheProjetAcquereur.tsx`, adresse `#/pipelines/acquereurs/<id>`.
+
 ### Consentement et RGPD des contacts
 
 Ces règles traduisent la section Conformité du cadrage. Elles sont **à faire valider par un juriste**.
@@ -298,7 +330,7 @@ Ces règles traduisent la section Conformité du cadrage. Elles sont **à faire 
 
 **Date du dernier contact.** La plus récente parmi : la date de collecte, la date de l'accord ou du refus, la date d'opposition, les appels sans accord et les activités du journal liées au contact (sauf les notes, et sauf les activités retirées). L'application ne l'envoie jamais. Toute autre table qui enregistrerait un échange avec un contact doit être ajoutée au calcul, dans la fonction `contacts_maj_dernier_contact`, et déclencher le recalcul comme le font `appels_sans_accord` et `activites`.
 
-**Export (droit d'accès).** `src/features/contacts/export-contact.ts` fabrique un fichier texte avec toutes les colonnes de la fiche, les appels sans accord, les biens, les projets de vente, les tâches, le journal d'activité et les anciennes fiches fusionnées. Un test échoue si une colonne de `contacts` n'y figure pas. Toute nouvelle table liée aux contacts doit être ajoutée à `rassemblerDonneesContact` et au fichier.
+**Export (droit d'accès).** `src/features/contacts/export-contact.ts` fabrique un fichier texte avec toutes les colonnes de la fiche, les appels sans accord, les biens, les projets de vente, les projets d'achat (avec les biens proposés), les tâches, le journal d'activité (comptes rendus de visite compris) et les anciennes fiches fusionnées. Un test échoue si une colonne de `contacts` n'y figure pas. Toute nouvelle table liée aux contacts doit être ajoutée à `rassemblerDonneesContact` et au fichier.
 
 **Suppression définitive (droit à l'effacement).** Elle ne laisse aucune ligne dans la base ; le lien « recommandé par » des autres contacts est vidé. Deux limites à connaître : les sauvegardes automatiques de Supabase gardent les données supprimées jusqu'à leur expiration, et un nom cité dans les notes d'une autre fiche n'est pas retrouvé.
 
@@ -327,7 +359,7 @@ L'application reconnaît le projet de test à son adresse (`src/lib/environnemen
 | Courriel | Domaine `exemple.invalid`, qui ne peut recevoir aucun message |
 | Adresse | `00000 Villefictive`, rue de l'Exemple, avenue du Test… |
 
-L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens, 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire), 4 projets vendeurs (un à chacune des quatre premières étapes, deux du même vendeur, trois avec une relance liée) et 8 activités du journal, du jour même à trois semaines en arrière (appels aux résultats variés, SMS, courriel, une visite et une estimation liées à un contact et à un bien, du porte-à-porte sans fiche, une note sur un bien) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
+L'ajout dans la base passe par une seule fonction, `insererDonneesFictives`, qui **refuse d'agir ailleurs que sur le projet de test**. La carte « Données fictives » de la page Réglages n'apparaît que sur le projet de test. Son bouton ajoute 12 contacts fictifs (personnes et sociétés, tous étiquetés « fictif », avec des situations de consentement variées : accord inconnu, accord prouvé, refus, client existant, opposition), 6 biens, 6 tâches datées à partir du jour même (une par vue, un rendez-vous avec heure et lieu, une tâche mensuelle, un créneau de prospection hebdomadaire), 4 projets vendeurs (un à chacune des quatre premières étapes, deux du même vendeur, trois avec une relance liée), 3 projets acquéreurs (une demande de portail du jour avec son bien concerné et son appel de qualification ; une recherche en sélection avec un co-acquéreur et deux biens proposés, l'un intéressant, l'autre refusé ; une recherche aux visites, menée par le vendeur des deux premiers projets vendeurs, avec une visite faite et son compte rendu, et une contre-visite planifiée) et 8 activités du journal, du jour même à trois semaines en arrière (appels aux résultats variés, SMS, courriel, une visite et une estimation liées à un contact et à un bien, du porte-à-porte sans fiche, une note sur un bien) ; chaque appui en ajoute autant. Chaque étape qui crée une table ajoute son lot à la liste `JEUX_FICTIFS`.
 
 Exception : l'essai de volume de l'étape 1.2 (30 000 contacts, pour mesurer les temps de réponse) est un script SQL, `supabase/tests/contacts-fictifs-volume.sql`, lancé par Claude Code sur le seul projet de test. Ses fiches portent l'étiquette « essai de volume » ; leurs téléphones viennent des tranches réservées aux fictions (06 39 98, 01 99 00, 02 61 91). Le script refuse de tourner sur une base qui contient plus de 20 fiches non fictives.
 

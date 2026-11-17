@@ -13,6 +13,8 @@ import { exigerSupabase } from '../../lib/supabase'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import ChoixLiens from '../liens/ChoixLiens'
+import ChampsCompteRenduVisite from './ChampsCompteRenduVisite'
+import type { LienProjet } from '../liens/lien-projet'
 import {
   brouillonActiviteDepuis,
   brouillonActiviteVide,
@@ -41,7 +43,7 @@ type Props = {
     type?: TypeActivite
     contact?: Contact | null
     bien?: Bien | null
-    projetVendeurId?: string | null
+    projet?: LienProjet | null
   }
   /** Lien fixé par la fiche d'où l'on vient : il ne se retire pas ici. */
   verrouiller?: 'contact' | 'bien' | 'projet'
@@ -229,10 +231,23 @@ export default function FormulaireActivite({
           </fieldset>
         )}
 
+        {brouillon.type === 'visite' && (
+          <ChampsCompteRenduVisite
+            valeur={brouillon.visite}
+            onChange={(visite) => changer('visite', visite)}
+          />
+        )}
+
         <ChampTexteLong
-          libelle={avecTexteObligatoire ? 'Note' : 'Compte rendu'}
+          libelle={
+            avecTexteObligatoire
+              ? 'Note'
+              : brouillon.type === 'visite'
+                ? 'Autres remarques'
+                : 'Compte rendu'
+          }
           rows={5}
-          autoFocus={existante === null}
+          autoFocus={existante === null && brouillon.type !== 'visite'}
           maxLength={LONGUEUR_MAX_COMPTE_RENDU}
           placeholder={inviteCompteRendu(brouillon.type)}
           value={brouillon.compteRendu}
@@ -271,14 +286,14 @@ export default function FormulaireActivite({
           legende="Liée à"
           contact={brouillon.contact}
           bien={brouillon.bien}
-          projetVendeurId={brouillon.projetVendeurId}
+          projet={brouillon.projet}
           verrouiller={verrouiller}
           onContact={(contact) => changer('contact', contact)}
           onBien={(bien) => changer('bien', bien)}
-          onProjetVendeur={(projet) =>
+          onProjet={(projet) =>
             setBrouillon((actuel) => ({
               ...actuel,
-              projetVendeurId: projet?.id ?? null,
+              projet: projet?.lien ?? null,
               bien: actuel.bien ?? projet?.bien ?? null,
             }))
           }

@@ -48,6 +48,7 @@ import SuppressionContact from '../features/contacts/SuppressionContact'
 import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
 import SectionJournal from '../features/activites/SectionJournal'
 import SectionProjetsVendeurs from '../features/projets/SectionProjetsVendeurs'
+import SectionProjetsAcquereurs from '../features/acquereurs/SectionProjetsAcquereurs'
 import ProchaineAction from '../features/relances/ProchaineAction'
 import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
@@ -457,6 +458,9 @@ export default function FicheContact() {
         {/* `min-w-0` : une adresse longue est coupée au lieu d'élargir la page. */}
         <div className="min-w-0">
           <SectionProjetsVendeurs contact={contact} lectureSeule={archive || fusionnee} />
+        </div>
+        <div className="min-w-0">
+          <SectionProjetsAcquereurs contact={contact} lectureSeule={archive || fusionnee} />
         </div>
         {/* `min-w-0` : une adresse longue est coupée au lieu d'élargir la page. */}
         <div className="min-w-0">

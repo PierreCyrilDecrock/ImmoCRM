@@ -64,7 +64,11 @@ export async function lireFichesLiees<L extends AvecLiens>(
 }
 
 /** Une fiche à laquelle des tâches ou des activités sont liées. */
-export type LienFiche = { contactId: string } | { bienId: string } | { projetVendeurId: string }
+export type LienFiche =
+  | { contactId: string }
+  | { bienId: string }
+  | { projetVendeurId: string }
+  | { projetAcquereurId: string }
 
 /** La condition qui retrouve les lignes liées à cette fiche. */
 export function filtreLien(
@@ -72,5 +76,8 @@ export function filtreLien(
 ): Filtre<'taches'> & Filtre<'activites'> & { genre: 'egal' } {
   if ('contactId' in lien) return { colonne: 'contact_id', genre: 'egal', valeur: lien.contactId }
   if ('bienId' in lien) return { colonne: 'bien_id', genre: 'egal', valeur: lien.bienId }
-  return { colonne: 'projet_vendeur_id', genre: 'egal', valeur: lien.projetVendeurId }
+  if ('projetVendeurId' in lien) {
+    return { colonne: 'projet_vendeur_id', genre: 'egal', valeur: lien.projetVendeurId }
+  }
+  return { colonne: 'projet_acquereur_id', genre: 'egal', valeur: lien.projetAcquereurId }
 }

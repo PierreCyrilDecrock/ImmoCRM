@@ -209,13 +209,15 @@ describe('lien vers un projet vendeur', () => {
       contact: null,
       bien: null,
     })
-    expect(brouillon.projetVendeurId).toBe('p1')
+    expect(brouillon.projet).toEqual({ genre: 'vendeur', id: 'p1' })
     const preparation = preparerTache(brouillon, existante)
     expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBe('p1')
   })
 
   it('peut être posé dès la création, depuis la fiche du projet', () => {
-    const brouillon = brouillonTacheVide('2026-11-17', { projetVendeurId: 'p2' })
+    const brouillon = brouillonTacheVide('2026-11-17', {
+      projet: { genre: 'vendeur', id: 'p2' },
+    })
     const preparation = preparerTache({ ...brouillon, titre: 'Relancer' })
     expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBe('p2')
   })
@@ -224,5 +226,17 @@ describe('lien vers un projet vendeur', () => {
     const { client, appels } = fauxClient({ data: [], error: null })
     await listerTachesLiees(client, { projetVendeurId: 'p3' })
     expect(appels).toContainEqual(['eq', 'projet_vendeur_id', 'p3'])
+  })
+
+  it('peut viser un projet acquéreur, sans lien vendeur', async () => {
+    const brouillon = brouillonTacheVide('2026-11-17', {
+      projet: { genre: 'acquereur', id: 'a2' },
+    })
+    const preparation = preparerTache({ ...brouillon, titre: 'Visite' })
+    expect(preparation.ok && preparation.valeurs.projet_acquereur_id).toBe('a2')
+    expect(preparation.ok && preparation.valeurs.projet_vendeur_id).toBeNull()
+    const { client, appels } = fauxClient({ data: [], error: null })
+    await listerTachesLiees(client, { projetAcquereurId: 'a3' })
+    expect(appels).toContainEqual(['eq', 'projet_acquereur_id', 'a3'])
   })
 })

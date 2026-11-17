@@ -160,3 +160,14 @@ export function heureDeFin(heure: string, minutes: number): string | null {
   if (total >= 24 * 60) return null
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
+
+/**
+ * L'instant (temps universel, format de la base) d'un jour et d'une heure lus sur une montre
+ * à Paris : `2026-11-17` et `14:30` donnent `2026-11-17T13:30:00.000Z` en hiver.
+ */
+export function instantDeParis(date: string, heure: string): string {
+  const supposition = new Date(`${date}T${heure}:00Z`)
+  // Ce que la montre de Paris afficherait à cet instant : l'écart donne le décalage horaire.
+  const affiche = new Date(`${dateDuJour(supposition)}T${heureDuMoment(supposition)}:00Z`)
+  return new Date(2 * supposition.getTime() - affiche.getTime()).toISOString()
+}

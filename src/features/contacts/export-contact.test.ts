@@ -1,5 +1,6 @@
 import { formaterPrix } from '../../lib/nombres'
 import { describe, expect, it } from 'vitest'
+import { projetAcquereurEssai } from '../acquereurs/projet-acquereur-essai'
 import { activiteEssai } from '../activites/activite-essai'
 import { bienEssai } from '../biens/bien-essai'
 import { tacheEssai } from '../taches/tache-essai'
@@ -51,6 +52,7 @@ describe('texteExportContact', () => {
         taches: [],
         activites: [],
         projetsVendeurs: [],
+        projetsAcquereurs: [],
       },
       '2026-11-16',
     )
@@ -80,6 +82,7 @@ describe('texteExportContact', () => {
       taches: [],
       activites: [],
       projetsVendeurs: [],
+      projetsAcquereurs: [],
     })
     expect(texte).toContain('Adresse : non renseigné')
     expect(texte).toContain('Recommandé par : non renseigné')
@@ -94,6 +97,7 @@ describe('texteExportContact', () => {
       taches: [],
       activites: [],
       projetsVendeurs: [],
+      projetsAcquereurs: [],
     })
     expect(texte).toContain('Recommandé par : un autre contact du fichier')
     expect(texte).not.toContain('00000000-0000-4000-8000-000000000009')
@@ -208,6 +212,7 @@ describe('texteExportContact', () => {
           prochaine: null,
         },
       ],
+      projetsAcquereurs: [],
     })
     expect(texte).toContain('PROJETS DE VENTE\n')
     expect(texte).toContain(
@@ -244,5 +249,119 @@ describe('nomFichierExport', () => {
         '2026-11-16',
       ),
     ).toBe('donnees-etude-factice-associes-2026-11-16.txt')
+  })
+})
+
+describe('projets d’achat dans l’export', () => {
+  const vide = {
+    contact,
+    fichesFusionnees: [],
+    appels: [],
+    biens: [],
+    taches: [],
+    activites: [],
+    projetsVendeurs: [],
+  }
+  const coAcquereur = contactEssai({ id: 'c2', prenom: 'Dominique', nom: 'Exemple' })
+
+  it('écrit la recherche, le rôle de la personne et les biens proposés', () => {
+    const projet = projetAcquereurEssai({
+      contact_id: contact.id,
+      co_acquereur_id: 'c2',
+      etape: 'selection',
+      origine: 'portail',
+      portail: 'Leboncoin',
+      types_biens: ['ancien'],
+      secteurs: ['Villefictive'],
+      budget_max: 280000,
+      financement: 'pret',
+      accord_principe: true,
+    })
+    const texte = texteExportContact({
+      ...vide,
+      projetsAcquereurs: [
+        {
+          affiche: {
+            id: projet.id,
+            projet,
+            contact,
+            coAcquereur,
+            bienOrigine: null,
+            prochaine: null,
+            nbProposes: 1,
+          },
+          proposes: [
+            {
+              id: 'bp1',
+              propose: {
+                id: 'bp1',
+                user_id: 'u',
+                created_at: '2026-11-12T10:00:00Z',
+                updated_at: '2026-11-12T10:00:00Z',
+                archived_at: null,
+                projet_acquereur_id: projet.id,
+                bien_id: 'b1',
+                propose_le: '2026-11-12',
+                reaction: 'refuse',
+                raison_refus: 'Trop de travaux',
+              },
+              bien: bienEssai({ adresse: '3 impasse Fictive', ville: 'Villefictive' }),
+            },
+          ],
+        },
+      ],
+    })
+    expect(texte).toContain("PROJETS D'ACHAT\n")
+    expect(texte).toContain(
+      'rôle : acquéreur — co-acquéreur : Dominique Exemple — étape : Sélection',
+    )
+    expect(texte).toContain('origine : Portail Leboncoin')
+    expect(texte).toContain('accord de principe : oui')
+    expect(texte).toContain(
+      '  · bien proposé : 3 impasse Fictive, Villefictive — proposé le 12 novembre 2026 — refusé — raison : Trop de travaux',
+    )
+  })
+
+  it('indique le rôle de co-acquéreur', () => {
+    const projet = projetAcquereurEssai({ contact_id: 'c2', co_acquereur_id: contact.id })
+    const texte = texteExportContact({
+      ...vide,
+      projetsAcquereurs: [
+        {
+          affiche: {
+            id: projet.id,
+            projet,
+            contact: coAcquereur,
+            coAcquereur: contact,
+            bienOrigine: null,
+            prochaine: null,
+            nbProposes: 0,
+          },
+          proposes: [],
+        },
+      ],
+    })
+    expect(texte).toContain('rôle : co-acquéreur — acquéreur : Dominique Exemple')
+  })
+
+  it('écrit le compte rendu structuré d’une visite', () => {
+    const texte = texteExportContact({
+      ...vide,
+      projetsAcquereurs: [],
+      activites: [
+        {
+          id: 'v1',
+          activite: activiteEssai({
+            type: 'visite',
+            date_activite: '2026-11-14',
+            visite_points_positifs: 'Lumineux',
+            visite_interet: 'fort',
+          }),
+          contact,
+          bien: null,
+        },
+      ],
+    })
+    expect(texte).toContain('Visite — points positifs : Lumineux — intérêt : Fort')
   })
 })

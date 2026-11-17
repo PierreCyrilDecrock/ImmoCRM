@@ -11,6 +11,7 @@ import { exigerSupabase } from '../../lib/supabase'
 import { adresseBien, type Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import ChoixLiens from '../liens/ChoixLiens'
+import type { LienProjet } from '../liens/lien-projet'
 import { useActionsTache } from './actions-tache'
 import { libelleVue, REPORTS, vueDe } from './echeances'
 import { RECURRENCES, type Recurrence } from './recurrence'
@@ -41,7 +42,7 @@ type Props = {
     echeance?: string
     contact?: Contact | null
     bien?: Bien | null
-    projetVendeurId?: string | null
+    projet?: LienProjet | null
   }
   /** Lien fixé par la fiche d'où l'on vient : il ne se change pas ici. */
   verrouiller?: 'contact' | 'bien' | 'projet'
@@ -320,14 +321,14 @@ export default function FormulaireTache({
           legende="Liée à"
           contact={brouillon.contact}
           bien={lienBien}
-          projetVendeurId={brouillon.projetVendeurId}
+          projet={brouillon.projet}
           verrouiller={verrouiller}
-          onProjetVendeur={(projet) =>
+          onProjet={(projet) =>
             setBrouillon((actuel) => {
               const bien = actuel.bien ?? projet?.bien ?? null
               return {
                 ...actuel,
-                projetVendeurId: projet?.id ?? null,
+                projet: projet?.lien ?? null,
                 bien,
                 lieu: bien !== null && actuel.lieu.trim() === '' ? adresseBien(bien) : actuel.lieu,
               }

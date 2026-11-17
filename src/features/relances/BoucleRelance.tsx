@@ -8,6 +8,7 @@ import Icone from '../../components/Icone'
 import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import Pastille from '../../components/Pastille'
+import ChampsCompteRenduVisite from '../activites/ChampsCompteRenduVisite'
 import { formaterJourCourt } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import {
@@ -273,17 +274,30 @@ export default function BoucleRelance({
           )}
         </Etape>
 
-        <Etape numero={2} titre="Compte rendu">
+        <Etape
+          numero={2}
+          titre={brouillon.type === 'visite' ? 'Compte rendu de visite' : 'Compte rendu'}
+        >
+          {brouillon.type === 'visite' && (
+            <ChampsCompteRenduVisite
+              valeur={brouillon.visite}
+              onChange={(visite) => changer('visite', visite)}
+            />
+          )}
           <ChampTexteLong
-            libelle="Compte rendu"
+            libelle={brouillon.type === 'visite' ? 'Autres remarques' : 'Compte rendu'}
             rows={3}
-            // Pour un appel, le résultat se touche d'abord : le clavier attendra.
-            autoFocus={tache.categorie !== 'relance' && tache.categorie !== 'prospection'}
+            // Pour un appel ou une visite, on touche d'abord un choix : le clavier attendra.
+            autoFocus={!['relance', 'prospection', 'visite'].includes(tache.categorie)}
             maxLength={LONGUEUR_MAX_COMPTE_RENDU}
             placeholder={inviteCompteRendu(brouillon.type)}
             value={brouillon.compteRendu}
             onChange={(evenement) => changer('compteRendu', evenement.target.value)}
-            aide="Facultatif. Pour dicter, touchez le micro du clavier. Il rejoint le journal du contact."
+            aide={
+              brouillon.type === 'visite'
+                ? 'Facultatif. Le compte rendu rejoint le journal du contact, du bien et du projet.'
+                : 'Facultatif. Pour dicter, touchez le micro du clavier. Il rejoint le journal du contact.'
+            }
             erreur={erreurs.compteRendu}
           />
         </Etape>

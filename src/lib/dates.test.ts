@@ -13,6 +13,7 @@ import {
   formaterHeure,
   formaterJourCourt,
   heureDeFin,
+  instantDeParis,
   jourDeSemaine,
 } from './dates'
 
@@ -158,5 +159,18 @@ describe('estHeureValide', () => {
     expect(estHeureValide('24:00')).toBe(false)
     expect(estHeureValide('9:05')).toBe(false)
     expect(estHeureValide('')).toBe(false)
+  })
+})
+
+describe('instantDeParis', () => {
+  it('retire une heure en hiver et deux en été', () => {
+    expect(instantDeParis('2026-11-17', '14:30')).toBe('2026-11-17T13:30:00.000Z')
+    expect(instantDeParis('2026-07-01', '09:05')).toBe('2026-07-01T07:05:00.000Z')
+  })
+
+  it('se relit à l’identique', () => {
+    const instant = new Date(instantDeParis('2026-03-29', '10:00'))
+    expect(dateDuJour(instant)).toBe('2026-03-29')
+    expect(heureDuMoment(instant)).toBe('10:00')
   })
 })

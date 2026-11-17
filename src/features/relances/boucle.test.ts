@@ -256,3 +256,59 @@ describe('bouclerTache', () => {
     expect(resultat.ok === false && resultat.erreur.message).toMatch(/déjà été close/)
   })
 })
+
+describe('boucle d’une visite', () => {
+  const visite = tacheEssai({
+    id: 't2',
+    contact_id: 'c1',
+    categorie: 'visite',
+    heure: '14:00:00',
+    projet_acquereur_id: 'a1',
+  })
+  const depart = brouillonBoucle(visite, contact, {
+    aujourdhui,
+    delais: DELAIS_PAR_DEFAUT,
+    suite: null,
+  })
+
+  it('propose de rappeler l’acquéreur le lendemain, quelle que soit sa température', () => {
+    expect(depart).toMatchObject({
+      type: 'visite',
+      titre: 'Rappeler Camille Fictif après la visite',
+      echeance: '2026-11-18',
+    })
+  })
+
+  it('envoie le compte rendu structuré de la visite', () => {
+    const preparation = preparerBoucle(
+      {
+        ...depart,
+        compteRendu: 'Visite avec ses parents.',
+        visite: {
+          pointsPositifs: ' Lumineux ',
+          pointsNegatifs: 'Travaux de cuisine',
+          interet: 'fort',
+          suite: 'contre_visite',
+        },
+      },
+      { tache: visite, contact, aujourdhui, suite: null },
+    )
+    expect(preparation.ok && preparation.parametres).toMatchObject({
+      p_type: 'visite',
+      p_compte_rendu: 'Visite avec ses parents.',
+      p_visite_points_positifs: 'Lumineux',
+      p_visite_points_negatifs: 'Travaux de cuisine',
+      p_visite_interet: 'fort',
+      p_visite_suite: 'contre_visite',
+      p_prochaine_echeance: '2026-11-18',
+    })
+  })
+
+  it('n’envoie rien de la visite si ce qui a été fait est un autre type', () => {
+    const preparation = preparerBoucle(
+      { ...depart, type: 'appel', visite: { ...depart.visite, interet: 'fort' } },
+      { tache: visite, contact, aujourdhui, suite: null },
+    )
+    expect(preparation.ok && 'p_visite_interet' in preparation.parametres).toBe(false)
+  })
+})
