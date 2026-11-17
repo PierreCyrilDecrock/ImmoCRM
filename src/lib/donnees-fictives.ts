@@ -822,6 +822,111 @@ const JEU_PROJETS_ACQUEREURS: JeuFictif = {
   },
 }
 
+/**
+ * Une journée variée pour l'écran Aujourd'hui : une estimation à l'heure, sans lieu (son
+ * adresse vient du bien) ; un rappel à heure fixe (dans l'agenda) ; une relance en retard et
+ * une du jour, avec leur motif ; une tâche administrative en retard, sans fiche ; et un
+ * vendeur nouveau, sans prochaine action, dont le projet dort depuis 25 jours (deux alertes).
+ * `jours` : écart avec aujourd'hui ; `fiche` : rang du contact fictif lié (`null` : le
+ * vendeur créé par le lot, `'aucune'` : pas de contact).
+ */
+const MODELES_JOURNEE: readonly (Omit<Creation<'taches'>, 'echeance'> & {
+  jours: number
+  fiche: number | null | 'aucune'
+  avecBien: boolean
+})[] = [
+  {
+    titre: 'Estimation (fictive)',
+    categorie: 'estimation',
+    heure: '14:30',
+    duree: 90,
+    jours: 0,
+    fiche: 1,
+    avecBien: true,
+  },
+  {
+    titre: 'Rappeler à heure fixe (fictif)',
+    categorie: 'relance',
+    heure: '11:00',
+    duree: 15,
+    jours: 0,
+    fiche: 2,
+    avecBien: false,
+  },
+  {
+    titre: 'Relancer après l’avis de valeur (fictif)',
+    categorie: 'relance',
+    motif: 'Voulait en parler à ses enfants avant de décider.',
+    jours: -6,
+    fiche: 3,
+    avecBien: false,
+  },
+  {
+    titre: 'Prendre des nouvelles (fictif)',
+    categorie: 'relance',
+    motif: 'Projet de vente au printemps.',
+    jours: 0,
+    fiche: 7,
+    avecBien: false,
+  },
+  {
+    titre: 'Commander le diagnostic amiante (fictif)',
+    categorie: 'administratif',
+    jours: -3,
+    fiche: 'aucune',
+    avecBien: false,
+  },
+]
+
+/** Lignes ajoutées par le lot « Journée » : un contact, un bien, un projet et les tâches. */
+export const NOMBRE_LIGNES_JOURNEE_FICTIVE = 3 + MODELES_JOURNEE.length
+
+/** Depuis combien de jours le projet du lot « Journée » n'a pas bougé. */
+export const JOURS_PROJET_ENDORMI_FICTIF = 25
+
+const JEU_JOURNEE: JeuFictif = {
+  libelle: 'Journée',
+  async inserer(client) {
+    const fiches = await fichesFictivesRecentes(client, NOMBRE_CONTACTS_FICTIFS)
+    if (!fiches.ok) return fiches
+    const aujourdhui = dateDuJour()
+    // Le vendeur nouveau, son bien et son projet endormi.
+    const vendeur = await creer(client, 'contacts', {
+      ...contactFictif(NOMBRE_CONTACTS_FICTIFS),
+      roles: ['vendeur'],
+      temperature: 'tiede',
+    })
+    if (!vendeur.ok) return vendeur
+    const bien = await creer(client, 'biens', bienFictif(NOMBRE_BIENS_FICTIFS))
+    if (!bien.ok) return bien
+    const projet = await creer(client, 'projets_vendeurs', {
+      contact_id: vendeur.donnees.id,
+      bien_id: bien.donnees.id,
+      etape: 'decouverte',
+      etape_le: ajouterJours(aujourdhui, -JOURS_PROJET_ENDORMI_FICTIF),
+      notes: 'Projet fictif endormi : aucune activité depuis des semaines.',
+    })
+    if (!projet.ok) return projet
+    for (const { jours, fiche, avecBien, ...valeurs } of MODELES_JOURNEE) {
+      const contactId =
+        fiche === 'aucune'
+          ? null
+          : fiche === null
+            ? vendeur.donnees.id
+            : (fiches.donnees(fiche).contactId ?? vendeur.donnees.id)
+      const tache = await creer(client, 'taches', {
+        ...valeurs,
+        motif: valeurs.motif ?? 'Tâche fictive, créée pour les essais.',
+        echeance: ajouterJours(aujourdhui, jours),
+        contact_id: contactId,
+        bien_id: avecBien ? bien.donnees.id : null,
+      })
+      if (!tache.ok) return tache
+    }
+    return { ok: true, donnees: NOMBRE_LIGNES_JOURNEE_FICTIVE }
+  },
+}
+
 /** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
 export const JEUX_FICTIFS: readonly JeuFictif[] = [
   JEU_CONTACTS,
@@ -830,6 +935,7 @@ export const JEUX_FICTIFS: readonly JeuFictif[] = [
   JEU_ACTIVITES,
   JEU_PROJETS_VENDEURS,
   JEU_PROJETS_ACQUEREURS,
+  JEU_JOURNEE,
 ]
 
 export type BilanFictif = { ok: true; lignes: number } | { ok: false; message: string }

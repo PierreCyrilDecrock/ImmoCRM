@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Bouton from '../components/Bouton'
 import Carte from '../components/Carte'
 import ChampSaisie from '../components/ChampSaisie'
@@ -59,7 +60,11 @@ const MESSAGES_VIDES: Record<Vue, { titre: string; texte: string }> = {
 export default function Taches() {
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
-  const [vue, setVue] = useState<Vue>('aujourdhui')
+  // Une vue peut être demandée par l'adresse (`#/taches?vue=en_retard`, depuis Aujourd'hui).
+  const [parametres] = useSearchParams()
+  const [vue, setVue] = useState<Vue>(
+    () => VUES.find((option) => option.valeur === parametres.get('vue'))?.valeur ?? 'aujourdhui',
+  )
   const [version, setVersion] = useState(0)
   const [comptes, setComptes] = useState<Partial<Record<Vue, number | null>>>({})
   const [titreRapide, setTitreRapide] = useState('')

@@ -12,6 +12,7 @@ import {
   NOMBRE_ACTIVITES_FICTIVES,
   NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
+  NOMBRE_LIGNES_JOURNEE_FICTIVE,
   NOMBRE_TACHES_FICTIVES,
   NOMBRE_PROJETS_VENDEURS_FICTIFS,
   NOMBRE_PROJETS_ACQUEREURS_FICTIFS,
@@ -159,7 +160,8 @@ describe('contacts fictifs', () => {
       NOMBRE_CONTACTS_FICTIFS +
       NOMBRE_BIENS_FICTIFS +
       NOMBRE_TACHES_FICTIVES +
-      NOMBRE_ACTIVITES_FICTIVES
+      NOMBRE_ACTIVITES_FICTIVES +
+      NOMBRE_LIGNES_JOURNEE_FICTIVE
     expect(bilan).toEqual({ ok: true, lignes: attendues })
     expect(appels.filter((appel) => appel[0] === 'insert')).toHaveLength(attendues)
   })

@@ -10,7 +10,7 @@ import type { Contact } from '../contacts/contacts'
  */
 
 /** Une ligne qui peut être liée à un contact et à un bien. */
-type AvecLiens = { contact_id: string | null; bien_id: string | null }
+export type AvecLiens = { contact_id: string | null; bien_id: string | null }
 
 /** Une ligne accompagnée des fiches auxquelles elle est liée. */
 export type AvecFiches = { contact: Contact | null; bien: Bien | null }
@@ -34,32 +34,49 @@ async function lireParIds<T extends 'contacts' | 'biens'>(
   })
 }
 
+/** Les fiches lues, rangées par identifiant. */
+export type FichesLues = { contacts: Map<string, Contact>; biens: Map<string, Bien> }
+
+/** Lit les contacts et les biens liés à ces lignes (deux lectures au plus). */
+export async function lireFiches(
+  client: SupabaseClient,
+  lignes: readonly AvecLiens[],
+): Promise<Resultat<FichesLues>> {
+  const idsContacts = identifiantsLies(lignes, 'contact_id')
+  const idsBiens = identifiantsLies(lignes, 'bien_id')
+  const [lusContacts, lusBiens] = await Promise.all([
+    idsContacts.length > 0 ? lireParIds(client, 'contacts', idsContacts) : null,
+    idsBiens.length > 0 ? lireParIds(client, 'biens', idsBiens) : null,
+  ])
+  if (lusContacts !== null && !lusContacts.ok) return lusContacts
+  if (lusBiens !== null && !lusBiens.ok) return lusBiens
+  return {
+    ok: true,
+    donnees: {
+      contacts: new Map((lusContacts?.donnees.lignes ?? []).map((c) => [c.id, c])),
+      biens: new Map((lusBiens?.donnees.lignes ?? []).map((b) => [b.id, b])),
+    },
+  }
+}
+
+/** Les fiches liées à une ligne, d'après les fiches lues. */
+export function fichesDe(ligne: AvecLiens, fiches: FichesLues): AvecFiches {
+  return {
+    contact: ligne.contact_id === null ? null : (fiches.contacts.get(ligne.contact_id) ?? null),
+    bien: ligne.bien_id === null ? null : (fiches.biens.get(ligne.bien_id) ?? null),
+  }
+}
+
 /** Lit les contacts et les biens liés à ces lignes, et les ajoute à chacune. */
 export async function lireFichesLiees<L extends AvecLiens>(
   client: SupabaseClient,
   lignes: readonly L[],
 ): Promise<Resultat<(AvecFiches & { ligne: L })[]>> {
-  const idsContacts = identifiantsLies(lignes, 'contact_id')
-  const idsBiens = identifiantsLies(lignes, 'bien_id')
-  const contacts = new Map<string, Contact>()
-  const biens = new Map<string, Bien>()
-  if (idsContacts.length > 0) {
-    const lus = await lireParIds(client, 'contacts', idsContacts)
-    if (!lus.ok) return lus
-    for (const contact of lus.donnees.lignes) contacts.set(contact.id, contact)
-  }
-  if (idsBiens.length > 0) {
-    const lus = await lireParIds(client, 'biens', idsBiens)
-    if (!lus.ok) return lus
-    for (const bien of lus.donnees.lignes) biens.set(bien.id, bien)
-  }
+  const fiches = await lireFiches(client, lignes)
+  if (!fiches.ok) return fiches
   return {
     ok: true,
-    donnees: lignes.map((ligne) => ({
-      ligne,
-      contact: ligne.contact_id === null ? null : (contacts.get(ligne.contact_id) ?? null),
-      bien: ligne.bien_id === null ? null : (biens.get(ligne.bien_id) ?? null),
-    })),
+    donnees: lignes.map((ligne) => ({ ligne, ...fichesDe(ligne, fiches.donnees) })),
   }
 }
 

@@ -62,6 +62,10 @@ Tous sont dans `src/components`, un par fichier.
 
 Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour le journal, `SectionJournal` (rubrique d'une fiche : un bouton par type pour consigner, puis le fil), `FilActivites` (fil regroupé par jour) et `FormulaireActivite` ; pour la boucle de relance, `BoucleRelance` (l'écran en trois temps ouvert en cochant une tâche liée à un contact) et `ProchaineAction` (en-tête de la fiche Contact) ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`, réunis avec l'affichage du lien dans `ChoixLiens` (rubrique « Liée à » des formulaires de tâche et d'activité, y compris le projet de vente) ; pour les projets vendeurs, `TableauPipeline` (colonnes par étape avec glisser-déposer par une poignée sur tablette et ordinateur, liste groupée par étape sur téléphone), `CarteProjet`, `SectionProjetsVendeurs` (rubrique des fiches Contact et Bien), `NouveauProjetVendeur`, `FenetrePassage` (ouverte par `useChangementEtape` quand un critère de sortie manque), `SortieProjet` et `FormulaireProjetVendeur`. `SectionTaches` et `SectionJournal` acceptent aussi un projet (`projet={…}`).
 
+Les gestes sur une tâche (cocher avec la boucle de relance, reporter, ouvrir, rouvrir) et leurs fenêtres viennent du crochet `useGestesTache` (`src/features/taches/gestes-tache.tsx`) : `ListeTaches` s'en sert, et tout écran qui affiche des tâches à sa façon aussi (il place `gestes.fenetres` une fois sous ses listes).
+
+**Écran Aujourd'hui** (`src/features/aujourdhui/`) : `BlocJournee` (bloc repliable avec son titre, son compteur — vert à zéro, rouge en cas de retard — et un message positif quand il est vide ; les blocs repliés sont gardés sur l'appareil), `TroisActions` (les trois actions qui comptent, enregistrées en quittant le champ), `LigneRendezVous`, `LigneRelance`, `LigneAlerte`, `LigneNouveaute`, `CaseTache` (la case ronde qui clôt une tâche) et `BoutonAppel` (« Appeler » qui respecte l'accord pour être appelé : sans accord, il mène à la fiche).
+
 **Glisser-déposer.** Fait avec les événements du pointeur (souris, doigt, stylet) : la carte se saisit par sa poignée (dessin `poignee`, 44 px), la colonne visée s'allume, Échap annule, le tableau défile seul près de ses bords. Le même changement reste possible sans glisser, d'un toucher sur l'étape dans la fiche du projet.
 
 ### Structure
@@ -103,6 +107,7 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | `ChampEtiquettes` | Étiquettes libres : on écrit, on valide par « Entrée », une virgule ou « Ajouter » ; on touche une étiquette pour la retirer. | `libelle`, `etiquettes`, `onChange`, `ajouter` (règle de nettoyage et de doublon), `aide?` |
 | `Onglets` | Vues d'une même liste (En retard, Aujourd'hui…) : des pastilles, une seule allumée, avec un compteur facultatif. Elles passent à la ligne sur téléphone. | `libelle`, `options` (`{ valeur, libelle, compteur? }`), `valeur`, `onChange` |
 | `LienAction` | Grosse touche qui ouvre une autre application du téléphone (`tel:`, `sms:`, `mailto:`). Sans `href`, elle reste visible mais grisée. | `libelle`, `icone`, `href?` |
+| `LienBouton` | Lien à l'allure d'un petit bouton (44 px), pour les gestes d'une ligne de liste : ouvrir une fiche (`vers`), appeler ou lancer l'itinéraire (`href`, avec `nouvelOnglet` pour les cartes). | `icone`, `vers?` ou `href?`, `variante?` (`secondaire`, `discret`), `nouvelOnglet?`, `onClick?` |
 
 Une `LigneListe` coupe un texte trop long : placée dans une grille, son conteneur doit porter `min-w-0`, sinon la page s'élargit sur téléphone.
 
@@ -155,7 +160,7 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Installation sur l'écran d'accueil
 

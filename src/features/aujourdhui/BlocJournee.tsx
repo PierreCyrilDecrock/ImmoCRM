@@ -1,0 +1,98 @@
+import type { ReactNode } from 'react'
+import Icone, { type NomIcone } from '../../components/Icone'
+import Message from '../../components/Message'
+
+type Props = {
+  /** Sert à l'identifiant du contenu (`bloc-agenda`…). */
+  cle: string
+  titre: string
+  icone: NomIcone
+  /** Nombre d'éléments du bloc ; `null` : pas encore connu (lecture, erreur). */
+  compteur: number | null
+  /** Le compteur est un signal d'alerte (retard, demande en attente). */
+  compteurAlerte?: boolean
+  replie: boolean
+  onBasculer: () => void
+  /** Message d'erreur de lecture du bloc. */
+  erreur?: string | null
+  /** Message positif quand le bloc est vide. */
+  vide: { titre: string; texte: string }
+  /** Le contenu ; ignoré si le compteur vaut 0. */
+  children?: ReactNode
+  /** Sous la liste : lien « Voir tout », explication. */
+  pied?: ReactNode
+}
+
+/**
+ * Un bloc de l'écran Aujourd'hui : un titre avec son compteur, qui replie ou déplie le
+ * contenu d'un toucher. Vide, il le dit sur un ton positif.
+ */
+export default function BlocJournee({
+  cle,
+  titre,
+  icone,
+  compteur,
+  compteurAlerte = false,
+  replie,
+  onBasculer,
+  erreur = null,
+  vide,
+  children,
+  pied,
+}: Props) {
+  const idContenu = `bloc-${cle}`
+  const couleurCompteur =
+    compteur === 0
+      ? 'bg-succes-doux text-succes'
+      : compteurAlerte
+        ? 'bg-danger-doux text-danger'
+        : 'bg-accent-doux text-accent-fort'
+
+  return (
+    <section className="rounded-2xl bg-surface ring-1 ring-bord">
+      <h2>
+        <button
+          type="button"
+          onClick={onBasculer}
+          aria-expanded={!replie}
+          aria-controls={idContenu}
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 py-2 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <Icone nom={icone} className="size-6 text-encre-douce" />
+          <span className="min-w-0 flex-1 text-lg font-semibold text-encre">{titre}</span>
+          {compteur !== null && (
+            <span
+              className={`min-w-8 rounded-full px-2.5 py-0.5 text-center text-sm font-bold ${couleurCompteur}`}
+            >
+              {compteur}
+              <span className="sr-only"> {compteur > 1 ? 'éléments' : 'élément'}</span>
+            </span>
+          )}
+          <Icone
+            nom="chevron"
+            className={`size-5 text-encre-douce transition-transform ${replie ? '' : 'rotate-90'}`}
+          />
+        </button>
+      </h2>
+      {!replie && (
+        <div id={idContenu} className="px-4 pb-4">
+          {erreur !== null ? (
+            <Message genre="erreur">Ce bloc n'a pas pu être lu. {erreur}</Message>
+          ) : compteur === 0 ? (
+            <div className="flex items-start gap-3 rounded-xl bg-succes-doux px-3 py-3">
+              <Icone nom="succes" className="mt-0.5 size-5 text-succes" />
+              <p className="text-sm text-encre">
+                <span className="font-semibold">{vide.titre}</span> {vide.texte}
+              </p>
+            </div>
+          ) : (
+            <>
+              {children}
+              {pied}
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
