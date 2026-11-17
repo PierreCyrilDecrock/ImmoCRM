@@ -16,6 +16,7 @@ import Liste from '../components/Liste'
 import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
+import Onglets from '../components/Onglets'
 
 /**
  * Vitrine du système de design : tous les composants réutilisables, avec des données
@@ -26,6 +27,7 @@ export default function Composants() {
   const [modaleOuverte, setModaleOuverte] = useState(false)
   const [roles, setRoles] = useState<string[]>(['vendeur'])
   const [etiquettes, setEtiquettes] = useState(['investisseur'])
+  const [onglet, setOnglet] = useState('aujourdhui')
 
   return (
     <Page titre="Composants de l'interface" retour={{ vers: '/plus', libelle: 'Plus' }}>
@@ -153,6 +155,19 @@ export default function Composants() {
             aide="Validez par « Entrée » ; touchez une étiquette pour la retirer."
           />
         </div>
+      </Carte>
+
+      <Carte titre="Onglets">
+        <Onglets
+          libelle="Exemple d'onglets"
+          options={[
+            { valeur: 'en_retard', libelle: 'En retard', compteur: 2 },
+            { valeur: 'aujourdhui', libelle: "Aujourd'hui", compteur: 5 },
+            { valeur: 'terminees', libelle: 'Terminées' },
+          ]}
+          valeur={onglet}
+          onChange={setOnglet}
+        />
       </Carte>
 
       <Carte titre="Liens d'action">

@@ -60,6 +60,8 @@ Police du système de l'appareil (aucun fichier à télécharger).
 
 Tous sont dans `src/components`, un par fichier.
 
+Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`.
+
 ### Structure
 
 | Composant | Rôle | Propriétés principales |
@@ -94,6 +96,7 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | `ChampChoix` | Liste déroulante (sélecteur natif du téléphone). | `libelle`, `options` (`{ valeur, libelle }`), `optionVide?`, `aide?`, `erreur?` |
 | `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
 | `ChampEtiquettes` | Étiquettes libres : on écrit, on valide par « Entrée », une virgule ou « Ajouter » ; on touche une étiquette pour la retirer. | `libelle`, `etiquettes`, `onChange`, `ajouter` (règle de nettoyage et de doublon), `aide?` |
+| `Onglets` | Vues d'une même liste (En retard, Aujourd'hui…) : des pastilles, une seule allumée, avec un compteur facultatif. Elles passent à la ligne sur téléphone. | `libelle`, `options` (`{ valeur, libelle, compteur? }`), `valeur`, `onChange` |
 | `LienAction` | Grosse touche qui ouvre une autre application du téléphone (`tel:`, `sms:`, `mailto:`). Sans `href`, elle reste visible mais grisée. | `libelle`, `icone`, `href?` |
 
 Une `LigneListe` coupe un texte trop long : placée dans une grille, son conteneur doit porter `min-w-0`, sinon la page s'élargit sur téléphone.
@@ -104,7 +107,7 @@ Un formulaire est une colonne `flex flex-col gap-4` ; sur grand écran, une gril
 
 ### Fenêtre modale
 
-`FenetreModale` : plein écran sur téléphone, centrée au-delà. Se ferme par la croix, la touche Échap ou un clic à côté. Les boutons vont dans `pied`, fixé en bas ; mettre l'action principale en premier.
+`FenetreModale` : plein écran sur téléphone, centrée au-delà. Se ferme par la croix, la touche Échap ou un clic à côté. Les boutons vont dans `pied`, fixé en bas ; mettre l'action principale en premier. Un `ChampSaisie` ou un `ChampRecherche` marqué `autoFocus` reçoit le curseur à l'ouverture (sinon il irait sur la croix) : pour taper aussitôt.
 
 ```tsx
 <FenetreModale
@@ -147,7 +150,7 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Installation sur l'écran d'accueil
 

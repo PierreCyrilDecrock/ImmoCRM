@@ -18,6 +18,13 @@ import {
   TEMPERATURES,
   type Contact,
 } from './contacts'
+import {
+  horaireTache,
+  libelleCategorie,
+  libelleEtatTache,
+  listerTachesLiees,
+  type TacheAffichee,
+} from '../taches/taches'
 import { formaterTelephone } from './telephone'
 
 /**
@@ -35,6 +42,8 @@ export type DonneesContact = {
   appels: AppelSansAccord[]
   /** Les biens dont la personne est ou a été notée propriétaire, toutes fiches confondues. */
   biens: BienDuContact[]
+  /** Les tâches et rendez-vous liés à la personne (à faire, faits, annulés). */
+  taches: TacheAffichee[]
 }
 
 const ouiNon = (valeur: boolean) => (valeur ? 'Oui' : 'Non')
@@ -210,7 +219,7 @@ function lignesFiche(contact: Contact): string[] {
 
 /** Le contenu du fichier d'export, en clair. `date` : le jour de l'export (`2026-11-16`). */
 export function texteExportContact(donnees: DonneesContact, date: string = dateDuJour()): string {
-  const { contact, fichesFusionnees, appels, biens } = donnees
+  const { contact, fichesFusionnees, appels, biens, taches } = donnees
   const lignes = [
     `DONNÉES PERSONNELLES — ${nomComplet(contact)}`,
     `Document établi le ${formaterDate(date)} à partir du fichier de contacts ImmoCRM.`,
@@ -236,6 +245,21 @@ export function texteExportContact(donnees: DonneesContact, date: string = dateD
       libelleType(bien.type),
       lien.quote_part === null ? null : `quote-part : ${formaterQuotePart(lien.quote_part)}`,
       lien.archived_at === null ? null : `lien retiré le ${formaterDate(lien.archived_at)}`,
+    ]
+    lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
+  }
+  lignes.push(...titre('Tâches et rendez-vous'))
+  if (taches.length === 0) lignes.push('Aucun.')
+  for (const { tache, bien } of taches) {
+    const horaire = horaireTache(tache)
+    const morceaux = [
+      horaire === '' ? formaterDate(tache.echeance) : `${formaterDate(tache.echeance)}, ${horaire}`,
+      libelleCategorie(tache.categorie),
+      tache.titre,
+      libelleEtatTache(tache.etat).toLowerCase(),
+      tache.lieu === '' ? null : `lieu : ${tache.lieu}`,
+      bien === null ? null : `bien : ${adresseBien(bien)}`,
+      tache.motif === '' ? null : `motif : ${tache.motif}`,
     ]
     lignes.push(`- ${morceaux.filter((morceau) => morceau !== null).join(' — ')}`)
   }
@@ -266,7 +290,7 @@ export function nomFichierExport(contact: Contact, date: string = dateDuJour()):
 /**
  * Lit tout ce que la base contient sur une personne : sa fiche, les fiches fusionnées dans
  * celle-ci (y compris les fusions successives), les appels sans accord de chacune et les
- * biens dont elle est notée propriétaire (liens retirés compris).
+ * biens dont elle est notée propriétaire (liens retirés compris) et ses tâches.
  * Chaque table liée aux contacts, créée à une étape suivante, viendra s'ajouter ici.
  */
 export async function rassemblerDonneesContact(
@@ -301,6 +325,7 @@ export async function rassemblerDonneesContact(
 
   const appels: AppelSansAccord[] = []
   const biens: BienDuContact[] = []
+  const taches: TacheAffichee[] = []
   for (const idFiche of [id, ...fichesFusionnees.map((f) => f.id)]) {
     const resultat = await listerAppelsSansAccord(client, idFiche)
     if (!resultat.ok) return resultat
@@ -308,8 +333,14 @@ export async function rassemblerDonneesContact(
     const possedes = await listerBiensDuContact(client, idFiche, 'avec')
     if (!possedes.ok) return possedes
     biens.push(...possedes.donnees)
+    const liees = await listerTachesLiees(client, { contactId: idFiche }, 'toutes')
+    if (!liees.ok) return liees
+    taches.push(...liees.donnees)
   }
   appels.sort((a, b) => b.created_at.localeCompare(a.created_at))
 
-  return { ok: true, donnees: { contact: fiche.donnees, fichesFusionnees, appels, biens } }
+  return {
+    ok: true,
+    donnees: { contact: fiche.donnees, fichesFusionnees, appels, biens, taches },
+  }
 }

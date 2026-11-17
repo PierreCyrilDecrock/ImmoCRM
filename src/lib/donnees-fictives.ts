@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { creer, type Creation, type Resultat } from './donnees'
+import { ajouterJours, dateDuJour } from './dates'
+import { creer, listerPage, type Creation, type Resultat } from './donnees'
 import type { Environnement } from './environnement'
 
 /**
@@ -259,8 +260,124 @@ const JEU_BIENS: JeuFictif = {
   },
 }
 
+/**
+ * Ce qui change d'une tâche fictive à l'autre : une par vue de la page Tâches, un rendez-vous
+ * avec heure et lieu, une visite liée à un bien, une tâche mensuelle et un créneau de
+ * prospection. `jours` : écart avec aujourd'hui ; `lien` : à quoi la tâche est liée.
+ */
+const MODELES_TACHES: readonly (Omit<Creation<'taches'>, 'echeance'> & {
+  jours: number
+  lien: 'contact' | 'bien' | 'les_deux' | null
+})[] = [
+  { titre: 'Rappeler pour le projet de vente', categorie: 'relance', jours: -2, lien: 'contact' },
+  {
+    titre: 'Rendez-vous de découverte',
+    categorie: 'rendez_vous',
+    heure: '10:00',
+    duree: 60,
+    lieu: `12 rue de l'Exemple, ${CODE_POSTAL_FICTIF} ${VILLE_FICTIVE}`,
+    priorite: 1,
+    jours: 0,
+    lien: 'contact',
+  },
+  {
+    titre: 'Envoyer le dossier de diagnostics',
+    categorie: 'administratif',
+    jours: 0,
+    lien: 'bien',
+  },
+  {
+    titre: 'Visite avec un acquéreur',
+    categorie: 'visite',
+    heure: '17:30',
+    duree: 45,
+    jours: 1,
+    lien: 'les_deux',
+  },
+  {
+    titre: 'Compte rendu au vendeur',
+    categorie: 'relance',
+    recurrence: 'mois',
+    jours: 3,
+    lien: 'les_deux',
+  },
+  {
+    titre: 'Prospection : boîtage du quartier',
+    categorie: 'prospection',
+    heure: '14:00',
+    duree: 120,
+    lieu: `avenue du Test, ${VILLE_FICTIVE}`,
+    recurrence: 'semaine',
+    jours: 9,
+    lien: null,
+  },
+]
+
+/** Nombre de tâches du lot fictif. */
+export const NOMBRE_TACHES_FICTIVES = MODELES_TACHES.length
+
+/**
+ * Fabrique une tâche fictive, datée par rapport à `aujourdhui` et liée, si le modèle le
+ * prévoit, au contact et au bien donnés.
+ */
+export function tacheFictive(
+  rang: number,
+  aujourdhui: string,
+  liens: { contactId: string | null; bienId: string | null },
+): Creation<'taches'> {
+  const modele = MODELES_TACHES[rang % MODELES_TACHES.length]
+  if (modele === undefined) throw new Error('Aucun modèle de tâche fictive.')
+  const { jours, lien, ...valeurs } = modele
+  const echeance = ajouterJours(aujourdhui, jours)
+  return {
+    ...valeurs,
+    motif: 'Tâche fictive, créée pour les essais.',
+    echeance,
+    recurrence_ancre:
+      valeurs.recurrence === undefined || valeurs.recurrence === null ? null : echeance,
+    contact_id: lien === 'contact' || lien === 'les_deux' ? liens.contactId : null,
+    bien_id: lien === 'bien' || lien === 'les_deux' ? liens.bienId : null,
+  }
+}
+
+const JEU_TACHES: JeuFictif = {
+  libelle: 'Tâches',
+  async inserer(client) {
+    // Les tâches se lient aux fiches fictives les plus récentes (celles des lots précédents).
+    const contacts = await listerPage(client, 'contacts', {
+      filtres: [{ colonne: 'etiquettes', genre: 'comprend', valeur: ['fictif'] }],
+      tri: [{ colonne: 'created_at', croissant: false }, { colonne: 'id' }],
+      debut: 0,
+      taille: NOMBRE_TACHES_FICTIVES,
+    })
+    if (!contacts.ok) return contacts
+    const biens = await listerPage(client, 'biens', {
+      filtres: [{ colonne: 'ville', genre: 'egal', valeur: VILLE_FICTIVE }],
+      tri: [{ colonne: 'created_at', croissant: false }, { colonne: 'id' }],
+      debut: 0,
+      taille: NOMBRE_TACHES_FICTIVES,
+    })
+    if (!biens.ok) return biens
+    const aujourdhui = dateDuJour()
+    for (let rang = 0; rang < NOMBRE_TACHES_FICTIVES; rang += 1) {
+      const contactsLus = contacts.donnees.lignes
+      const biensLus = biens.donnees.lignes
+      const resultat = await creer(
+        client,
+        'taches',
+        tacheFictive(rang, aujourdhui, {
+          contactId: contactsLus[rang % Math.max(contactsLus.length, 1)]?.id ?? null,
+          bienId: biensLus[rang % Math.max(biensLus.length, 1)]?.id ?? null,
+        }),
+      )
+      if (!resultat.ok) return resultat
+    }
+    return { ok: true, donnees: NOMBRE_TACHES_FICTIVES }
+  },
+}
+
 /** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
-export const JEUX_FICTIFS: readonly JeuFictif[] = [JEU_CONTACTS, JEU_BIENS]
+export const JEUX_FICTIFS: readonly JeuFictif[] = [JEU_CONTACTS, JEU_BIENS, JEU_TACHES]
 
 export type BilanFictif = { ok: true; lignes: number } | { ok: false; message: string }
 

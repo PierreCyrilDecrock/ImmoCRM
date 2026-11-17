@@ -31,6 +31,7 @@ import {
 } from '../features/biens/biens'
 import PhotosBien from '../features/biens/PhotosBien'
 import ProprietairesBien from '../features/biens/ProprietairesBien'
+import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { formaterNombre, formaterPrix, formaterSurface } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
@@ -274,6 +275,10 @@ export default function FicheBien() {
           rubrique('Diagnostics', diagnostics, 'DPE et GES non renseignés.')}
 
         <ProprietairesBien bienId={bien.id} />
+
+        <div className="min-w-0">
+          <SectionTaches bien={bien} />
+        </div>
 
         <Carte titre="Historique des prix">
           {prix === null ? (

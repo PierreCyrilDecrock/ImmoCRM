@@ -474,11 +474,131 @@ export type Database = {
         }
         Relationships: []
       }
+      taches: {
+        Row: {
+          archived_at: string | null
+          bien_id: string | null
+          categorie: string
+          cloturee_le: string | null
+          contact_id: string | null
+          created_at: string
+          duree: number | null
+          echeance: string
+          etat: string
+          heure: string | null
+          id: string
+          lieu: string
+          motif: string
+          priorite: number
+          recurrence: string | null
+          recurrence_ancre: string | null
+          recurrence_rang: number
+          titre: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          bien_id?: string | null
+          categorie?: string
+          cloturee_le?: string | null
+          contact_id?: string | null
+          created_at?: string
+          duree?: number | null
+          echeance: string
+          etat?: string
+          heure?: string | null
+          id?: string
+          lieu?: string
+          motif?: string
+          priorite?: number
+          recurrence?: string | null
+          recurrence_ancre?: string | null
+          recurrence_rang?: number
+          titre: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          bien_id?: string | null
+          categorie?: string
+          cloturee_le?: string | null
+          contact_id?: string | null
+          created_at?: string
+          duree?: number | null
+          echeance?: string
+          etat?: string
+          heure?: string | null
+          id?: string
+          lieu?: string
+          motif?: string
+          priorite?: number
+          recurrence?: string | null
+          recurrence_ancre?: string | null
+          recurrence_rang?: number
+          titre?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'taches_bien_fk'
+            columns: ['user_id', 'bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'taches_contact_fk'
+            columns: ['user_id', 'contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      cloturer_tache: {
+        Args: {
+          p_etat: string
+          p_id: string
+          p_suivante_echeance?: string
+          p_suivante_rang?: number
+        }
+        Returns: {
+          archived_at: string | null
+          bien_id: string | null
+          categorie: string
+          cloturee_le: string | null
+          contact_id: string | null
+          created_at: string
+          duree: number | null
+          echeance: string
+          etat: string
+          heure: string | null
+          id: string
+          lieu: string
+          motif: string
+          priorite: number
+          recurrence: string | null
+          recurrence_ancre: string | null
+          recurrence_rang: number
+          titre: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'taches'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       doublons_contact: {
         Args: {
           p_courriels: string[]

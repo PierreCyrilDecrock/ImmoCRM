@@ -32,6 +32,8 @@ export default function ChampRecherche({ libelle, valeur, onChange, ...champ }: 
         spellCheck={false}
         enterKeyHint="search"
         {...champ}
+        // Repère lu par `FenetreModale` pour placer le curseur à l'ouverture.
+        data-autofocus={champ.autoFocus === true ? '' : undefined}
       />
       {valeur !== '' && (
         <button

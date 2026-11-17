@@ -22,7 +22,13 @@ export default function FenetreModale({ ouverte, titre, onFermer, children, pied
   useEffect(() => {
     const element = dialogue.current
     if (element === null) return
-    if (ouverte && !element.open) element.showModal()
+    if (ouverte && !element.open) {
+      element.showModal()
+      // Le champ marqué « autoFocus » a été monté avant l'ouverture : le navigateur a donc
+      // placé le curseur sur la croix. On le remet dans le champ prévu (titre d'une tâche,
+      // recherche d'un contact), pour pouvoir taper aussitôt.
+      element.querySelector<HTMLElement>('[data-autofocus]')?.focus()
+    }
     if (!ouverte && element.open) element.close()
   }, [ouverte])
 
