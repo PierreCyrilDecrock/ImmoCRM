@@ -27,12 +27,17 @@ export type Contact = Ligne<'contacts'>
 
 /**
  * Valeurs envoyées à la base pour créer ou modifier un contact. Les colonnes que la base
- * calcule elle-même (recherche, nom de classement, lien de fusion, date du dernier contact)
- * n'en font pas partie.
+ * calcule ou tient elle-même (recherche, nom de classement, lien de fusion, date du dernier
+ * contact, prochaine action et son absence confirmée) n'en font pas partie.
  */
 export type ValeursContact = Omit<
   Creation<'contacts'>,
-  'recherche' | 'nom_tri' | 'fusionne_dans_id' | 'dernier_contact_le'
+  | 'recherche'
+  | 'nom_tri'
+  | 'fusionne_dans_id'
+  | 'dernier_contact_le'
+  | 'prochaine_action_le'
+  | 'sans_prochaine_action_le'
 >
 
 export type TypeContact = 'personne' | 'societe'

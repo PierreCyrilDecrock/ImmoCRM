@@ -72,6 +72,8 @@ export type Filtre<T extends NomTable> = { colonne: keyof Ligne<T> & string } & 
   /** La colonne vaut au moins / au plus cette valeur : un nombre, ou une date `AAAA-MM-JJ`. */
   | { genre: 'min'; valeur: number | string }
   | { genre: 'max'; valeur: number | string }
+  /** La colonne est vide (`null`). */
+  | { genre: 'vide' }
 )
 
 export type OptionsPage<T extends NomTable> = {
@@ -165,6 +167,7 @@ export async function listerPage<T extends NomTable>(
     if (filtre.genre === 'parmi') requete = requete.in(colonne, filtre.valeur)
     if (filtre.genre === 'min') requete = requete.gte(colonne, filtre.valeur)
     if (filtre.genre === 'max') requete = requete.lte(colonne, filtre.valeur)
+    if (filtre.genre === 'vide') requete = requete.is(colonne, null)
     if (filtre.genre === 'comprend') {
       // Entre guillemets : une valeur peut contenir une espace ou une virgule (étiquette libre).
       const valeurs = filtre.valeur.map((valeur) => `"${valeur.replace(/(["\\])/g, '\\$1')}"`)

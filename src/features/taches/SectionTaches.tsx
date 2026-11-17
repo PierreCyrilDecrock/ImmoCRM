@@ -11,7 +11,15 @@ import FormulaireTache from './FormulaireTache'
 import ListeTaches from './ListeTaches'
 import { listerTachesLiees, type TacheAffichee } from './taches'
 
-type Props = { contact: Contact; bien?: undefined } | { bien: Bien; contact?: undefined }
+type Props = ({ contact: Contact; bien?: undefined } | { bien: Bien; contact?: undefined }) & {
+  /** Change quand la fiche demande une relecture (après un geste fait ailleurs sur la fiche). */
+  version?: number
+  /**
+   * Appelé après chaque geste. Fourni, c'est la fiche qui fait relire toutes ses rubriques
+   * (en changeant `version`) ; absent, la rubrique se relit seule.
+   */
+  onChangement?: () => void
+}
 
 type Etat =
   | { phase: 'chargement' }
@@ -45,9 +53,9 @@ export default function SectionTaches(props: Props) {
       actif = false
     }
     // `version` relance la lecture après un changement.
-  }, [cle, version])
+  }, [cle, version, props.version])
 
-  const relire = () => setVersion((v) => v + 1)
+  const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
   const masquer = props.contact !== undefined ? 'contact' : 'bien'
 
   return (

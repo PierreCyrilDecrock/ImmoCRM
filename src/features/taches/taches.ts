@@ -343,6 +343,24 @@ export async function listerTachesLiees(
   return completerTaches(client, page.donnees.lignes)
 }
 
+/** La prochaine tâche à faire d'un contact (la plus proche), ou `null` s'il n'y en a pas. */
+export async function lireProchaineTache(
+  client: SupabaseClient,
+  contactId: string,
+): Promise<Resultat<Tache | null>> {
+  const page = await listerPage(client, 'taches', {
+    filtres: [
+      { colonne: 'contact_id', genre: 'egal', valeur: contactId },
+      { colonne: 'etat', genre: 'egal', valeur: 'a_faire' },
+    ],
+    tri: TRI_A_FAIRE,
+    debut: 0,
+    taille: 1,
+  })
+  if (!page.ok) return page
+  return { ok: true, donnees: page.donnees.lignes[0] ?? null }
+}
+
 // ---------------------------------------------------------------------------
 // Écriture
 // ---------------------------------------------------------------------------
@@ -377,6 +395,26 @@ export function rouvrirTache(client: SupabaseClient, id: string): Promise<Result
 }
 
 /**
+ * L'occurrence que crée la clôture d'une tâche récurrente (date et rang dans la série) ;
+ * `null` pour une tâche unique.
+ */
+export function suivanteDeSerie(
+  tache: Pick<Tache, 'recurrence' | 'recurrence_ancre' | 'recurrence_rang' | 'echeance'>,
+  aujourdhui: string,
+): { echeance: string; rang: number } | null {
+  if (!estRecurrence(tache.recurrence) || tache.recurrence_ancre === null) return null
+  return occurrenceSuivante(
+    {
+      recurrence: tache.recurrence,
+      ancre: tache.recurrence_ancre,
+      rang: tache.recurrence_rang,
+      echeance: tache.echeance,
+    },
+    aujourdhui,
+  )
+}
+
+/**
  * Clôture une tâche : faite, ou annulée. Pour une tâche récurrente, l'occurrence suivante
  * est créée dans la même opération, sauf si `arreterSerie` est demandé (annulation de toute
  * la série). Renvoie l'occurrence créée, ou `null`.
@@ -386,20 +424,7 @@ export async function cloturerTache(
   tache: Tache,
   options: { etat: 'faite' | 'annulee'; aujourdhui: string; arreterSerie?: boolean },
 ): Promise<Resultat<Tache | null>> {
-  const suivante =
-    options.arreterSerie !== true &&
-    estRecurrence(tache.recurrence) &&
-    tache.recurrence_ancre !== null
-      ? occurrenceSuivante(
-          {
-            recurrence: tache.recurrence,
-            ancre: tache.recurrence_ancre,
-            rang: tache.recurrence_rang,
-            echeance: tache.echeance,
-          },
-          options.aujourdhui,
-        )
-      : null
+  const suivante = options.arreterSerie === true ? null : suivanteDeSerie(tache, options.aujourdhui)
   const resultat = await appeler(client, 'cloturer_tache', {
     p_id: tache.id,
     p_etat: options.etat,

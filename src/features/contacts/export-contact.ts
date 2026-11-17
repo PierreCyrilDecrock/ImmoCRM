@@ -174,6 +174,16 @@ export const RUBRIQUES_EXPORT: readonly { titre: string; lignes: readonly LigneE
         valeur: (c) => formaterDate(c.dernier_contact_le),
       },
       {
+        colonne: 'prochaine_action_le',
+        libelle: 'Prochaine action prévue le',
+        valeur: (c) => formaterDate(c.prochaine_action_le),
+      },
+      {
+        colonne: 'sans_prochaine_action_le',
+        libelle: 'Absence de prochaine action confirmée le',
+        valeur: (c) => formaterDate(c.sans_prochaine_action_le),
+      },
+      {
         colonne: 'created_at',
         libelle: 'Fiche créée le',
         valeur: (c) => formaterDate(c.created_at),

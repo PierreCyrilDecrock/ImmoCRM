@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type FormEvent } from 'react'
 import Bouton from '../../components/Bouton'
 import ChampChoix from '../../components/ChampChoix'
 import ChampSaisie from '../../components/ChampSaisie'
@@ -6,6 +6,7 @@ import ChampTexteLong from '../../components/ChampTexteLong'
 import FenetreModale from '../../components/FenetreModale'
 import Icone from '../../components/Icone'
 import Message from '../../components/Message'
+import Pastille from '../../components/Pastille'
 import { useNotifications } from '../../components/notifications-contexte'
 import { dateDuJour, formaterDate, heureDuMoment } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
@@ -18,6 +19,7 @@ import {
   creerActivite,
   DUREES_ACTIVITE,
   iconeTypeActivite,
+  inviteCompteRendu,
   libelleTypeActivite,
   LONGUEUR_MAX_COMPTE_RENDU,
   modifierActivite,
@@ -41,44 +43,6 @@ type Props = {
   onFermer: () => void
   /** Appelé après tout enregistrement : le fil se relit. */
   onChangement: () => void
-}
-
-/** Une pastille à toucher, allumée quand elle est choisie (type, résultat d'un appel). */
-function Pastille({
-  choisie,
-  onClick,
-  children,
-}: {
-  choisie: boolean
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={choisie}
-      onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-        choisie
-          ? 'bg-accent text-sur-plein ring-accent'
-          : 'bg-surface text-encre ring-bord-fort hover:bg-creux'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
-
-/** Ce que demande le champ de texte, selon le type choisi. */
-const INVITES: Partial<Record<TypeActivite, string>> = {
-  appel: 'Ce qui a été dit, ce qui est convenu',
-  sms: 'Le message envoyé ou reçu, en résumé',
-  courriel: 'Objet ou résumé du courriel',
-  note: 'Votre note',
-  visite: 'Impressions de la visite, objections, suite',
-  estimation: 'Valeur avancée, état du bien, projet du vendeur',
-  porte_a_porte: 'Rue, numéro, personne rencontrée, intérêt',
-  document: 'Quel document, à qui',
 }
 
 /**
@@ -265,7 +229,7 @@ export default function FormulaireActivite({
           rows={5}
           autoFocus={existante === null}
           maxLength={LONGUEUR_MAX_COMPTE_RENDU}
-          placeholder={INVITES[brouillon.type] ?? 'Ce qui s’est passé'}
+          placeholder={inviteCompteRendu(brouillon.type)}
           value={brouillon.compteRendu}
           onChange={(evenement) => changer('compteRendu', evenement.target.value)}
           aide="Pour dicter, touchez le micro du clavier."

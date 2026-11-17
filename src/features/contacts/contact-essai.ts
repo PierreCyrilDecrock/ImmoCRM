@@ -37,6 +37,8 @@ export function contactEssai(valeurs: Partial<Contact> = {}): Contact {
     opposition_demarchage: false,
     opposition_demarchage_date: null,
     dernier_contact_le: '2026-11-16',
+    prochaine_action_le: null,
+    sans_prochaine_action_le: null,
     ...valeurs,
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import Bouton from '../components/Bouton'
 import Carte from '../components/Carte'
+import ChampChoix from '../components/ChampChoix'
 import ChampSaisie from '../components/ChampSaisie'
 import EtatChargement from '../components/EtatChargement'
 import Etiquette from '../components/Etiquette'
@@ -15,6 +16,13 @@ import {
   usageEspace,
   type NiveauEspace,
 } from '../features/biens/photos'
+import { TEMPERATURES, type Temperature } from '../features/contacts/contacts'
+import {
+  CHOIX_DELAIS,
+  DELAIS_PAR_DEFAUT,
+  libelleDelai,
+  type DelaisRelance,
+} from '../features/relances/delais'
 import {
   enregistrerReglages,
   lireReglages,
@@ -117,6 +125,87 @@ function CartePreferences() {
           <div className="md:self-start">
             <Bouton type="submit" pleineLargeur disabled={envoi}>
               {envoi ? 'Enregistrement…' : 'Enregistrer'}
+            </Bouton>
+          </div>
+        </form>
+      )}
+    </Carte>
+  )
+}
+
+/** Délai de relance par défaut de chaque température : la date proposée en clôturant une tâche. */
+function CarteRelances() {
+  const { notifier } = useNotifications()
+  const [delais, setDelais] = useState<DelaisRelance | null>(null)
+  const [erreurLecture, setErreurLecture] = useState<string | null>(null)
+  const [envoi, setEnvoi] = useState(false)
+
+  useEffect(() => {
+    let actif = true
+    void lireReglages(exigerSupabase()).then((resultat) => {
+      if (!actif) return
+      if (resultat.ok) setDelais(resultat.donnees.delais_relance)
+      else setErreurLecture(resultat.erreur.message)
+    })
+    return () => {
+      actif = false
+    }
+  }, [])
+
+  async function enregistrer(evenement: FormEvent) {
+    evenement.preventDefault()
+    if (delais === null) return
+    setEnvoi(true)
+    const resultat = await enregistrerReglages(exigerSupabase(), { delais_relance: delais })
+    setEnvoi(false)
+    if (resultat.ok) {
+      setDelais(resultat.donnees.delais_relance)
+      notifier('succes', 'Rythme des relances enregistré')
+    } else {
+      notifier('erreur', `L'enregistrement a échoué. ${resultat.erreur.message}`)
+    }
+  }
+
+  // Un délai enregistré hors de la liste proposée reste choisissable.
+  const options = (temperature: Temperature) => {
+    const actuel = delais?.[temperature]
+    return actuel === undefined || CHOIX_DELAIS.some((choix) => choix.valeur === actuel)
+      ? CHOIX_DELAIS
+      : [{ valeur: actuel, libelle: libelleDelai(actuel) }, ...CHOIX_DELAIS]
+  }
+
+  return (
+    <Carte titre="Rythme des relances">
+      {erreurLecture !== null ? (
+        <Message genre="erreur">Les réglages n'ont pas pu être lus. {erreurLecture}</Message>
+      ) : delais === null ? (
+        <EtatChargement />
+      ) : (
+        <form className="flex flex-col gap-4" onSubmit={(evenement) => void enregistrer(evenement)}>
+          <p className="text-sm text-encre-douce">
+            Quand vous cochez une tâche liée à un contact, la prochaine relance est proposée à ce
+            délai, selon sa température. Vous pouvez toujours changer la date au cas par cas.
+          </p>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {TEMPERATURES.map((temperature) => (
+              <ChampChoix
+                key={temperature.valeur}
+                libelle={temperature.libelle}
+                options={options(temperature.valeur)}
+                value={delais[temperature.valeur]}
+                aide={temperature.detail}
+                onChange={(evenement) =>
+                  setDelais({ ...delais, [temperature.valeur]: evenement.target.value })
+                }
+              />
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 md:flex-row">
+            <Bouton type="submit" pleineLargeur disabled={envoi}>
+              {envoi ? 'Enregistrement…' : 'Enregistrer'}
+            </Bouton>
+            <Bouton variante="discret" onClick={() => setDelais(DELAIS_PAR_DEFAUT)}>
+              Revenir aux délais conseillés
             </Bouton>
           </div>
         </form>
@@ -304,6 +393,7 @@ export default function Reglages() {
     <Page titre="Réglages" retour={{ vers: '/plus', libelle: 'Plus' }}>
       <CarteProjet />
       <CartePreferences />
+      <CarteRelances />
       <CarteStockage />
       <CarteSecurite />
       {environnement === 'test' && <CarteDonneesFictives />}

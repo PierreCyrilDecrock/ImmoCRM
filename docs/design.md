@@ -60,7 +60,7 @@ Police du système de l'appareil (aucun fichier à télécharger).
 
 Tous sont dans `src/components`, un par fichier.
 
-Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour le journal, `SectionJournal` (rubrique d'une fiche : un bouton par type pour consigner, puis le fil), `FilActivites` (fil regroupé par jour) et `FormulaireActivite` ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`, réunis avec l'affichage du lien dans `ChoixLiens` (rubrique « Liée à » des formulaires de tâche et d'activité).
+Des composants propres à un domaine vivent dans `src/features/<domaine>` et se réutilisent d'un écran à l'autre : pour les tâches, `ListeTaches` (lignes avec case à cocher, report et ouverture), `FormulaireTache`, `ReportTache` et `SectionTaches` (rubrique d'une fiche) ; pour le journal, `SectionJournal` (rubrique d'une fiche : un bouton par type pour consigner, puis le fil), `FilActivites` (fil regroupé par jour) et `FormulaireActivite` ; pour la boucle de relance, `BoucleRelance` (l'écran en trois temps ouvert en cochant une tâche liée à un contact) et `ProchaineAction` (en-tête de la fiche Contact) ; pour choisir une fiche, `SelecteurContact` et `SelecteurBien`, réunis avec l'affichage du lien dans `ChoixLiens` (rubrique « Liée à » des formulaires de tâche et d'activité).
 
 ### Structure
 
@@ -95,6 +95,7 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | `ChampRecherche` | Champ de recherche : loupe, saisie, croix pour effacer. Pas de libellé visible. | `libelle` (lu par les lecteurs d'écran), `valeur`, `onChange(valeur)`, plus celles d'un champ HTML |
 | `ChampChoix` | Liste déroulante (sélecteur natif du téléphone). | `libelle`, `options` (`{ valeur, libelle }`), `optionVide?`, `aide?`, `erreur?` |
 | `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
+| `Pastille` | Une pastille à toucher, allumée quand elle est choisie : un choix en un geste (type d'activité, résultat d'un appel, température, raccourci de date). À grouper dans un `fieldset` avec sa `legend`, ou un `div role="group"` avec `aria-label`. | `choisie`, `onClick`, contenu |
 | `ChampEtiquettes` | Étiquettes libres : on écrit, on valide par « Entrée », une virgule ou « Ajouter » ; on touche une étiquette pour la retirer. | `libelle`, `etiquettes`, `onChange`, `ajouter` (règle de nettoyage et de doublon), `aide?` |
 | `Onglets` | Vues d'une même liste (En retard, Aujourd'hui…) : des pastilles, une seule allumée, avec un compteur facultatif. Elles passent à la ligne sur téléphone. | `libelle`, `options` (`{ valeur, libelle, compteur? }`), `valeur`, `onChange` |
 | `LienAction` | Grosse touche qui ouvre une autre application du téléphone (`tel:`, `sms:`, `mailto:`). Sans `href`, elle reste visible mais grisée. | `libelle`, `icone`, `href?` |

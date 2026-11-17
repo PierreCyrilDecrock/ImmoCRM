@@ -42,6 +42,11 @@ type Props = {
   onFermer: () => void
   /** Appelé après tout enregistrement : la liste se relit. */
   onChangement: () => void
+  /**
+   * « Marquer comme faite » sur une tâche liée à un contact : ouvre la boucle de relance au
+   * lieu de clore la tâche en un geste.
+   */
+  onBoucler?: () => void
 }
 
 /** Les dates proposées d'un toucher sous le champ Date. */
@@ -59,6 +64,7 @@ export default function FormulaireTache({
   verrouiller,
   onFermer,
   onChangement,
+  onBoucler,
 }: Props) {
   const { notifier } = useNotifications()
   const actions = useActionsTache(onChangement)
@@ -351,7 +357,11 @@ export default function FormulaireTache({
                 variante="secondaire"
                 icone="succes"
                 disabled={occupe}
-                onClick={() => void agir(() => actions.cocher(existante, aujourdhui))}
+                onClick={() =>
+                  existante.contact_id !== null && onBoucler !== undefined
+                    ? onBoucler()
+                    : void agir(() => actions.cocher(existante, aujourdhui))
+                }
               >
                 Marquer comme faite
               </Bouton>

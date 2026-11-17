@@ -195,6 +195,17 @@ describe('listerPage', () => {
     expect(appels).toContainEqual(['lte', 'prix', 300000])
   })
 
+  it('cherche une colonne vide', async () => {
+    const { client, appels } = fauxClient({ data: [], error: null })
+    await listerPage(client, 'contacts', {
+      filtres: [{ colonne: 'prochaine_action_le', genre: 'vide' }],
+      tri: [{ colonne: 'id' }],
+      debut: 0,
+      taille: 10,
+    })
+    expect(appels).toContainEqual(['is', 'prochaine_action_le', null])
+  })
+
   it('ne demande pas le total s’il n’est pas voulu', async () => {
     const { client, appels } = fauxClient({ data: [], error: null })
     const resultat = await listerPage(client, 'reglages', {

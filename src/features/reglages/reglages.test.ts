@@ -26,10 +26,38 @@ describe('lireReglages', () => {
   })
 
   it('donne les réglages enregistrés', async () => {
-    const { client } = fauxClient({ data: [{ nom_affiche: 'Camille Fictif' }], error: null })
+    const { client } = fauxClient({
+      data: [
+        {
+          nom_affiche: 'Camille Fictif',
+          relance_chaud: '3j',
+          relance_tiede: '2s',
+          relance_froid: '3m',
+          relance_veille: '12m',
+        },
+      ],
+      error: null,
+    })
     expect(await lireReglages(client)).toEqual({
       ok: true,
-      donnees: { nom_affiche: 'Camille Fictif' },
+      donnees: {
+        nom_affiche: 'Camille Fictif',
+        delais_relance: { chaud: '3j', tiede: '2s', froid: '3m', veille: '12m' },
+      },
+    })
+  })
+
+  it('remplace un délai illisible par celui par défaut', async () => {
+    const { client } = fauxClient({
+      data: [{ nom_affiche: '', relance_chaud: '??', relance_tiede: '1m' }],
+      error: null,
+    })
+    const resultat = await lireReglages(client)
+    expect(resultat.ok && resultat.donnees.delais_relance).toEqual({
+      chaud: '1s',
+      tiede: '1m',
+      froid: '3m',
+      veille: '6m',
     })
   })
 
@@ -44,10 +72,28 @@ describe('enregistrerReglages', () => {
   it('enregistre le nom sans espaces autour, sur la ligne du compte', async () => {
     const { client, appels } = fauxClient({ data: { nom_affiche: 'Camille Fictif' }, error: null })
     const resultat = await enregistrerReglages(client, { nom_affiche: '  Camille Fictif ' })
-    expect(resultat).toEqual({ ok: true, donnees: { nom_affiche: 'Camille Fictif' } })
+    expect(resultat).toEqual({
+      ok: true,
+      donnees: {
+        nom_affiche: 'Camille Fictif',
+        delais_relance: REGLAGES_PAR_DEFAUT.delais_relance,
+      },
+    })
     expect(appels).toContainEqual([
       'upsert',
       { nom_affiche: 'Camille Fictif' },
+      { onConflict: 'user_id' },
+    ])
+  })
+
+  it('enregistre les délais de relance seuls, sans toucher au nom', async () => {
+    const { client, appels } = fauxClient({ data: { nom_affiche: 'Camille Fictif' }, error: null })
+    await enregistrerReglages(client, {
+      delais_relance: { chaud: '3j', tiede: '1m', froid: '2m', veille: '6m' },
+    })
+    expect(appels).toContainEqual([
+      'upsert',
+      { relance_chaud: '3j', relance_tiede: '1m', relance_froid: '2m', relance_veille: '6m' },
       { onConflict: 'user_id' },
     ])
   })

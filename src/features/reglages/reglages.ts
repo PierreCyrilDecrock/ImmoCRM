@@ -1,14 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { enregistrerUnique, lister, type Resultat } from '../../lib/donnees'
+import { enregistrerUnique, lister, type Ligne, type Resultat } from '../../lib/donnees'
+import { DELAIS_PAR_DEFAUT, delaisLisibles, type DelaisRelance } from '../relances/delais'
 
 /** Les réglages modifiables par l'utilisateur. */
 export type Reglages = {
   /** Nom du mandataire, tel qu'il apparaît dans l'application. */
   nom_affiche: string
+  /** Délai de relance par défaut de chaque température (« 1s », « 1m »…). */
+  delais_relance: DelaisRelance
 }
 
 /** Valeurs utilisées tant que rien n'a été enregistré. */
-export const REGLAGES_PAR_DEFAUT: Reglages = { nom_affiche: '' }
+export const REGLAGES_PAR_DEFAUT: Reglages = {
+  nom_affiche: '',
+  delais_relance: DELAIS_PAR_DEFAUT,
+}
 
 export const LONGUEUR_MAX_NOM_AFFICHE = 80
 
@@ -20,24 +26,48 @@ export function validerNomAffiche(nom: string): string | null {
   return null
 }
 
+/** Les réglages tels que l'application les utilise, depuis la ligne de la base. */
+function depuisLigne(ligne: Partial<Ligne<'reglages'>>): Reglages {
+  return {
+    nom_affiche: ligne.nom_affiche ?? '',
+    delais_relance: delaisLisibles({
+      chaud: ligne.relance_chaud,
+      tiede: ligne.relance_tiede,
+      froid: ligne.relance_froid,
+      veille: ligne.relance_veille,
+    }),
+  }
+}
+
 /** Lit les réglages du compte connecté ; les valeurs par défaut si rien n'est enregistré. */
 export async function lireReglages(client: SupabaseClient): Promise<Resultat<Reglages>> {
   const resultat = await lister(client, 'reglages', { limite: 1 })
   if (!resultat.ok) return resultat
   const ligne = resultat.donnees[0]
-  return {
-    ok: true,
-    donnees: ligne === undefined ? REGLAGES_PAR_DEFAUT : { nom_affiche: ligne.nom_affiche },
-  }
+  return { ok: true, donnees: ligne === undefined ? REGLAGES_PAR_DEFAUT : depuisLigne(ligne) }
 }
 
-/** Enregistre les réglages du compte connecté (la ligne est créée au premier enregistrement). */
+/**
+ * Enregistre les réglages du compte connecté (la ligne est créée au premier
+ * enregistrement). Seuls les réglages fournis sont changés.
+ */
 export async function enregistrerReglages(
   client: SupabaseClient,
-  reglages: Reglages,
+  reglages: Partial<Reglages>,
 ): Promise<Resultat<Reglages>> {
-  const valeurs = { nom_affiche: reglages.nom_affiche.trim() }
+  const { nom_affiche, delais_relance } = reglages
+  const valeurs = {
+    ...(nom_affiche === undefined ? {} : { nom_affiche: nom_affiche.trim() }),
+    ...(delais_relance === undefined
+      ? {}
+      : {
+          relance_chaud: delais_relance.chaud,
+          relance_tiede: delais_relance.tiede,
+          relance_froid: delais_relance.froid,
+          relance_veille: delais_relance.veille,
+        }),
+  }
   const resultat = await enregistrerUnique(client, 'reglages', valeurs, 'user_id')
   if (!resultat.ok) return resultat
-  return { ok: true, donnees: { nom_affiche: resultat.donnees.nom_affiche } }
+  return { ok: true, donnees: depuisLigne(resultat.donnees) }
 }
