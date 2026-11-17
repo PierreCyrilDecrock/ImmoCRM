@@ -3,6 +3,8 @@ import {
   ajouterJours,
   ajouterMois,
   dateDuJour,
+  estHeureValide,
+  heureDuMoment,
   ecartJours,
   estDateValide,
   finDeSemaine,
@@ -135,5 +137,26 @@ describe('formats courts', () => {
     expect(heureDeFin('09:30:00', 90)).toBe('11:00')
     expect(heureDeFin('23:00', 30)).toBe('23:30')
     expect(heureDeFin('23:30', 60)).toBeNull()
+  })
+})
+
+describe('heureDuMoment', () => {
+  it("donne l'heure de Paris, en hiver comme en été", () => {
+    expect(heureDuMoment(new Date('2026-11-17T08:05:00Z'))).toBe('09:05')
+    expect(heureDuMoment(new Date('2026-07-01T12:30:00Z'))).toBe('14:30')
+  })
+
+  it('écrit minuit 00:00, pas 24:00', () => {
+    expect(heureDuMoment(new Date('2026-11-16T23:00:00Z'))).toBe('00:00')
+  })
+})
+
+describe('estHeureValide', () => {
+  it('accepte une heure HH:MM et refuse le reste', () => {
+    expect(estHeureValide('09:05')).toBe(true)
+    expect(estHeureValide('23:59')).toBe(true)
+    expect(estHeureValide('24:00')).toBe(false)
+    expect(estHeureValide('9:05')).toBe(false)
+    expect(estHeureValide('')).toBe(false)
   })
 })

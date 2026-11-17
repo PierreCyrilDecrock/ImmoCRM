@@ -12,6 +12,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      activites: {
+        Row: {
+          archived_at: string | null
+          bien_id: string | null
+          compte_rendu: string
+          contact_id: string | null
+          created_at: string
+          date_activite: string
+          duree: number | null
+          heure: string
+          id: string
+          resultat: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          bien_id?: string | null
+          compte_rendu?: string
+          contact_id?: string | null
+          created_at?: string
+          date_activite?: string
+          duree?: number | null
+          heure?: string
+          id?: string
+          resultat?: string | null
+          type: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          bien_id?: string | null
+          compte_rendu?: string
+          contact_id?: string | null
+          created_at?: string
+          date_activite?: string
+          duree?: number | null
+          heure?: string
+          id?: string
+          resultat?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'activites_bien_fk'
+            columns: ['user_id', 'bien_id']
+            isOneToOne: false
+            referencedRelation: 'biens'
+            referencedColumns: ['user_id', 'id']
+          },
+          {
+            foreignKeyName: 'activites_contact_fk'
+            columns: ['user_id', 'contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['user_id', 'id']
+          },
+        ]
+      }
       appels_sans_accord: {
         Row: {
           archived_at: string | null

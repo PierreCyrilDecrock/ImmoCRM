@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { activiteEssai } from '../activites/activite-essai'
 import { bienEssai } from '../biens/bien-essai'
 import { tacheEssai } from '../taches/tache-essai'
 import { contactEssai } from './contact-essai'
@@ -41,7 +42,7 @@ describe('texteExportContact', () => {
 
   it('écrit les données en clair, rubrique par rubrique', () => {
     const texte = texteExportContact(
-      { contact, fichesFusionnees: [], appels: [], biens: [], taches: [] },
+      { contact, fichesFusionnees: [], appels: [], biens: [], taches: [], activites: [] },
       '2026-11-16',
     )
     expect(texte).toContain('DONNÉES PERSONNELLES — Camille Fictif')
@@ -68,6 +69,7 @@ describe('texteExportContact', () => {
       appels: [],
       biens: [],
       taches: [],
+      activites: [],
     })
     expect(texte).toContain('Adresse : non renseigné')
     expect(texte).toContain('Recommandé par : non renseigné')
@@ -80,6 +82,7 @@ describe('texteExportContact', () => {
       appels: [],
       biens: [],
       taches: [],
+      activites: [],
     })
     expect(texte).toContain('Recommandé par : un autre contact du fichier')
     expect(texte).not.toContain('00000000-0000-4000-8000-000000000009')
@@ -133,7 +136,39 @@ describe('texteExportContact', () => {
           bien: null,
         },
       ],
+      activites: [
+        {
+          id: 'j1',
+          activite: activiteEssai({
+            type: 'appel',
+            resultat: 'joint',
+            date_activite: '2026-11-12',
+            heure: '18:05:00',
+            duree: 10,
+            compte_rendu: 'Projet de vente au printemps',
+          }),
+          contact,
+          bien: bienEssai({ adresse: '3 impasse Fictive', ville: 'Villefictive' }),
+        },
+        {
+          id: 'j2',
+          activite: activiteEssai({
+            type: 'note',
+            date_activite: '2026-11-11',
+            archived_at: '2026-11-13T08:00:00Z',
+          }),
+          contact,
+          bien: null,
+        },
+      ],
     })
+    expect(texte).toContain("JOURNAL D'ACTIVITÉ\n")
+    expect(texte).toContain(
+      '- 12 novembre 2026, 18 h 05 · 10 min — Appel · Joint — bien : 3 impasse Fictive, Villefictive — compte rendu : Projet de vente au printemps',
+    )
+    expect(texte).toContain(
+      '- 11 novembre 2026, 10 h — Note — retirée du journal le 13 novembre 2026',
+    )
     expect(texte).toContain('TÂCHES ET RENDEZ-VOUS\n')
     expect(texte).toContain(
       '- 20 novembre 2026, 10 h – 11 h — Visite — Visite du bien — à faire — lieu : 3 impasse Fictive — motif : Deuxième visite',

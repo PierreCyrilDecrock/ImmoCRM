@@ -14,6 +14,7 @@ import {
 import { estDateValide, formaterDuree, formaterHeure, heureDeFin } from '../../lib/dates'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
+import { lireFichesLiees } from '../liens/fiches-liees'
 import { bornesVue, type Vue } from './echeances'
 import { estRecurrence, occurrenceSuivante, type Recurrence } from './recurrence'
 
@@ -261,41 +262,15 @@ export async function completerTaches(
   client: SupabaseClient,
   taches: Tache[],
 ): Promise<Resultat<TacheAffichee[]>> {
-  const idsContacts = [
-    ...new Set(taches.flatMap((t) => (t.contact_id === null ? [] : [t.contact_id]))),
-  ]
-  const idsBiens = [...new Set(taches.flatMap((t) => (t.bien_id === null ? [] : [t.bien_id])))]
-  const contacts = new Map<string, Contact>()
-  const biens = new Map<string, Bien>()
-  if (idsContacts.length > 0) {
-    const lus = await listerPage(client, 'contacts', {
-      archives: 'avec',
-      filtres: [{ colonne: 'id', genre: 'parmi', valeur: idsContacts }],
-      tri: [{ colonne: 'id' }],
-      debut: 0,
-      taille: idsContacts.length,
-    })
-    if (!lus.ok) return lus
-    for (const contact of lus.donnees.lignes) contacts.set(contact.id, contact)
-  }
-  if (idsBiens.length > 0) {
-    const lus = await listerPage(client, 'biens', {
-      archives: 'avec',
-      filtres: [{ colonne: 'id', genre: 'parmi', valeur: idsBiens }],
-      tri: [{ colonne: 'id' }],
-      debut: 0,
-      taille: idsBiens.length,
-    })
-    if (!lus.ok) return lus
-    for (const bien of lus.donnees.lignes) biens.set(bien.id, bien)
-  }
+  const liees = await lireFichesLiees(client, taches)
+  if (!liees.ok) return liees
   return {
     ok: true,
-    donnees: taches.map((tache) => ({
-      id: tache.id,
-      tache,
-      contact: tache.contact_id === null ? null : (contacts.get(tache.contact_id) ?? null),
-      bien: tache.bien_id === null ? null : (biens.get(tache.bien_id) ?? null),
+    donnees: liees.donnees.map(({ ligne, contact, bien }) => ({
+      id: ligne.id,
+      tache: ligne,
+      contact,
+      bien,
     })),
   }
 }

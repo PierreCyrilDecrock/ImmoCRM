@@ -15,6 +15,7 @@ import Connexion from './pages/Connexion'
 import Contacts from './pages/Contacts'
 import FicheBien from './pages/FicheBien'
 import FicheContact from './pages/FicheContact'
+import Journal from './pages/Journal'
 import FusionContacts from './pages/FusionContacts'
 import ModifierBien from './pages/ModifierBien'
 import ModifierContact from './pages/ModifierContact'
@@ -65,6 +66,7 @@ function Pages() {
           <Route path="/pipelines" element={<Pipelines />} />
           <Route path="/taches" element={<Taches />} />
           <Route path="/plus" element={<Plus />} />
+          <Route path="/plus/journal" element={<Journal />} />
           <Route path="/plus/reglages" element={<Reglages />} />
           <Route path="/plus/composants" element={<Composants />} />
         </Route>

@@ -340,35 +340,45 @@ export function tacheFictive(
   }
 }
 
+/** Les fiches fictives les plus récentes, auxquelles se lient tâches et activités. */
+async function fichesFictivesRecentes(client: SupabaseClient, nombre: number) {
+  const contacts = await listerPage(client, 'contacts', {
+    filtres: [{ colonne: 'etiquettes', genre: 'comprend', valeur: ['fictif'] }],
+    tri: [{ colonne: 'created_at', croissant: false }, { colonne: 'id' }],
+    debut: 0,
+    taille: nombre,
+  })
+  if (!contacts.ok) return contacts
+  const biens = await listerPage(client, 'biens', {
+    filtres: [{ colonne: 'ville', genre: 'egal', valeur: VILLE_FICTIVE }],
+    tri: [{ colonne: 'created_at', croissant: false }, { colonne: 'id' }],
+    debut: 0,
+    taille: nombre,
+  })
+  if (!biens.ok) return biens
+  const contactsLus = contacts.donnees.lignes
+  const biensLus = biens.donnees.lignes
+  return {
+    ok: true as const,
+    donnees: (rang: number) => ({
+      contactId: contactsLus[rang % Math.max(contactsLus.length, 1)]?.id ?? null,
+      bienId: biensLus[rang % Math.max(biensLus.length, 1)]?.id ?? null,
+    }),
+  }
+}
+
 const JEU_TACHES: JeuFictif = {
   libelle: 'Tâches',
   async inserer(client) {
     // Les tâches se lient aux fiches fictives les plus récentes (celles des lots précédents).
-    const contacts = await listerPage(client, 'contacts', {
-      filtres: [{ colonne: 'etiquettes', genre: 'comprend', valeur: ['fictif'] }],
-      tri: [{ colonne: 'created_at', croissant: false }, { colonne: 'id' }],
-      debut: 0,
-      taille: NOMBRE_TACHES_FICTIVES,
-    })
-    if (!contacts.ok) return contacts
-    const biens = await listerPage(client, 'biens', {
-      filtres: [{ colonne: 'ville', genre: 'egal', valeur: VILLE_FICTIVE }],
-      tri: [{ colonne: 'created_at', croissant: false }, { colonne: 'id' }],
-      debut: 0,
-      taille: NOMBRE_TACHES_FICTIVES,
-    })
-    if (!biens.ok) return biens
+    const fiches = await fichesFictivesRecentes(client, NOMBRE_TACHES_FICTIVES)
+    if (!fiches.ok) return fiches
     const aujourdhui = dateDuJour()
     for (let rang = 0; rang < NOMBRE_TACHES_FICTIVES; rang += 1) {
-      const contactsLus = contacts.donnees.lignes
-      const biensLus = biens.donnees.lignes
       const resultat = await creer(
         client,
         'taches',
-        tacheFictive(rang, aujourdhui, {
-          contactId: contactsLus[rang % Math.max(contactsLus.length, 1)]?.id ?? null,
-          bienId: biensLus[rang % Math.max(biensLus.length, 1)]?.id ?? null,
-        }),
+        tacheFictive(rang, aujourdhui, fiches.donnees(rang)),
       )
       if (!resultat.ok) return resultat
     }
@@ -376,8 +386,128 @@ const JEU_TACHES: JeuFictif = {
   },
 }
 
+/**
+ * Ce qui change d'une activité fictive à l'autre : des appels aux résultats variés, des
+ * messages, une visite et une estimation liées à la fois à un contact et à un bien, du
+ * porte-à-porte et une note. `jours` : écart (négatif) avec aujourd'hui ; `lien` : à quoi
+ * l'activité est liée.
+ */
+const MODELES_ACTIVITES: readonly (Omit<Creation<'activites'>, 'date_activite'> & {
+  jours: number
+  lien: 'contact' | 'bien' | 'les_deux' | null
+})[] = [
+  {
+    type: 'appel',
+    resultat: 'joint',
+    heure: '09:15',
+    duree: 10,
+    compte_rendu: 'Appel fictif : projet de vente au printemps, estimation à prévoir.',
+    jours: 0,
+    lien: 'contact',
+  },
+  {
+    type: 'sms',
+    heure: '08:40',
+    compte_rendu: 'SMS fictif : confirmation du rendez-vous de demain.',
+    jours: 0,
+    lien: 'contact',
+  },
+  {
+    type: 'appel',
+    resultat: 'messagerie',
+    heure: '17:50',
+    compte_rendu: '',
+    jours: -1,
+    lien: 'contact',
+  },
+  {
+    type: 'visite',
+    heure: '11:00',
+    duree: 45,
+    compte_rendu: 'Visite fictive : acquéreurs intéressés, craignent les travaux de toiture.',
+    jours: -2,
+    lien: 'les_deux',
+  },
+  {
+    type: 'estimation',
+    heure: '14:30',
+    duree: 60,
+    compte_rendu: 'Estimation fictive : fourchette donnée oralement, avis de valeur à envoyer.',
+    jours: -5,
+    lien: 'les_deux',
+  },
+  {
+    type: 'courriel',
+    heure: '10:05',
+    compte_rendu: 'Courriel fictif : envoi des diagnostics demandés.',
+    jours: -8,
+    lien: 'contact',
+  },
+  {
+    type: 'porte_a_porte',
+    heure: '16:00',
+    duree: 90,
+    compte_rendu: 'Porte-à-porte fictif, avenue du Test : 25 portes, 3 contacts, 1 projet.',
+    jours: -12,
+    lien: null,
+  },
+  {
+    type: 'note',
+    heure: '19:00',
+    compte_rendu: 'Note fictive : le bien est mitoyen côté jardin.',
+    jours: -20,
+    lien: 'bien',
+  },
+]
+
+/** Nombre d'activités du lot fictif. */
+export const NOMBRE_ACTIVITES_FICTIVES = MODELES_ACTIVITES.length
+
+/**
+ * Fabrique une activité fictive, datée par rapport à `aujourdhui` (jamais après) et liée,
+ * si le modèle le prévoit, au contact et au bien donnés.
+ */
+export function activiteFictive(
+  rang: number,
+  aujourdhui: string,
+  liens: { contactId: string | null; bienId: string | null },
+): Creation<'activites'> {
+  const modele = MODELES_ACTIVITES[rang % MODELES_ACTIVITES.length]
+  if (modele === undefined) throw new Error('Aucun modèle d’activité fictive.')
+  const { jours, lien, ...valeurs } = modele
+  return {
+    ...valeurs,
+    date_activite: ajouterJours(aujourdhui, jours),
+    contact_id: lien === 'contact' || lien === 'les_deux' ? liens.contactId : null,
+    bien_id: lien === 'bien' || lien === 'les_deux' ? liens.bienId : null,
+  }
+}
+
+const JEU_ACTIVITES: JeuFictif = {
+  libelle: 'Journal',
+  async inserer(client) {
+    const fiches = await fichesFictivesRecentes(client, NOMBRE_ACTIVITES_FICTIVES)
+    if (!fiches.ok) return fiches
+    const aujourdhui = dateDuJour()
+    for (let rang = 0; rang < NOMBRE_ACTIVITES_FICTIVES; rang += 1) {
+      const resultat = await creer(
+        client,
+        'activites',
+        activiteFictive(rang, aujourdhui, fiches.donnees(rang)),
+      )
+      if (!resultat.ok) return resultat
+    }
+    return { ok: true, donnees: NOMBRE_ACTIVITES_FICTIVES }
+  },
+}
+
 /** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
-export const JEUX_FICTIFS: readonly JeuFictif[] = [JEU_CONTACTS, JEU_BIENS, JEU_TACHES]
+export const JEUX_FICTIFS: readonly JeuFictif[] = [
+  JEU_CONTACTS,
+  JEU_BIENS,
+  JEU_TACHES,
+  JEU_ACTIVITES,
+]
 
 export type BilanFictif = { ok: true; lignes: number } | { ok: false; message: string }
 
