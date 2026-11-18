@@ -15,7 +15,7 @@ L'offre gratuite de Supabase, qui héberge vos données, a trois limites (vérif
 | Protection | Quand | Ce qu'elle fait | Où la voir |
 | --- | --- | --- | --- |
 | **Export manuel** | Quand vous le décidez ; rappel au bout de 7 jours | Télécharge sur votre appareil un fichier complet de vos données (format JSON) | Plus → Réglages → « Sauvegarde de vos données » |
-| **Sauvegarde automatique chiffrée** | Chaque lundi vers 4 h | Copie toute la base du projet réel, la chiffre avec votre phrase secrète et la garde 90 jours dans GitHub, en deux exemplaires : une archive `.7z` (restauration, Windows) et une image disque `.dmg` (ouverture directe sur Mac) | GitHub → onglet Actions → « Sauvegarde » ; et dans Réglages, « Dernière sauvegarde automatique » |
+| **Sauvegarde automatique chiffrée** | Chaque lundi vers 4 h | Copie toute la base du projet réel, la chiffre avec votre phrase secrète et la garde 90 jours dans GitHub | GitHub → onglet Actions → « Sauvegarde » ; et dans Réglages, « Dernière sauvegarde automatique » |
 | **Maintien en activité** | Chaque jour vers 6 h | Interroge les projets pour qu'ils ne soient pas mis en pause | GitHub → onglet Actions → « Sauvegarde » |
 
 Aucune ne copie les **photos des biens** : seules leurs références sont sauvegardées. Gardez les originaux sur votre téléphone ou votre ordinateur.
@@ -90,7 +90,7 @@ Les workflows vérifient chaque secret avant de s'en servir, sans jamais l'affic
 2. Dans la liste de gauche, cliquez sur **Sauvegarde**.
 3. À droite, bouton **Run workflow** : laissez **reel**, puis **Run workflow**.
 4. Rafraîchissez la page : une ligne apparaît. Attendez 3 à 5 minutes, jusqu'à la coche verte ✓.
-5. Cliquez sur la ligne. En bas de la page, rubrique **Artifacts**, vous voyez deux fichiers : `immocrm-reel-AAAA-MM-JJ-HHMM.7z` et `immocrm-reel-AAAA-MM-JJ-HHMM.dmg`. C'est la même sauvegarde chiffrée, en deux formats : le `.dmg` s'ouvre directement sur Mac, le `.7z` sert à la restauration et s'ouvre sous Windows avec 7-Zip. La copie Mac est fabriquée juste après, sur un serveur Mac de GitHub : comptez une à deux minutes de plus.
+5. Cliquez sur la ligne. En bas de la page, rubrique **Artifacts**, vous voyez un fichier `immocrm-reel-AAAA-MM-JJ-HHMM.7z`. C'est la sauvegarde chiffrée.
 6. Dans l'application (projet réel), **Plus → Réglages** affiche « Dernière sauvegarde automatique : le … ».
 
 Si la coche est rouge ✗ : cliquez sur la ligne, puis sur l'étape en rouge. Le message d'erreur est en français et dit quoi corriger (voir aussi « En cas de problème » plus bas).
@@ -109,34 +109,23 @@ Chaque sauvegarde est gardée **90 jours** (le maximum pour un dépôt public) :
 
 Utile pour vérifier qu'elle est lisible, ou pour la confier à un développeur. Ce n'est pas nécessaire pour restaurer.
 
-**Sur Mac, sans rien installer** :
-
-1. Téléchargez le fichier `.dmg` depuis la rubrique **Artifacts** d'une exécution réussie.
-2. Double-cliquez dessus. macOS demande un mot de passe : tapez la **phrase secrète**. Ne cochez pas « Mémoriser dans mon trousseau ».
-3. Un disque « Sauvegarde ImmoCRM » apparaît dans le Finder, avec les fichiers ci-dessous.
-4. Une fois la vérification faite, éjectez-le (bouton ⏏ à côté de son nom dans le Finder). Le contenu redevient illisible sans la phrase.
-
-**Sur Windows, ou avec l'archive `.7z`** :
-
-1. Téléchargez le fichier `.7z`.
-2. Installez un logiciel qui ouvre les archives 7-Zip chiffrées : **7-Zip** sur Windows (gratuit, [7-zip.org](https://www.7-zip.org) ; clic droit sur le fichier → **7-Zip → Extraire ici**), ou **Keka** sur Mac ([keka.io](https://www.keka.io)). L'outil intégré de Windows et l'Utilitaire d'archive du Mac ne savent pas ouvrir une archive 7-Zip chiffrée.
+1. Téléchargez le fichier `.7z` depuis la rubrique **Artifacts** d'une exécution réussie.
+2. Ouvrez-le avec un logiciel qui lit les archives 7-Zip chiffrées en AES-256 : par exemple **7-Zip** sur Windows (gratuit, [7-zip.org](https://www.7-zip.org) ; clic droit sur le fichier → **7-Zip → Extraire ici**), ou **Keka** sur Mac ([keka.io](https://www.keka.io)). L'outil intégré de Windows et l'Utilitaire d'archive du Mac ne savent pas ouvrir une archive 7-Zip chiffrée.
 3. Tapez la **phrase secrète**. Sans elle, ou avec une phrase fausse, l'archive refuse de s'ouvrir et ne montre même pas la liste de ses fichiers.
+4. Vous obtenez quatre fichiers :
+   - `LISEZMOI.txt` : le projet, la date et l'heure de la sauvegarde (en temps universel : une heure de moins qu'à Paris en hiver) ;
+   - `donnees.sql` : toutes les lignes des tables, en texte ;
+   - `structure.sql` : la structure de la base à ce moment-là ;
+   - `inventaire.txt` : le nombre de lignes de chaque table (par exemple `contacts=12`).
 
-Dans les deux cas, vous trouvez quatre fichiers :
-
-- `LISEZMOI.txt` : le projet, la date et l'heure de la sauvegarde (en temps universel : une heure de moins qu'à Paris en hiver) ;
-- `donnees.sql` : toutes les lignes des tables, en texte ;
-- `structure.sql` : la structure de la base à ce moment-là ;
-- `inventaire.txt` : le nombre de lignes de chaque table (par exemple `contacts=12`).
-
-Pourquoi pas un simple zip ? L'Utilitaire d'archive du Mac n'ouvre que les zip protégés par l'ancien chiffrement « ZipCrypto », qui se casse en quelques minutes avec des outils gratuits. Les fichiers étant téléchargeables par tout compte GitHub, seuls des chiffrements solides (AES-256) sont utilisés : l'image disque `.dmg` est la forme que macOS sait ouvrir seul.
+Pourquoi pas un simple zip ? Le chiffrement que comprennent les outils intégrés de Windows et du Mac (« ZipCrypto ») se casse en quelques minutes avec des outils gratuits. Les fichiers étant téléchargeables par tout compte GitHub, seul un chiffrement solide (AES-256) est utilisé.
 
 ### Si la phrase est refusée
 
 Le workflow vérifie, avant de conserver une sauvegarde, qu'elle s'ouvre avec la phrase enregistrée dans GitHub : si l'ouverture échoue sur votre ordinateur, la cause est presque toujours l'une de celles-ci.
 
-1. **Le logiciel.** Sur Mac, ouvrez le fichier `.dmg` d'un double-clic. L'outil intégré de Windows (« Extraire tout ») et l'Utilitaire d'archive du Mac ne savent pas ouvrir le `.7z` : ils refusent la phrase même quand elle est juste. Pour le `.7z`, utilisez **7-Zip** (Windows) ou **Keka** (Mac).
-2. **Le bon fichier.** Ouvrez le fichier qui finit par `.dmg` (Mac) ou `.7z`. Si le navigateur a téléchargé un `.zip`, ouvrez-le d'abord (sans mot de passe) : le fichier chiffré est dedans. Les sauvegardes faites avant le 18/11/2026 au soir n'ont pas de `.dmg`.
+1. **Le logiciel.** L'outil intégré de Windows (« Extraire tout ») et l'Utilitaire d'archive du Mac ne savent pas ouvrir une archive 7-Zip chiffrée : ils refusent la phrase même quand elle est juste. Utilisez un logiciel qui lit le 7-Zip chiffré, comme **7-Zip** (Windows) ou **Keka** (Mac).
+2. **Le bon fichier.** Ouvrez le fichier qui finit par `.7z`. Si le navigateur a téléchargé un `.zip`, ouvrez-le d'abord (sans mot de passe) : le `.7z` est dedans.
 3. **La phrase exacte.** Majuscules, espaces entre les mots, accents : tout compte. Le plus sûr est de la copier depuis votre gestionnaire de mots de passe et de la coller.
 4. **Un caractère invisible dans le secret.** Si un espace ou un retour à la ligne a été collé avec la phrase dans GitHub, les sauvegardes faites avant le 18/11/2026 au soir le contiennent et ne s'ouvrent pas à la main ; le workflow **Restauration**, lui, les ouvre. Depuis, ces caractères sont ignorés, et le workflow le signale par un avertissement. Le plus simple : relancez une sauvegarde et essayez d'ouvrir la nouvelle.
 5. **Toujours refusée ?** Choisissez une nouvelle phrase (sans accent), mettez à jour le secret `SAUVEGARDE_PHRASE_SECRETE` (**Update**) et relancez une sauvegarde. Les anciennes restent liées à l'ancienne phrase : elles expireront d'elles-mêmes au bout de 90 jours.
@@ -216,7 +205,6 @@ Le workflow « Sauvegarde » échoue (coche rouge, courriel de GitHub) tant que 
 
 ## Pour aller plus loin (repères techniques)
 
-- La copie Mac (`image-mac.sh`) est fabriquée sur un serveur macOS de GitHub à partir de l'archive 7-Zip : `hdiutil` crée une image disque chiffrée en AES-256 avec la même phrase (transmise sans apparaître dans la liste des processus), puis vérifie qu'elle s'ouvre avec la phrase, contient les mêmes données et refuse une phrase fausse.
 - Les workflows sont `.github/workflows/sauvegarde.yml` (sauvegarde hebdomadaire et maintien quotidien) et `.github/workflows/restauration.yml` ; les scripts qu'ils lancent sont dans `supabase/sauvegarde/`.
 - La sauvegarde utilise l'outil officiel de Supabase (`supabase db dump`, version 3.2.0) : les données des tables de l'application (`donnees.sql`, instructions `COPY`), la structure (`structure.sql`) et l'inventaire. Elle est chiffrée par 7-Zip en AES-256, liste des fichiers comprise, puis vérifiée : elle doit s'ouvrir avec la phrase, et refuser une phrase fausse. Seul le fichier chiffré quitte le serveur de GitHub, qui est effacé à la fin de chaque exécution.
 - Rien n'est affiché dans les journaux, qui sont publics : ni données, ni nombres de lignes, ni messages d'erreur de la base pour le projet réel.
