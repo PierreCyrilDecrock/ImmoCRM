@@ -32,10 +32,15 @@ export default function MiseEnPage({ enTete, flottant }: Props) {
       <Navigation />
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {enTete}
-        {/* Marge du bas : la fin de la page défile au-dessus du bouton flottant. */}
+        {/*
+          « relative » : les textes réservés aux lecteurs d'écran (« sr-only », placés en
+          absolu) restent dans la zone qui défile, au lieu d'allonger tout le document (ce qui
+          créait un second défilement et un grand vide sous l'application).
+          Marge du bas : la fin de la page défile au-dessus du bouton flottant.
+        */}
         <main
           ref={contenu}
-          className={`min-h-0 flex-1 overflow-y-auto ${flottant !== undefined ? 'pb-20 md:pb-24' : ''}`}
+          className={`relative min-h-0 flex-1 overflow-y-auto ${flottant !== undefined ? 'pb-12 md:pb-16' : ''}`}
         >
           <Outlet key={version} />
         </main>

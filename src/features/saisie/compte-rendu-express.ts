@@ -33,7 +33,7 @@ import {
 
 /**
  * « Compte rendu express » : juste après un échange, on cherche le contact, on choisit ce
- * qui s'est passé (appel, visite…), on dicte ou on écrit, et on fixe la prochaine action.
+ * qui s'est passé (appel, visite…), on écrit le compte rendu, et on fixe la prochaine action.
  * Un seul écran, ouvert depuis le bouton « + » de n'importe quelle page.
  */
 
