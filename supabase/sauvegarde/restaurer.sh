@@ -31,8 +31,13 @@ chmod 700 "$travail"
 trap 'rm -rf "$travail"' EXIT
 
 echo "Déchiffrement de $(basename "$archive")…"
-7z x -bd -y -p"$PHRASE" -o"$travail" "$archive" >/dev/null 2>&1 ||
-  echec "Déchiffrement impossible : la phrase secrète ne correspond pas à cette sauvegarde, ou le fichier est abîmé."
+# La phrase nettoyée d'abord ; puis la valeur exacte du secret, pour les sauvegardes faites
+# avant que les espaces autour de la phrase ne soient ignorés.
+if ! 7z x -bd -y -p"$PHRASE" -o"$travail" "$archive" >/dev/null 2>&1; then
+  { [ "$PHRASE_BRUTE" != "$PHRASE" ] &&
+    7z x -bd -y -p"$PHRASE_BRUTE" -o"$travail" "$archive" >/dev/null 2>&1; } ||
+    echec "Déchiffrement impossible : la phrase secrète ne correspond pas à cette sauvegarde, ou le fichier est abîmé."
+fi
 for fichier in LISEZMOI.txt donnees.sql inventaire.txt; do
   [ -s "$travail/$fichier" ] || echec "La sauvegarde est incomplète : $fichier manque."
 done

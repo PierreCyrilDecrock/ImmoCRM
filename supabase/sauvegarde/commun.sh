@@ -73,9 +73,20 @@ verifier_adresse() {
 }
 
 # Vérifie la phrase secrète (sans jamais l'afficher).
+# Les espaces et retours à la ligne autour de la phrase (souvent collés avec elle) sont
+# retirés : invisibles, ils rendraient la phrase impossible à retaper à l'ouverture.
+# PHRASE_BRUTE garde la valeur exacte du secret, pour ouvrir les sauvegardes faites avant.
 verifier_phrase() {
   [ -n "${PHRASE:-}" ] || echec "Le secret SAUVEGARDE_PHRASE_SECRETE est absent. Voir docs/sauvegarde.md, « Les secrets à ajouter »."
+  PHRASE_BRUTE="$PHRASE"
+  PHRASE="$(printf '%s' "$PHRASE_BRUTE" | python3 -I -c 'import sys; print(sys.stdin.read().strip(), end="")')"
   [ "${#PHRASE}" -ge "$LONGUEUR_MIN_PHRASE" ] || echec "La phrase secrète est trop courte : au moins $LONGUEUR_MIN_PHRASE caractères (six mots au hasard, par exemple)."
+  if [ "$PHRASE" != "$PHRASE_BRUTE" ]; then
+    echo "::warning::La phrase secrète enregistrée dans GitHub commence ou finit par un espace ou un retour à la ligne. Ils sont désormais ignorés ; les sauvegardes faites avant cette correction les contiennent (le workflow Restauration sait les ouvrir)."
+  fi
+  if printf '%s' "$PHRASE" | LC_ALL=C grep -q '[^ -~]'; then
+    echo "::warning::La phrase secrète contient des lettres accentuées ou des signes spéciaux : selon le clavier et le logiciel, ils peuvent être mal reconnus à l'ouverture. Préférez des lettres sans accent, des chiffres et des espaces (voir docs/sauvegarde.md)."
+  fi
   # La phrase vient d'un secret GitHub : elle est déjà masquée dans les journaux.
 }
 
