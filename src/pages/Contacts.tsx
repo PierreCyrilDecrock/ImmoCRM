@@ -28,7 +28,8 @@ import {
   type Contact,
   type ErreursContact,
 } from '../features/contacts/contacts'
-import { chercherDoublons, libelleMotifs, motifsDoublon } from '../features/contacts/doublons'
+import AlerteDoublons from '../features/contacts/AlerteDoublons'
+import { chercherDoublons } from '../features/contacts/doublons'
 import {
   FILTRES_VIDES,
   filtresMemorises,
@@ -119,35 +120,10 @@ function NouveauContact({ ouverte, onFermer }: { ouverte: boolean; onFermer: () 
         {echec !== null && <Message genre="erreur">{echec}</Message>}
         {/* En tête de fenêtre : visible sans faire défiler, même sur un petit écran. */}
         {doublons.length > 0 && (
-          <div role="alert" className="flex flex-col gap-2 rounded-2xl bg-alerte-doux p-3">
-            <p className="text-base font-semibold text-encre">
-              {doublons.length > 1
-                ? 'Ces fiches existent peut-être déjà'
-                : 'Cette fiche existe peut-être déjà'}
-            </p>
-            <Liste>
-              {doublons.map((doublon) => (
-                <LigneListe
-                  key={doublon.id}
-                  titre={nomDeListe(doublon)}
-                  detail={[
-                    preparation?.ok === true
-                      ? libelleMotifs(motifsDoublon(preparation.valeurs, doublon))
-                      : null,
-                    resumeContact(doublon),
-                    doublon.archived_at !== null ? 'archivée' : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                  vers={`/contacts/${doublon.id}`}
-                />
-              ))}
-            </Liste>
-            <p className="text-sm text-encre">
-              Touchez une fiche pour l'ouvrir. Si c'est bien une autre personne, touchez « Créer
-              quand même ».
-            </p>
-          </div>
+          <AlerteDoublons
+            doublons={doublons}
+            valeurs={preparation?.ok === true ? preparation.valeurs : null}
+          />
         )}
         <FormulaireContact court brouillon={brouillon} erreurs={erreurs} onChange={setBrouillon} />
       </form>
@@ -265,6 +241,8 @@ export default function Contacts() {
           <ChampRecherche
             libelle="Rechercher dans les contacts"
             placeholder="Nom, téléphone, courriel, adresse…"
+            data-raccourci-recherche=""
+            aria-keyshortcuts="/ Control+K"
             valeur={filtres.recherche}
             onChange={(recherche) => changerFiltres({ recherche })}
           />

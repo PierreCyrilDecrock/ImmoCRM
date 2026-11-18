@@ -50,6 +50,8 @@ import SectionTaches from '../features/taches/SectionTaches'
 import { dateDuJour, formaterDate, formaterHeure, heureDuMoment } from '../lib/dates'
 import { formaterNombre, formaterPrix } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
+import { ficheDeProjetAcquereur } from '../features/saisie/fiches-consultees'
+import { useConsultation } from '../features/saisie/recents'
 
 type Etat =
   | { phase: 'chargement' }
@@ -92,6 +94,7 @@ export default function FicheProjetAcquereur() {
   const toutRelire = () => setVersion((v) => v + 1)
   const changement = useChangementEtapeAcquereur(toutRelire)
   const aujourdhui = dateDuJour()
+  useConsultation(etat.phase === 'pret' ? ficheDeProjetAcquereur(etat.affiche) : null)
 
   useEffect(() => {
     let actif = true

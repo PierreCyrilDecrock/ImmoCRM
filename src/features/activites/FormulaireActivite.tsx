@@ -252,7 +252,7 @@ export default function FormulaireActivite({
           placeholder={inviteCompteRendu(brouillon.type)}
           value={brouillon.compteRendu}
           onChange={(evenement) => changer('compteRendu', evenement.target.value)}
-          aide="Pour dicter, touchez le micro du clavier."
+          aide="Pour dicter, touchez le micro."
           erreur={erreurs.compteRendu}
         />
 

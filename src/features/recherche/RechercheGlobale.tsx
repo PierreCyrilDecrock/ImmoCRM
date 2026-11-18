@@ -6,10 +6,16 @@ import { nomDeListe, resumeContact } from '../contacts/contacts'
 import { FILTRES_VIDES, memoriserFiltres } from '../contacts/filtres'
 import { useRechercheContacts } from '../contacts/recherche-contacts'
 import { formaterNombre } from '../../lib/nombres'
+import FichesRecentes from '../saisie/FichesRecentes'
+import { useFichesRecentes } from '../saisie/recents'
+
+/** Nombre de fiches récentes proposées sous le champ vide. */
+const RECENTES_PROPOSEES = 6
 
 /**
  * Champ de recherche présent en haut de toutes les pages : quelques lettres, et les fiches
  * correspondantes s'affichent juste dessous. « Entrée » ouvre la liste complète des résultats.
+ * Champ vide, il propose les fiches consultées récemment. Au clavier : « / » ou Ctrl+K.
  * La page qui l'affiche le recrée à chaque changement de page : il repart alors vide.
  */
 export default function RechercheGlobale() {
@@ -17,7 +23,10 @@ export default function RechercheGlobale() {
   const [saisie, setSaisie] = useState('')
   const [ouvert, setOuvert] = useState(false)
   const recherche = useRechercheContacts(saisie, { taille: 6 })
-  const panneau = ouvert && recherche.phase !== 'vide'
+  const recentes = useFichesRecentes().slice(0, RECENTES_PROPOSEES)
+  // Champ vide : les fiches consultées récemment, pour y revenir d'un toucher.
+  const avecRecentes = recherche.phase === 'vide' && recentes.length > 0
+  const panneau = ouvert && (recherche.phase !== 'vide' || avecRecentes)
 
   function voirTout() {
     if (recherche.phase === 'vide') return
@@ -37,6 +46,8 @@ export default function RechercheGlobale() {
           <ChampRecherche
             libelle="Rechercher un contact"
             placeholder="Rechercher un contact"
+            data-raccourci-recherche=""
+            aria-keyshortcuts="/ Control+K"
             valeur={saisie}
             onChange={(valeur) => {
               setSaisie(valeur)
@@ -56,6 +67,14 @@ export default function RechercheGlobale() {
                 aria-live="polite"
                 className="max-h-[70dvh] overflow-y-auto rounded-b-2xl bg-surface shadow-xl ring-1 ring-bord"
               >
+                {avecRecentes && (
+                  <div className="flex flex-col gap-2 p-2">
+                    <p className="px-2 pt-1 text-sm font-medium text-encre-douce">
+                      Consultées récemment
+                    </p>
+                    <FichesRecentes fiches={recentes} onOuvrir={() => setOuvert(false)} />
+                  </div>
+                )}
                 {recherche.phase === 'chargement' && (
                   <p className="px-4 py-3 text-sm text-encre-douce">Recherche…</p>
                 )}

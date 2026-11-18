@@ -38,6 +38,8 @@ import SectionTaches from '../features/taches/SectionTaches'
 import { dateDuJour, formaterDate } from '../lib/dates'
 import { formaterPrix } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
+import { ficheDeProjetVendeur } from '../features/saisie/fiches-consultees'
+import { useConsultation } from '../features/saisie/recents'
 
 type Etat =
   | { phase: 'chargement' }
@@ -68,6 +70,7 @@ export default function FicheProjetVendeur() {
   const toutRelire = () => setVersion((v) => v + 1)
   const changement = useChangementEtape(toutRelire)
   const aujourdhui = dateDuJour()
+  useConsultation(etat.phase === 'pret' ? ficheDeProjetVendeur(etat.affiche) : null)
 
   useEffect(() => {
     let actif = true

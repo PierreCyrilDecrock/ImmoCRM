@@ -4,6 +4,7 @@ import ChampSaisie from '../../components/ChampSaisie'
 import FenetreModale from '../../components/FenetreModale'
 import Message from '../../components/Message'
 import { exigerSupabase } from '../../lib/supabase'
+import { retirerDesRecentes } from '../saisie/recents'
 import { nomComplet, supprimerContactDefinitivement, type Contact } from './contacts'
 
 type Props = {
@@ -38,6 +39,7 @@ export default function SuppressionContact({ contact, onFermer, onSupprime }: Pr
       setEchec(`La suppression a échoué : rien n'a été supprimé. ${resultat.erreur.message}`)
       return
     }
+    retirerDesRecentes({ genre: 'contact', id: contact.id })
     onSupprime()
   }
 

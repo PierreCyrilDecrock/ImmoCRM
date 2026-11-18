@@ -54,6 +54,8 @@ import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
 import { telechargerTexte } from '../lib/telechargement'
+import { ficheDeContact } from '../features/saisie/fiches-consultees'
+import { useConsultation } from '../features/saisie/recents'
 
 type Etat =
   | { phase: 'chargement' }
@@ -96,6 +98,7 @@ export default function FicheContact() {
   // Change après chaque geste sur les tâches ou le journal : toutes les rubriques se relisent.
   const [version, setVersion] = useState(0)
   const naviguer = useNavigate()
+  useConsultation(etat.phase === 'pret' ? ficheDeContact(etat.contact) : null)
 
   useEffect(() => {
     let actif = true
