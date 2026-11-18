@@ -15,24 +15,39 @@ source "$ici/commun.sh"
 visites=0
 probleme_reel=0
 
-# 1. Une requête par l'interface du site, comme l'application : sans session, les règles
-#    d'accès par ligne ne renvoient rien, mais la base a bien travaillé.
+# 1. Une requête par l'interface du site, comme l'application. Sans session, la base
+#    refuse l'accès (réponse 401 ou 403) : c'est normal, elle a bien travaillé pour
+#    répondre. Un projet en pause ou injoignable ne répond pas, ou répond autre chose.
 if [ -n "${URL_REELLE:-}" ] && [ -n "${CLE_PUBLIQUE:-}" ]; then
-  if curl -fsS --max-time 30 -o /dev/null \
-    -H "apikey: ${CLE_PUBLIQUE}" "${URL_REELLE%/}/rest/v1/reglages?select=id&limit=1"; then
-    echo "Projet réel : visite par le site réussie."
-    visites=$((visites + 1))
-  else
-    echo "::error::Le projet réel ne répond pas par le site. Il est peut-être en pause : ouvrez-le dans Supabase et cliquez sur « Resume project » (voir docs/sauvegarde.md)."
-    probleme_reel=1
-  fi
+  # Le projet visé par le site, d'après son adresse (variable VITE_SUPABASE_URL).
+  case "$URL_REELLE" in
+    *"$REF_PROJET_TEST"*) site="de test" ;;
+    *"$REF_PROJET_REEL"*) site="réel" ;;
+    *) site="inconnu" ;;
+  esac
+  [ "$site" = réel ] ||
+    echo "::warning::La variable VITE_SUPABASE_URL du dépôt pointe vers le projet $site, pas vers le projet réel : le site publié n'utilise donc pas vos vraies fiches (voir docs/sauvegarde.md)."
+  code="$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' \
+    -H "apikey: ${CLE_PUBLIQUE}" "${URL_REELLE%/}/rest/v1/reglages?select=id&limit=1" || true)"
+  case "$code" in
+    200 | 206 | 401 | 403)
+      echo "Projet $site : visite par le site réussie."
+      visites=$((visites + 1)) ;;
+    *)
+      if [ "$site" = réel ]; then
+        echo "::error::Le projet réel ne répond pas par le site (code ${code:-aucun}). Il est peut-être en pause : ouvrez-le dans Supabase et cliquez sur « Resume project » (voir docs/sauvegarde.md)."
+        probleme_reel=1
+      else
+        echo "::warning::Le projet $site ne répond pas par le site (code ${code:-aucun})."
+      fi ;;
+  esac
 fi
 
 # 2. Une lecture directe dans chaque base dont l'adresse est connue.
 for projet in reel test; do
+  [ -n "$(secret_du_projet "$projet")" ] || continue
+  verifier_projet "$projet"
   adresse="$(adresse_du_projet "$projet")"
-  [ -n "$adresse" ] || continue
-  verifier_adresse "$projet" "$adresse"
   if psql "$adresse" -X -q -A -t -v ON_ERROR_STOP=1 \
     -c 'select count(*) from public.contacts' -c 'select count(*) from public.taches' >/dev/null 2>&1; then
     if [ "$projet" = reel ]; then echo "Projet réel : lecture de la base réussie."; else echo "Projet de test : lecture de la base réussie."; fi

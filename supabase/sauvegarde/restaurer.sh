@@ -20,8 +20,8 @@ ici="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ici/commun.sh"
 
 verifier_phrase
+verifier_projet "$cible"
 adresse="$(adresse_du_projet "$cible")"
-verifier_adresse "$cible" "$adresse"
 exiger_7z
 command -v psql >/dev/null 2>&1 || echec "psql est absent."
 [ -f "$archive" ] || echec "Archive introuvable : $archive"
