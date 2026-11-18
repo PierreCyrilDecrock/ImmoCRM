@@ -50,6 +50,8 @@ jobs:
     # Le lundi, ou à la demande ; pas lors des visites quotidiennes.
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 3 * * 1'
     runs-on: ubuntu-latest
+    outputs:
+      nom: ${{ steps.sauvegarde.outputs.nom }}
     timeout-minutes: 30
     env:
       PROJET: ${{ inputs.projet || 'reel' }}
@@ -80,3 +82,33 @@ jobs:
           adresse="$(adresse_du_projet "$PROJET")"
           psql "$adresse" -X -q -v ON_ERROR_STOP=1 -f supabase/sauvegarde/noter-sauvegarde.sql >/dev/null
           echo "Date inscrite : elle apparaît dans Réglages, « Dernière sauvegarde automatique »."
+
+  # Copie de la même sauvegarde en image disque chiffrée (.dmg, AES-256), que macOS ouvre
+  # sans logiciel (double-clic, phrase secrète). Fabriquée sur un serveur macOS de GitHub,
+  # à partir de l'archive 7-Zip ; le contenu n'y est en clair que le temps de la conversion.
+  image-mac:
+    name: Copie pour Mac (.dmg)
+    needs: sauvegarder
+    runs-on: macos-latest
+    timeout-minutes: 20
+    env:
+      PHRASE: ${{ secrets.SAUVEGARDE_PHRASE_SECRETE }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Récupération de l'archive chiffrée
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.sauvegarder.outputs.nom }}.7z
+          path: ${{ runner.temp }}/archive
+      - name: Fabrication de l'image disque chiffrée
+        id: image
+        run: |
+          archive="$(find "$RUNNER_TEMP/archive" -type f -name '*.7z' | head -n 1)"
+          bash supabase/sauvegarde/image-mac.sh "$archive" "$RUNNER_TEMP/image"
+      - name: Conservation de l'image disque chiffrée
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.image.outputs.fichier }}
+          archive: false
+          retention-days: 90
+          if-no-files-found: error
