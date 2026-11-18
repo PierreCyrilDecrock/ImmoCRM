@@ -4,6 +4,8 @@ import type { Activite } from '../activites/activites'
 import type { ProjetAcquereur } from '../acquereurs/pipeline-acquereur'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
+import { lireDatesSauvegarde, type DatesSauvegarde } from '../reglages/reglages'
+import { exportARappeler, joursDepuisExport } from '../sauvegarde/rappel-export'
 import { fichesDe, lireFiches, type AvecLiens, type FichesLues } from '../liens/fiches-liees'
 import type { Tache, TacheAffichee } from '../taches/taches'
 import {
@@ -42,6 +44,12 @@ export type ProjetCalme = {
  * et les conditions suspensives des transactions.
  */
 export type Alerte =
+  | {
+      genre: 'export_a_faire'
+      cle: string
+      /** Jours depuis le dernier export, ou `null` s'il n'y en a jamais eu. */
+      jours: number | null
+    }
   | { genre: 'contact_sans_action'; cle: string; contact: Contact }
   | { genre: 'projet_sans_activite'; cle: string; projet: ProjetCalme }
 
@@ -128,6 +136,7 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
     sansAction,
     calmes,
     demandes,
+    sauvegardes,
   ] = await Promise.all([
     lireTaches(client, conditionsAgenda(aujourdhui), LIMITES.agenda),
     lireTaches(client, conditionsRelances('en_retard', aujourdhui), LIMITES.relances),
@@ -159,6 +168,7 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
       taille: LIMITES.nouveautes,
       compter: true,
     }),
+    lireDatesSauvegarde(client),
   ])
 
   const blocAgenda = reunir([agenda], LIMITES.agenda)
@@ -220,6 +230,9 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
       sansAction,
       calmes.ok ? { ok: true, donnees: lignesCalmes } : calmes,
       lues,
+      // Si les réglages n'ont pas pu être lus, le rappel est simplement omis.
+      sauvegardes.ok ? sauvegardes.donnees : null,
+      aujourdhui,
     ),
     nouveautes: demandes.ok
       ? {
@@ -249,17 +262,36 @@ function avecFiches<L>(
 }
 
 /**
- * Les groupes d'alertes, dans l'ordre d'importance : les projets en cours qui s'endorment,
- * puis les contacts sans prochaine action. Un groupe vide n'apparaît pas.
+ * Les groupes d'alertes, dans l'ordre d'importance : la sauvegarde des données (le fichier
+ * clients est l'actif principal), les projets en cours qui s'endorment, puis les contacts
+ * sans prochaine action. Un groupe vide n'apparaît pas.
  */
 function construireAlertes(
   sansAction: Resultat<PageLignes<Contact>>,
   calmes: Resultat<LigneProjetCalme[]>,
   fiches: FichesLues,
+  sauvegardes: DatesSauvegarde | null,
+  aujourdhui: string,
 ): Resultat<GroupeAlertes[]> {
   if (!sansAction.ok) return sansAction
   if (!calmes.ok) return calmes
+  const rappelExport =
+    sauvegardes !== null && exportARappeler(sauvegardes.dernier_export_le, aujourdhui)
   const groupes: GroupeAlertes[] = [
+    {
+      cle: 'export_a_faire',
+      titre: 'Sauvegarde de vos données',
+      total: rappelExport ? 1 : 0,
+      alertes: rappelExport
+        ? [
+            {
+              genre: 'export_a_faire',
+              cle: 'export',
+              jours: joursDepuisExport(sauvegardes.dernier_export_le, aujourdhui),
+            },
+          ]
+        : [],
+    },
     {
       cle: 'projet_sans_activite',
       titre: `Projets sans activité depuis ${JOURS_SANS_ACTIVITE} jours`,

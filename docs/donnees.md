@@ -363,6 +363,20 @@ Ces règles traduisent la section Conformité du cadrage. Elles sont **à faire 
 
 Chaque domaine range ses propres fonctions dans `src/features/<domaine>` (exemple : `src/features/reglages/reglages.ts`), bâties sur cette couche. Pour les tests, `src/lib/faux-client.ts` simule Supabase sans réseau.
 
+### Sauvegardes et export complet
+
+L'offre gratuite de Supabase ne sauvegarde rien. Deux mécanismes s'en chargent (guide pour l'utilisateur : [sauvegarde.md](sauvegarde.md)) :
+
+| Élément | Rôle |
+| --- | --- |
+| `src/features/sauvegarde/export-complet.ts` | Export complet depuis Réglages : toutes les tables de `TABLES`, archives comprises, lues par lots de 1 000 lignes triées par `id`, dans un fichier JSON (`format`, `version_format`, `application`, `projet`, `exporte_le`, `remarques`, puis `tables.<nom>.nombre` et `.lignes`). Une nouvelle table y entre d'elle-même ; elle doit seulement recevoir un libellé dans `LIBELLES_TABLES` (TypeScript le rappelle) |
+| `src/features/sauvegarde/rappel-export.ts` | Rappel dans les Alertes de l'écran Aujourd'hui quand le dernier export a 7 jours ou plus (jours de Paris), ou qu'il n'y en a jamais eu |
+| Colonnes `dernier_export_le`, `derniere_sauvegarde_le` (table `reglages`, migration `0017_sauvegardes`) | Moment du dernier export (inscrit par l'application, `noterExport`) et de la dernière sauvegarde automatique (inscrit par le workflow) |
+| `.github/workflows/sauvegarde.yml`, `supabase/sauvegarde/` | Sauvegarde hebdomadaire chiffrée du projet réel (`supabase db dump` des données du schéma `public`, structure, inventaire ; 7-Zip AES-256) et maintien en activité quotidien |
+| `.github/workflows/restauration.yml` | Restauration à la main : vide les tables du schéma `public`, recharge les lignes déclencheurs suspendus, puis remplace `user_id` par l'unique compte du projet cible, en une transaction |
+
+Conséquences pour toute nouvelle table : elle doit avoir une colonne `id` (tri de l'export) et `user_id` (rattachement lors d'une restauration), comme le veulent déjà les conventions ci-dessus. Les fichiers du stockage (photos) ne sont dans aucune sauvegarde.
+
 ### Types TypeScript
 
 `src/lib/types-base.ts` décrit les tables. Il est **généré** à partir du projet de test, jamais écrit à la main. Après chaque migration, Claude Code :

@@ -895,6 +895,8 @@ export type Database = {
       reglages: {
         Row: {
           created_at: string
+          dernier_export_le: string | null
+          derniere_sauvegarde_le: string | null
           id: string
           nom_affiche: string
           relance_chaud: string
@@ -906,6 +908,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dernier_export_le?: string | null
+          derniere_sauvegarde_le?: string | null
           id?: string
           nom_affiche?: string
           relance_chaud?: string
@@ -917,6 +921,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dernier_export_le?: string | null
+          derniere_sauvegarde_le?: string | null
           id?: string
           nom_affiche?: string
           relance_chaud?: string

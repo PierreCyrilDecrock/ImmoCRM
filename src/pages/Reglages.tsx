@@ -25,10 +25,27 @@ import {
 } from '../features/relances/delais'
 import {
   enregistrerReglages,
+  lireDatesSauvegarde,
   lireReglages,
   LONGUEUR_MAX_NOM_AFFICHE,
+  noterExport,
   validerNomAffiche,
+  type DatesSauvegarde,
 } from '../features/reglages/reglages'
+import {
+  assemblerExport,
+  LIBELLES_TABLES,
+  lireToutesLesDonnees,
+  nombreDeLignes,
+  nomFichierExport,
+  type Avancement,
+} from '../features/sauvegarde/export-complet'
+import {
+  ancienneteExport,
+  exportARappeler,
+  formaterMoment,
+  joursDepuisExport,
+} from '../features/sauvegarde/rappel-export'
 import { controlerAccesAnonyme, type BilanAccesAnonyme } from '../lib/controle-acces-anonyme'
 import { TABLES } from '../lib/donnees'
 import {
@@ -38,8 +55,11 @@ import {
   NOMBRE_TACHES_FICTIVES,
   personnesFictives,
 } from '../lib/donnees-fictives'
-import { accorder, formaterPoids } from '../lib/nombres'
+import { dateDuJour } from '../lib/dates'
+import { accorder, formaterNombre, formaterPoids } from '../lib/nombres'
 import { creerClientAnonyme, environnement, exigerSupabase } from '../lib/supabase'
+import { telechargerJson } from '../lib/telechargement'
+import { VERSION } from '../lib/version'
 
 /** Dit, de façon impossible à manquer, sur quel projet Supabase l'application est branchée. */
 function CarteProjet() {
@@ -61,6 +81,137 @@ function CarteProjet() {
             ? "L'application est branchée sur le projet de test. N'y saisissez que des données fictives : aucune vraie fiche client."
             : "L'application est branchée sur le projet réel : ce que vous saisissez ici, ce sont vos vraies fiches."}
         </p>
+      </div>
+    </Carte>
+  )
+}
+
+/** Une date de sauvegarde : le moment et son ancienneté, ou ce qu'il faut savoir sans elle. */
+function LigneDate({
+  libelle,
+  date,
+  absente,
+}: {
+  libelle: string
+  date: string | null
+  absente: string
+}) {
+  const jours = joursDepuisExport(date, dateDuJour())
+  return (
+    <p className="text-sm text-encre">
+      <span className="font-semibold">{libelle} : </span>
+      {date === null || jours === null
+        ? absente
+        : `${formaterMoment(date)} (${ancienneteExport(jours)})`}
+    </p>
+  )
+}
+
+/**
+ * Export complet des données, et dates des sauvegardes. L'offre gratuite de Supabase n'en
+ * fait aucune : ce fichier et la sauvegarde automatique chiffrée (docs/sauvegarde.md) sont
+ * les seules copies du fichier clients.
+ */
+function CarteSauvegarde() {
+  const { notifier } = useNotifications()
+  const [dates, setDates] = useState<DatesSauvegarde | null>(null)
+  const [erreurLecture, setErreurLecture] = useState<string | null>(null)
+  const [avancement, setAvancement] = useState<Avancement | null>(null)
+  const [enCours, setEnCours] = useState(false)
+
+  useEffect(() => {
+    let actif = true
+    void lireDatesSauvegarde(exigerSupabase()).then((resultat) => {
+      if (!actif) return
+      if (resultat.ok) setDates(resultat.donnees)
+      else setErreurLecture(resultat.erreur.message)
+    })
+    return () => {
+      actif = false
+    }
+  }, [])
+
+  async function exporter() {
+    setEnCours(true)
+    const client = exigerSupabase()
+    const lues = await lireToutesLesDonnees(client, setAvancement)
+    setAvancement(null)
+    if (!lues.ok) {
+      setEnCours(false)
+      notifier('erreur', `L'export a échoué : aucun fichier n'a été créé. ${lues.erreur.message}`)
+      return
+    }
+    const maintenant = new Date()
+    const fichier = assemblerExport(lues.donnees, {
+      maintenant,
+      version: VERSION,
+      projet: environnement,
+    })
+    telechargerJson(
+      nomFichierExport(dateDuJour(maintenant), environnement),
+      JSON.stringify(fichier, null, 2),
+    )
+    const note = await noterExport(client, maintenant)
+    setEnCours(false)
+    if (note.ok) setDates(note.donnees)
+    notifier(
+      note.ok ? 'succes' : 'erreur',
+      note.ok
+        ? `Export terminé : ${accorder(nombreDeLignes(fichier), 'ligne')} dans le fichier`
+        : `Le fichier est créé, mais la date de l'export n'a pas pu être notée. ${note.erreur.message}`,
+    )
+  }
+
+  const enRetard = dates !== null && exportARappeler(dates.dernier_export_le, dateDuJour())
+
+  return (
+    <Carte titre="Sauvegarde de vos données">
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-encre-douce">
+          L'offre gratuite de Supabase ne fait aucune sauvegarde. Exportez vos données chaque
+          semaine : un seul fichier, au format JSON (lisible par la plupart des logiciels), avec
+          toutes vos fiches, archives comprises. Les photos n'y sont pas. Rangez-le hors de cet
+          appareil (clé USB, espace de stockage personnel) : il contient des données personnelles de
+          vos clients.
+        </p>
+        {erreurLecture !== null ? (
+          <Message genre="erreur">
+            Les dates des sauvegardes n'ont pas pu être lues. {erreurLecture}
+          </Message>
+        ) : dates === null ? (
+          <EtatChargement />
+        ) : (
+          <div className="flex flex-col gap-1">
+            <LigneDate
+              libelle="Dernier export"
+              date={dates.dernier_export_le}
+              absente="aucun pour l'instant"
+            />
+            <LigneDate
+              libelle="Dernière sauvegarde automatique"
+              date={dates.derniere_sauvegarde_le}
+              absente="aucune enregistrée (voir le guide des sauvegardes)"
+            />
+          </div>
+        )}
+        {enRetard && !enCours && (
+          <Message genre="info">
+            {dates?.dernier_export_le === null
+              ? 'Faites un premier export dès maintenant.'
+              : 'Votre dernier export a plus de 7 jours : pensez à en faire un nouveau.'}
+          </Message>
+        )}
+        {avancement !== null && (
+          <p className="text-sm text-encre-douce" role="status">
+            Lecture {avancement.rang} sur {avancement.total} : {LIBELLES_TABLES[avancement.table]}
+            {avancement.lignes > 0 ? ` (${formaterNombre(avancement.lignes)} lignes)` : ''}…
+          </p>
+        )}
+        <div className="md:self-start">
+          <Bouton icone="document" pleineLargeur disabled={enCours} onClick={() => void exporter()}>
+            {enCours ? 'Export en cours…' : 'Exporter toutes mes données'}
+          </Bouton>
+        </div>
       </div>
     </Carte>
   )
@@ -387,11 +538,12 @@ function CarteDonneesFictives() {
   )
 }
 
-/** Réglages de l'application : projet connecté, préférences, contrôle de sécurité. */
+/** Réglages de l'application : projet connecté, sauvegarde, préférences, contrôle de sécurité. */
 export default function Reglages() {
   return (
     <Page titre="Réglages" retour={{ vers: '/plus', libelle: 'Plus' }}>
       <CarteProjet />
+      <CarteSauvegarde />
       <CartePreferences />
       <CarteRelances />
       <CarteStockage />
