@@ -51,7 +51,7 @@ Pour changer un secret plus tard : même endroit, cliquez sur le secret puis **U
 
 La phrase qui chiffre les sauvegardes. Sans elle, une sauvegarde est illisible : **par vous comme par n'importe qui**.
 
-1. Choisissez une phrase d'**au moins 20 caractères**, idéalement six mots tirés au hasard (par exemple avec le générateur de votre gestionnaire de mots de passe) : `pivoine cadastre lagune fourchette orbite sable`. N'utilisez pas une phrase connue, une citation ou un mot de passe que vous utilisez ailleurs.
+1. Choisissez une phrase d'**au moins 20 caractères**, idéalement six mots tirés au hasard (par exemple avec le générateur de votre gestionnaire de mots de passe) : `pivoine cadastre lagune fourchette orbite sable`. N'utilisez pas une phrase connue, une citation ou un mot de passe que vous utilisez ailleurs. **Évitez les accents et les signes spéciaux** (é, ç, ’, «…) : selon le clavier et le logiciel, ils peuvent être reconnus différemment à l'ouverture. Des lettres sans accent, des chiffres et des espaces suffisent.
 2. **Notez-la à deux endroits sûrs** : dans votre gestionnaire de mots de passe, et sur papier rangé chez vous. Si elle est perdue, personne ne pourra ouvrir les sauvegardes, pas même Supabase ou GitHub.
 3. Ajoutez-la comme secret `SAUVEGARDE_PHRASE_SECRETE`.
 
@@ -120,6 +120,16 @@ Utile pour vérifier qu'elle est lisible, ou pour la confier à un développeur.
    - `structure.sql` : la structure de la base à ce moment-là ;
    - `inventaire.txt` : le nombre de lignes de chaque table (par exemple `contacts=12`).
 
+### Si la phrase est refusée
+
+Le workflow vérifie, avant de conserver une sauvegarde, qu'elle s'ouvre avec la phrase enregistrée dans GitHub : si l'ouverture échoue sur votre ordinateur, la cause est presque toujours l'une de celles-ci.
+
+1. **Le logiciel.** L'outil intégré de Windows (Explorateur de fichiers, « Extraire tout ») et l'Utilitaire d'archive du Mac ne savent pas ouvrir une archive 7-Zip chiffrée : ils refusent la phrase même quand elle est juste. Utilisez **7-Zip** (Windows) ou **Keka** (Mac), comme indiqué ci-dessus.
+2. **Le bon fichier.** Ouvrez le fichier qui finit par `.7z`. Si le navigateur a téléchargé un `.zip`, ouvrez-le d'abord (sans mot de passe) : le `.7z` est dedans.
+3. **La phrase exacte.** Majuscules, espaces entre les mots, accents : tout compte. Le plus sûr est de la copier depuis votre gestionnaire de mots de passe et de la coller.
+4. **Un caractère invisible dans le secret.** Si un espace ou un retour à la ligne a été collé avec la phrase dans GitHub, les sauvegardes faites avant le 18/11/2026 au soir le contiennent et ne s'ouvrent pas à la main ; le workflow **Restauration**, lui, les ouvre. Depuis, ces caractères sont ignorés, et le workflow le signale par un avertissement. Le plus simple : relancez une sauvegarde et essayez d'ouvrir la nouvelle.
+5. **Toujours refusée ?** Choisissez une nouvelle phrase (sans accent), mettez à jour le secret `SAUVEGARDE_PHRASE_SECRETE` (**Update**) et relancez une sauvegarde. Les anciennes restent liées à l'ancienne phrase : elles expireront d'elles-mêmes au bout de 90 jours.
+
 Ces fichiers sont **en clair** : ils contiennent les données de vos clients. Supprimez-les (et videz la corbeille) une fois la vérification faite ; gardez seulement le `.7z`.
 
 ## Restaurer une sauvegarde
@@ -185,6 +195,8 @@ Le workflow « Sauvegarde » échoue (coche rouge, courriel de GitHub) tant que 
 | « … n'est pas celle du Session pooler » ou « … Transaction pooler (port 6543) » | Reprenez l'adresse dans **Connect**, ligne **Session pooler** (port 5432). |
 | « … pointe vers un autre projet Supabase » | Les secrets `SUPABASE_BASE_REELLE` et `SUPABASE_BASE_TEST` sont inversés : corrigez-les. |
 | « … ne répond pas … peut-être en pause » | Voir « Si le projet est mis en pause ». Si le projet est actif, le mot de passe de la base a peut-être changé : mettez le secret à jour. |
+| Avertissement « La phrase secrète … commence ou finit par un espace ou un retour à la ligne » | Rien d'urgent : ces caractères sont ignorés. Pour ne plus voir l'avertissement, mettez le secret à jour en collant la phrase seule. |
+| Avertissement « La phrase secrète contient des lettres accentuées » | Si vous n'arrivez pas à ouvrir une sauvegarde à la main, choisissez une phrase sans accent et mettez le secret à jour. |
 | « Déchiffrement impossible : la phrase secrète ne correspond pas » | La sauvegarde a été chiffrée avec une autre phrase. Remettez l'ancienne phrase dans le secret le temps de la restauration. |
 | « Une sauvegarde du projet réel ne se restaure pas sur le projet de test » | Normal : pour l'exercice, sauvegardez le projet de test et restaurez celle-ci. |
 | « Le projet cible doit avoir exactement un compte de connexion » | Créez votre compte dans le projet (Authentication → Users → Add user), ou vérifiez qu'il n'y en a qu'un. |
