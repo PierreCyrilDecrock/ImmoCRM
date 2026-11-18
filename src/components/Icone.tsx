@@ -210,13 +210,6 @@ const TRACES = {
       <path d="M12 2.5v4M10 4.5l2 2 2-2" />
     </>
   ),
-  micro: (
-    <>
-      <rect x="9" y="3" width="6" height="11" rx="3" />
-      <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" />
-    </>
-  ),
-  arret: <rect x="6.5" y="6.5" width="11" height="11" rx="2" />,
   vide: (
     <>
       <path d="M3.5 13 6 5.5A2 2 0 0 1 7.9 4h8.2A2 2 0 0 1 18 5.5L20.5 13" />

@@ -61,8 +61,8 @@ function Titre({ id, children }: { id: string; children: string }) {
 
 /**
  * « Compte rendu express », juste après un échange : le contact (les fiches consultées à
- * l'instant sont proposées d'emblée), ce qui s'est passé, le compte rendu dicté ou écrit,
- * la prochaine action. Tout se fait au toucher et à la voix, sans clavier.
+ * l'instant sont proposées d'emblée), ce qui s'est passé, le compte rendu, la prochaine
+ * action.
  */
 export default function CompteRenduExpress({ onFermer, onEnregistre }: Props) {
   const { notifier } = useNotifications()
@@ -280,11 +280,7 @@ export default function CompteRenduExpress({ onFermer, onEnregistre }: Props) {
               placeholder={inviteCompteRendu(brouillon.type)}
               value={brouillon.compteRendu}
               onChange={(evenement) => changer('compteRendu', evenement.target.value)}
-              aide={
-                brouillon.type === 'note'
-                  ? 'Touchez le micro pour dicter.'
-                  : 'Facultatif. Touchez le micro pour dicter.'
-              }
+              aide={brouillon.type === 'note' ? undefined : 'Facultatif.'}
               erreur={erreurs.compteRendu}
             />
           </section>
