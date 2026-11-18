@@ -19,8 +19,8 @@ ici="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ici/commun.sh"
 
 verifier_phrase
+verifier_projet "$projet"
 adresse="$(adresse_du_projet "$projet")"
-verifier_adresse "$projet" "$adresse"
 exiger_7z
 command -v supabase >/dev/null 2>&1 || echec "Le CLI Supabase est absent (étape supabase/setup-cli du workflow)."
 command -v psql >/dev/null 2>&1 || echec "psql est absent."

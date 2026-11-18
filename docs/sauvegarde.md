@@ -80,7 +80,9 @@ La même chose pour le projet **Immo CRM - test** : son adresse contient `postgr
 
 Les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_CLE_PUBLIQUE` (onglet **Variables**, même page), ajoutées pour la publication du site, servent aussi au maintien en activité. Rien à faire.
 
-Les workflows vérifient chaque secret avant de s'en servir : une adresse qui contient encore `[YOUR-PASSWORD]`, qui n'est pas celle du « Session pooler », ou qui pointe vers l'autre projet est refusée avec un message en français.
+Ces deux variables doivent être celles du **projet réel** : l'adresse `VITE_SUPABASE_URL` doit contenir `pikagadwyntsebprgwns`. Si elle contient `kgodrynbcaacteolgorr`, le site publié est branché sur le projet de test (Réglages y affiche TEST) : le workflow le signale par un avertissement.
+
+Les workflows vérifient chaque secret avant de s'en servir, sans jamais l'afficher. Ce qui entoure souvent une adresse copiée est retiré tout seul : espaces, retour à la ligne, guillemets, `DATABASE_URL=` devant, commande `psql` autour. Une adresse qui contient encore `[YOUR-PASSWORD]`, qui n'est pas au format URI, qui n'est pas celle du « Session pooler », ou qui pointe vers l'autre projet est refusée avec un message en français qui dit quoi corriger.
 
 ## Premier essai : lancer la sauvegarde à la main
 
@@ -176,6 +178,9 @@ Le workflow « Sauvegarde » échoue (coche rouge, courriel de GitHub) tant que 
 | --- | --- |
 | « Le secret SAUVEGARDE_PHRASE_SECRETE est absent » | Ajoutez le secret 1 (orthographe exacte du nom). |
 | « La phrase secrète est trop courte » | Choisissez une phrase d'au moins 20 caractères et mettez le secret à jour (**Update**). Les sauvegardes déjà faites restent lisibles avec l'ancienne phrase : gardez-la tant qu'elles existent. |
+| « Le secret … ne contient pas d'adresse postgresql:// », « … au format JDBC », « … paramètres séparés (host=…) », « … l'adresse du site Supabase (https://…) » | Le secret ne contient pas la bonne forme d'adresse. Dans **Connect**, choisissez le type **URI**, ligne **Session pooler**, copiez la ligne entière, remplacez `[YOUR-PASSWORD]`, puis mettez le secret à jour (**Update**). |
+| « … ne contient pas de mot de passe » | Le mot de passe a été retiré avec `[YOUR-PASSWORD]` : il doit se trouver entre `postgres.<identifiant>:` et `@aws-…`. |
+| Avertissement « La variable VITE_SUPABASE_URL du dépôt pointe vers le projet de test » | Le site publié est branché sur le projet de test. Pour qu'il utilise vos vraies fiches : onglet **Variables**, mettez dans `VITE_SUPABASE_URL` et `VITE_SUPABASE_CLE_PUBLIQUE` l'adresse et la clé publique du projet réel (Supabase → projet réel → **Connect** ou Project Settings → API), puis relancez Actions → **Déploiement**. |
 | « … contient encore [YOUR-PASSWORD] » | Remplacez `[YOUR-PASSWORD]`, crochets compris, par le mot de passe de la base, puis mettez le secret à jour. |
 | « … n'est pas celle du Session pooler » ou « … Transaction pooler (port 6543) » | Reprenez l'adresse dans **Connect**, ligne **Session pooler** (port 5432). |
 | « … pointe vers un autre projet Supabase » | Les secrets `SUPABASE_BASE_REELLE` et `SUPABASE_BASE_TEST` sont inversés : corrigez-les. |

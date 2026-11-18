@@ -76,7 +76,7 @@ jobs:
       - name: Date de la sauvegarde dans l'application
         run: |
           source supabase/sauvegarde/commun.sh
+          verifier_projet "$PROJET"
           adresse="$(adresse_du_projet "$PROJET")"
-          verifier_adresse "$PROJET" "$adresse"
           psql "$adresse" -X -q -v ON_ERROR_STOP=1 -f supabase/sauvegarde/noter-sauvegarde.sql >/dev/null
           echo "Date inscrite : elle apparaît dans Réglages, « Dernière sauvegarde automatique »."
