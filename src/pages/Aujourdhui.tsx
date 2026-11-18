@@ -261,7 +261,8 @@ export default function Aujourdhui() {
             erreur={erreurDe(alertes)}
             vide={{
               titre: 'Aucune alerte.',
-              texte: 'Chaque projet avance et chaque contact a sa prochaine action.',
+              texte:
+                'Vos données sont exportées, chaque projet avance et chaque contact a sa prochaine action.',
             }}
           >
             {alertes?.ok && (

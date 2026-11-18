@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { fauxClient } from '../../lib/faux-client'
 import {
   enregistrerReglages,
+  lireDatesSauvegarde,
   lireReglages,
+  noterExport,
   REGLAGES_PAR_DEFAUT,
   validerNomAffiche,
 } from './reglages'
@@ -94,6 +96,54 @@ describe('enregistrerReglages', () => {
     expect(appels).toContainEqual([
       'upsert',
       { relance_chaud: '3j', relance_tiede: '1m', relance_froid: '2m', relance_veille: '6m' },
+      { onConflict: 'user_id' },
+    ])
+  })
+})
+
+describe('lireDatesSauvegarde', () => {
+  it('ne donne aucune date tant que rien n’est enregistré', async () => {
+    const { client } = fauxClient({ data: [], error: null })
+    expect(await lireDatesSauvegarde(client)).toEqual({
+      ok: true,
+      donnees: { dernier_export_le: null, derniere_sauvegarde_le: null },
+    })
+  })
+
+  it('donne les dates enregistrées', async () => {
+    const { client } = fauxClient({
+      data: [
+        {
+          dernier_export_le: '2026-11-18T09:30:00+00:00',
+          derniere_sauvegarde_le: '2026-11-16T03:20:00+00:00',
+        },
+      ],
+      error: null,
+    })
+    expect(await lireDatesSauvegarde(client)).toEqual({
+      ok: true,
+      donnees: {
+        dernier_export_le: '2026-11-18T09:30:00+00:00',
+        derniere_sauvegarde_le: '2026-11-16T03:20:00+00:00',
+      },
+    })
+  })
+})
+
+describe('noterExport', () => {
+  it('inscrit le moment de l’export sur la ligne du compte, sans toucher au reste', async () => {
+    const { client, appels } = fauxClient({
+      data: { dernier_export_le: '2026-11-18T09:30:00+00:00', derniere_sauvegarde_le: null },
+      error: null,
+    })
+    const resultat = await noterExport(client, new Date('2026-11-18T09:30:00Z'))
+    expect(resultat).toEqual({
+      ok: true,
+      donnees: { dernier_export_le: '2026-11-18T09:30:00+00:00', derniere_sauvegarde_le: null },
+    })
+    expect(appels).toContainEqual([
+      'upsert',
+      { dernier_export_le: '2026-11-18T09:30:00.000Z' },
       { onConflict: 'user_id' },
     ])
   })

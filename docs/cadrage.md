@@ -221,12 +221,12 @@ ImmoCRM est une application web statique hébergée sur GitHub Pages, qui dialog
 | Données | Supabase gratuit : base PostgreSQL, connexion, stockage de fichiers | Les huit objets du CRM deviennent des tables reliées entre elles |
 | Connexion | Un seul compte, inscriptions fermées | Personne d'autre ne peut créer de compte |
 
-Quatre points de vigilance, dont les chiffres sont cités de mémoire et à vérifier sur le site de Supabase :
+Quatre points de vigilance. Les chiffres de l'offre gratuite ont été vérifiés dans la documentation de Supabase le 18 novembre 2026 (étape 1.13) ; aucun n'avait changé, quelques précisions ont été ajoutées :
 
 - **La sécurité repose sur la base, pas sur le site.** Le code d'un site statique est lisible par tous. Chaque table doit donc être verrouillée pour n'être accessible qu'au compte connecté (règles d'accès par ligne de Supabase). Seule la clé publique figure dans le code ; la clé d'administration n'entre jamais dans le dépôt.
-- **L'offre gratuite n'a pas de sauvegarde automatique.** Un export hebdomadaire planifié est indispensable dès le premier vrai client : le fichier est l'actif principal de l'activité.
-- **Un projet gratuit est mis en pause après environ une semaine sans activité.** Sans conséquence en usage quotidien, à surveiller pendant les congés.
-- **Les limites gratuites suffisent pour les fiches, moins pour les photos.** Environ 500 Mo de base, largement assez pour des dizaines de milliers de fiches, et 1 Go de fichiers : les photos devront être compressées et limitées. Le passage à l'offre payante sera à prévoir quand l'activité le justifiera.
+- **L'offre gratuite n'a aucune sauvegarde automatique** (seuls les projets payants sont sauvegardés chaque jour), et Supabase recommande de faire ses propres exports. Depuis l'étape 1.13 : export complet à la demande dans Réglages, avec rappel au bout de 7 jours, et sauvegarde hebdomadaire chiffrée par GitHub Actions, gardée 90 jours (voir [sauvegarde.md](sauvegarde.md)).
+- **Un projet gratuit est mis en pause après 7 jours de faible activité.** Supabase prévient par courriel environ une semaine avant ; un projet en pause se rouvre en un clic pendant 90 jours, plus ensuite. Le workflow de sauvegarde interroge les projets chaque jour pour l'éviter.
+- **Les limites gratuites suffisent pour les fiches, moins pour les photos.** 500 Mo de base (au-delà, elle passe en lecture seule), largement assez pour des dizaines de milliers de fiches, 1 Go de fichiers (les photos sont donc compressées et limitées), 5 Go d'échanges par mois, deux projets gratuits actifs au plus (ici : test et réel). Le passage à l'offre payante (sauvegardes quotidiennes, plus de pause) sera à prévoir quand l'activité le justifiera.
 
 Pour le RGPD, le projet Supabase est à créer dans une région européenne dès le départ, ce choix étant difficile à changer ensuite.
 

@@ -13,6 +13,7 @@ Documents de référence :
 - [docs/avancement.md](docs/avancement.md) — où en est le projet, étape par étape.
 - [docs/design.md](docs/design.md) — les composants d'interface disponibles, à réutiliser dans chaque écran.
 - [docs/donnees.md](docs/donnees.md) — les conventions des tables, la couche d'accès aux données, les données fictives et le test de sécurité.
+- [docs/sauvegarde.md](docs/sauvegarde.md) — l'export, la sauvegarde automatique chiffrée et la restauration, pas à pas.
 
 ## Les trois règles du dépôt public
 
@@ -42,6 +43,7 @@ Fixés par le plan de développement. Ne pas les changer sans accord explicite.
 | Connexion | Courriel et mot de passe (Supabase Auth), un seul compte, aucune inscription | Sans session, seul l'écran de connexion s'affiche |
 | Tests | Vitest pour la logique, vérifications manuelles pour l'interface | Proportionné à un outil personnel |
 | Déploiement | GitHub Actions vers GitHub Pages à chaque fusion dans `main` | Automatique, gratuit |
+| Sauvegardes | Workflow GitHub Actions hebdomadaire, chiffré par 7-Zip avec une phrase secrète ; export JSON dans Réglages | L'offre gratuite de Supabase ne sauvegarde rien ; le dépôt est public |
 
 Principes qui en découlent :
 
@@ -72,6 +74,7 @@ Principes qui en découlent :
 | `src/features/<domaine>` | Tout ce qui est propre à un domaine métier (`contacts`, `biens`, `taches`…) |
 | `supabase/migrations` | Fichiers SQL numérotés, appliqués par Claude Code via le connecteur Supabase |
 | `supabase/tests` | Test de sécurité à lancer dans Supabase après chaque migration |
+| `supabase/sauvegarde` | Scripts de sauvegarde chiffrée, de restauration et de maintien en activité, lancés par GitHub Actions (guide : `docs/sauvegarde.md`) |
 | `.claude/skills` | Procédures que Claude Code suit (par exemple pour agir sur Supabase) |
 | `docs` | Cadrage, plan, avancement et guides |
 

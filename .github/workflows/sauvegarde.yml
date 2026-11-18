@@ -1,0 +1,82 @@
+# Sauvegarde chiffrée de la base du projet réel, chaque semaine, et maintien en activité des
+# projets Supabase, chaque jour (l'offre gratuite met en pause un projet sans activité
+# pendant 7 jours et ne fait aucune sauvegarde).
+#
+# Le dépôt est public : la sauvegarde est chiffrée (7-Zip, AES-256) avec une phrase secrète
+# AVANT d'être conservée, et rien n'est jamais affiché ni déposé en clair.
+# Secrets à ajouter (Settings → Secrets and variables → Actions) : voir docs/sauvegarde.md.
+name: Sauvegarde
+
+on:
+  schedule:
+    # Chaque lundi à 3 h 17 (temps universel ; 4 h 17 à Paris en hiver) : sauvegarde.
+    - cron: '17 3 * * 1'
+    # Chaque jour à 5 h 41 (temps universel) : simple visite des projets.
+    - cron: '41 5 * * *'
+  # Lancement à la main depuis l'onglet Actions : sauvegarde du projet choisi.
+  workflow_dispatch:
+    inputs:
+      projet:
+        description: 'Projet à sauvegarder'
+        type: choice
+        options: [reel, test]
+        default: reel
+
+permissions:
+  contents: read
+
+# Jamais deux sauvegardes ou restaurations en même temps.
+concurrency:
+  group: sauvegarde
+  cancel-in-progress: false
+
+jobs:
+  maintenir-actif:
+    name: Maintien en activité
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Visite des projets Supabase
+        env:
+          URL_REELLE: ${{ vars.VITE_SUPABASE_URL }}
+          CLE_PUBLIQUE: ${{ vars.VITE_SUPABASE_CLE_PUBLIQUE }}
+          BASE_REELLE: ${{ secrets.SUPABASE_BASE_REELLE }}
+          BASE_TEST: ${{ secrets.SUPABASE_BASE_TEST }}
+        run: bash supabase/sauvegarde/maintenir-actif.sh
+
+  sauvegarder:
+    name: Sauvegarde chiffrée
+    # Le lundi, ou à la demande ; pas lors des visites quotidiennes.
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 3 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PROJET: ${{ inputs.projet || 'reel' }}
+      BASE_REELLE: ${{ secrets.SUPABASE_BASE_REELLE }}
+      BASE_TEST: ${{ secrets.SUPABASE_BASE_TEST }}
+      PHRASE: ${{ secrets.SAUVEGARDE_PHRASE_SECRETE }}
+    steps:
+      - uses: actions/checkout@v7
+      # Outil officiel de Supabase pour lire une base (il utilise Docker, présent sur le serveur).
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.2.0
+      - name: Lecture et chiffrement de la base
+        id: sauvegarde
+        run: bash supabase/sauvegarde/sauvegarder.sh "$PROJET" "$RUNNER_TEMP/sauvegarde"
+      # Seul le fichier chiffré est conservé, 90 jours (le maximum pour un dépôt public).
+      - name: Conservation du fichier chiffré
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.sauvegarde.outputs.fichier }}
+          archive: false
+          retention-days: 90
+          if-no-files-found: error
+      - name: Date de la sauvegarde dans l'application
+        run: |
+          source supabase/sauvegarde/commun.sh
+          adresse="$(adresse_du_projet "$PROJET")"
+          verifier_adresse "$PROJET" "$adresse"
+          psql "$adresse" -X -q -v ON_ERROR_STOP=1 -f supabase/sauvegarde/noter-sauvegarde.sql >/dev/null
+          echo "Date inscrite : elle apparaît dans Réglages, « Dernière sauvegarde automatique »."

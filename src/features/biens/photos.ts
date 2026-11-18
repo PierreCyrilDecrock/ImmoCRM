@@ -24,7 +24,7 @@ export const DUREE_ADRESSE_PHOTO = 15 * 60
 
 /**
  * Place offerte par l'offre gratuite de Supabase pour les fichiers : 1 Go.
- * Chiffre à vérifier sur le site de Supabase (voir le cadrage, Architecture technique).
+ * Chiffre vérifié dans la documentation de Supabase le 18/11/2026 (cadrage, Architecture technique).
  */
 export const ESPACE_GRATUIT = 1_000_000_000
 

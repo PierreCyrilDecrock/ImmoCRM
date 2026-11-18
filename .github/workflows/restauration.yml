@@ -1,0 +1,89 @@
+# Restauration d'une sauvegarde chiffrée (workflow « Sauvegarde ») sur un projet Supabase.
+# Lancement à la main uniquement, depuis l'onglet Actions. Mode d'emploi : docs/sauvegarde.md.
+#
+# Avant d'écraser quoi que ce soit, le workflow sauvegarde le projet cible (fichier chiffré
+# « avant-restauration-… », conservé 90 jours). La restauration est faite en une seule
+# transaction : si elle échoue, rien n'est modifié.
+name: Restauration
+
+on:
+  workflow_dispatch:
+    inputs:
+      execution:
+        description: "Numéro de l'exécution « Sauvegarde » à restaurer (le nombre qui suit /runs/ dans son adresse)"
+        required: true
+        type: string
+      projet_cible:
+        description: 'Projet sur lequel restaurer (son contenu actuel sera remplacé)'
+        type: choice
+        options: [test, reel]
+        default: test
+      confirmation:
+        description: 'Pour le projet réel seulement : écrivez ECRASER LE PROJET REEL'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  # Pour récupérer le fichier chiffré d'une autre exécution.
+  actions: read
+
+concurrency:
+  group: sauvegarde
+  cancel-in-progress: false
+
+jobs:
+  restaurer:
+    name: Restauration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CIBLE: ${{ inputs.projet_cible }}
+      EXECUTION: ${{ inputs.execution }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+      BASE_REELLE: ${{ secrets.SUPABASE_BASE_REELLE }}
+      BASE_TEST: ${{ secrets.SUPABASE_BASE_TEST }}
+      PHRASE: ${{ secrets.SAUVEGARDE_PHRASE_SECRETE }}
+    steps:
+      - name: Vérification de la demande
+        run: |
+          if ! [[ "$EXECUTION" =~ ^[0-9]+$ ]]; then
+            echo "::error::Le numéro d'exécution doit être un nombre (celui qui suit /runs/ dans l'adresse de l'exécution « Sauvegarde »)."
+            exit 1
+          fi
+          if [ "$CIBLE" = reel ] && [ "$CONFIRMATION" != 'ECRASER LE PROJET REEL' ]; then
+            echo "::error::Pour restaurer sur le projet réel, écrivez exactement ECRASER LE PROJET REEL dans la case de confirmation."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.2.0
+      - name: Récupération du fichier chiffré
+        uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ inputs.execution }}
+          github-token: ${{ github.token }}
+          # Une sauvegarde hebdomadaire (immocrm-…) ou de sécurité (avant-restauration-…).
+          pattern: '*.7z'
+          path: ${{ runner.temp }}/a-restaurer
+          merge-multiple: true
+      - name: Sauvegarde de sécurité du projet cible
+        id: securite
+        run: bash supabase/sauvegarde/sauvegarder.sh "$CIBLE" "$RUNNER_TEMP/securite" avant-restauration
+      - name: Conservation de la sauvegarde de sécurité
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.securite.outputs.fichier }}
+          archive: false
+          retention-days: 90
+          if-no-files-found: error
+      - name: Restauration
+        run: |
+          shopt -s nullglob
+          archives=("$RUNNER_TEMP"/a-restaurer/*.7z)
+          if [ "${#archives[@]}" -ne 1 ]; then
+            echo "::error::L'exécution $EXECUTION ne contient pas exactement une sauvegarde (trouvé : ${#archives[@]}). Vérifiez son numéro, et qu'elle a moins de 90 jours."
+            exit 1
+          fi
+          bash supabase/sauvegarde/restaurer.sh "${archives[0]}" "$CIBLE"

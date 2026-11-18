@@ -16,3 +16,6 @@ coverage/
 *.log
 .vscode/
 .idea/
+
+# Fichiers temporaires du CLI Supabase
+supabase/.temp/

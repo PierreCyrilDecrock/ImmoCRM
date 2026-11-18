@@ -10,6 +10,14 @@ export type Reglages = {
   delais_relance: DelaisRelance
 }
 
+/** Dates des sauvegardes, en lecture seule ici (voir `noterExport`). */
+export type DatesSauvegarde = {
+  /** Dernier export complet fait depuis Réglages. */
+  dernier_export_le: string | null
+  /** Dernière sauvegarde automatique chiffrée (inscrite par le workflow GitHub). */
+  derniere_sauvegarde_le: string | null
+}
+
 /** Valeurs utilisées tant que rien n'a été enregistré. */
 export const REGLAGES_PAR_DEFAUT: Reglages = {
   nom_affiche: '',
@@ -36,6 +44,43 @@ function depuisLigne(ligne: Partial<Ligne<'reglages'>>): Reglages {
       froid: ligne.relance_froid,
       veille: ligne.relance_veille,
     }),
+  }
+}
+
+/** Lit les dates des sauvegardes du compte connecté ; aucune si rien n'est enregistré. */
+export async function lireDatesSauvegarde(
+  client: SupabaseClient,
+): Promise<Resultat<DatesSauvegarde>> {
+  const resultat = await lister(client, 'reglages', { limite: 1 })
+  if (!resultat.ok) return resultat
+  const ligne = resultat.donnees[0]
+  return {
+    ok: true,
+    donnees: {
+      dernier_export_le: ligne?.dernier_export_le ?? null,
+      derniere_sauvegarde_le: ligne?.derniere_sauvegarde_le ?? null,
+    },
+  }
+}
+
+/** Inscrit le moment d'un export complet réussi (la ligne est créée au besoin). */
+export async function noterExport(
+  client: SupabaseClient,
+  quand: Date,
+): Promise<Resultat<DatesSauvegarde>> {
+  const resultat = await enregistrerUnique(
+    client,
+    'reglages',
+    { dernier_export_le: quand.toISOString() },
+    'user_id',
+  )
+  if (!resultat.ok) return resultat
+  return {
+    ok: true,
+    donnees: {
+      dernier_export_le: resultat.donnees.dernier_export_le,
+      derniere_sauvegarde_le: resultat.donnees.derniere_sauvegarde_le,
+    },
   }
 }
 
