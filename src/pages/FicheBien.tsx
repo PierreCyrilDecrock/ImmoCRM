@@ -38,6 +38,8 @@ import SectionTaches from '../features/taches/SectionTaches'
 import { formaterDate } from '../lib/dates'
 import { formaterNombre, formaterPrix, formaterSurface } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
+import { ficheDeBien } from '../features/saisie/fiches-consultees'
+import { useConsultation } from '../features/saisie/recents'
 
 type Etat =
   | { phase: 'chargement' }
@@ -76,6 +78,7 @@ export default function FicheBien() {
   // (une tâche faite depuis la fiche inscrit une activité au journal).
   const [version, setVersion] = useState(0)
   const toutRelire = () => setVersion((v) => v + 1)
+  useConsultation(etat.phase === 'pret' ? ficheDeBien(etat.bien) : null)
 
   useEffect(() => {
     let actif = true

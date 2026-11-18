@@ -5,6 +5,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import FournisseurSession from './features/connexion/FournisseurSession'
 import { useSession } from './features/connexion/session-contexte'
 import BarreRecherche from './features/recherche/BarreRecherche'
+import SaisieRapide from './features/saisie/SaisieRapide'
 import { erreurConfigSupabase, supabase } from './lib/supabase'
 import Aujourdhui from './pages/Aujourdhui'
 import Biens from './pages/Biens'
@@ -56,7 +57,14 @@ function Pages() {
   return (
     <HashRouter>
       <Routes>
-        <Route element={<MiseEnPage enTete={<BarreRecherche />} />}>
+        <Route
+          element={
+            <MiseEnPage
+              enTete={<BarreRecherche />}
+              flottant={(rafraichir) => <SaisieRapide rafraichir={rafraichir} />}
+            />
+          }
+        >
           <Route path="/" element={<Aujourdhui />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/contacts/:id" element={<FicheContact />} />

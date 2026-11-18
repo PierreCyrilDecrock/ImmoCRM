@@ -66,13 +66,17 @@ Les gestes sur une tâche (cocher avec la boucle de relance, reporter, ouvrir, r
 
 **Écran Aujourd'hui** (`src/features/aujourdhui/`) : `BlocJournee` (bloc repliable avec son titre, son compteur — vert à zéro, rouge en cas de retard — et un message positif quand il est vide ; les blocs repliés sont gardés sur l'appareil), `TroisActions` (les trois actions qui comptent, enregistrées en quittant le champ), `LigneRendezVous`, `LigneRelance`, `LigneAlerte`, `LigneNouveaute`, `CaseTache` (la case ronde qui clôt une tâche) et `BoutonAppel` (« Appeler » qui respecte l'accord pour être appelé : sans accord, il mène à la fiche).
 
+**Saisie rapide** (`src/features/saisie/`) : `SaisieRapide` (le bouton « + » flottant, en bas à droite de toutes les pages, son menu, ses fenêtres et les raccourcis clavier ; placé une fois par `MiseEnPage`), `MenuCreation` (feuille qui monte du bas sur téléphone : fiches récentes, puis les cinq créations), `ContactExpress` et `CompteRenduExpress` (les deux écrans express), `ChampsProchaineAction` (titre et date proposés, raccourcis de date, « Ne rien prévoir »), `GroupePastilles` (pastilles avec leur nom au-dessus) et `FichesRecentes` (liste des fiches consultées récemment). Une nouvelle fiche (page de détail) se note dans les récentes avec `useConsultation(…)` (`recents.ts`), dès qu'elle est lue. Le champ de recherche d'une page reçoit `data-raccourci-recherche` pour que « / » et Ctrl+K y mènent.
+
+**Raccourcis clavier** (ordinateur, ou tablette avec clavier), quand le curseur n'est pas dans un champ : `/` ou Ctrl+K (⌘K) pour la recherche, `N` pour le menu de création, `C` contact, `A` activité, `T` tâche, `B` bien, `D` demande entrante. Ils sont rappelés dans le menu sur grand écran.
+
 **Glisser-déposer.** Fait avec les événements du pointeur (souris, doigt, stylet) : la carte se saisit par sa poignée (dessin `poignee`, 44 px), la colonne visée s'allume, Échap annule, le tableau défile seul près de ses bords. Le même changement reste possible sans glisser, d'un toucher sur l'étape dans la fiche du projet.
 
 ### Structure
 
 | Composant | Rôle | Propriétés principales |
 | --- | --- | --- |
-| `MiseEnPage` | Coquille une fois connecté : navigation + page en cours. Déjà en place dans `App.tsx`, rien à faire. | — |
+| `MiseEnPage` | Coquille une fois connecté : navigation + page en cours, et le bouton flottant de la saisie rapide. Déjà en place dans `App.tsx`, rien à faire. Le bas de chaque page garde une marge pour que le bouton ne cache pas la dernière ligne. | `enTete?`, `flottant?` (reçoit de quoi faire relire la page) |
 | `Navigation` | Barre du bas ou colonne de gauche. Les entrées sont dans `src/lib/navigation.ts` (six au maximum). | — |
 | `Page` | Gabarit de **toute** page : titre, lien de retour, actions, contenu. Met aussi à jour le titre de l'onglet. | `titre`, `retour?` (`{ vers, libelle }`), `actions?` |
 | `Carte` | Bloc de contenu sur fond `surface`. | `titre?` |
@@ -99,7 +103,7 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | --- | --- | --- |
 | `Bouton` | Bouton d'action. `principal` (un seul par écran), `secondaire`, `discret` (action de faible poids), `danger` (suppression). | `variante?`, `pleineLargeur?`, `icone?`, plus celles d'un bouton HTML |
 | `ChampSaisie` | Champ sur une ligne : texte, courriel, téléphone, date, nombre. | `libelle`, `aide?`, `erreur?`, plus celles d'un champ HTML |
-| `ChampTexteLong` | Champ sur plusieurs lignes : note, compte rendu. Le micro du clavier du téléphone permet de dicter. | `libelle`, `aide?`, `erreur?`, `rows?` |
+| `ChampTexteLong` | Champ sur plusieurs lignes : note, compte rendu. Un bouton micro, dans le coin du champ, lance la dictée par le navigateur quand il sait le faire (Chrome, Edge, Safari) ; sinon il n'apparaît pas et le micro du clavier reste disponible. Une seule dictée à la fois : toucher le micro d'un autre champ arrête la première. | `libelle`, `aide?`, `erreur?`, `rows?`, `dictee?` (`false` : pas de micro) |
 | `ChampRecherche` | Champ de recherche : loupe, saisie, croix pour effacer. Pas de libellé visible. | `libelle` (lu par les lecteurs d'écran), `valeur`, `onChange(valeur)`, plus celles d'un champ HTML |
 | `ChampChoix` | Liste déroulante (sélecteur natif du téléphone). | `libelle`, `options` (`{ valeur, libelle }`), `optionVide?`, `aide?`, `erreur?` |
 | `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
@@ -160,7 +164,7 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`, `micro`, `arret`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Installation sur l'écran d'accueil
 

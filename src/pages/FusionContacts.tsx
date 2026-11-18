@@ -27,6 +27,7 @@ import { resumeAccord } from '../features/contacts/consentement'
 import { formaterTelephone } from '../features/contacts/telephone'
 import { formaterDate } from '../lib/dates'
 import { exigerSupabase } from '../lib/supabase'
+import { retirerDesRecentes } from '../features/saisie/recents'
 
 type Etat =
   | { phase: 'chargement' }
@@ -118,6 +119,7 @@ export default function FusionContacts() {
       setEchec(`La fusion a échoué : rien n'a été modifié. ${resultat.erreur.message}`)
       return
     }
+    retirerDesRecentes({ genre: 'contact', id: absorbe.id })
     notifier('succes', 'Fiches fusionnées')
     void naviguer(`/contacts/${garde.id}`, { replace: true })
   }

@@ -327,7 +327,7 @@ export default function BoucleRelance({
             aide={
               brouillon.type === 'visite'
                 ? 'Facultatif. Le compte rendu rejoint le journal du contact, du bien et du projet.'
-                : 'Facultatif. Pour dicter, touchez le micro du clavier. Il rejoint le journal du contact.'
+                : 'Facultatif. Pour dicter, touchez le micro. Il rejoint le journal du contact.'
             }
             erreur={erreurs.compteRendu}
           />
