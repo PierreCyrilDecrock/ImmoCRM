@@ -63,6 +63,7 @@ export default function Pipelines() {
   return (
     <Page
       titre="Pipelines"
+      large
       actions={
         <Bouton icone="ajouter" onClick={() => setCreation(memoire.pipeline)}>
           {memoire.pipeline === 'vendeurs' ? 'Projet vendeur' : 'Demande entrante'}

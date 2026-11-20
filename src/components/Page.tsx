@@ -8,11 +8,13 @@ type Props = {
   retour?: { vers: string; libelle: string }
   /** Boutons affichés à droite du titre. */
   actions?: ReactNode
+  /** Page qui a besoin de toute la largeur de l'écran (le tableau des pipelines). */
+  large?: boolean
   children: ReactNode
 }
 
 /** Gabarit de toutes les pages : titre, actions, puis le contenu dans une colonne lisible. */
-export default function Page({ titre, retour, actions, children }: Props) {
+export default function Page({ titre, retour, actions, large = false, children }: Props) {
   // Le titre de l'onglet (et de l'historique) suit la page affichée.
   useEffect(() => {
     document.title = `${titre} · ImmoCRM`
@@ -22,7 +24,9 @@ export default function Page({ titre, retour, actions, children }: Props) {
   }, [titre])
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-4 pb-8 md:px-8 md:pt-8">
+    <div
+      className={`mx-auto flex w-full ${large ? 'max-w-[100rem]' : 'max-w-5xl'} flex-col gap-4 px-4 pt-4 pb-8 md:px-8 md:pt-8`}
+    >
       <header>
         {retour !== undefined && (
           <Link

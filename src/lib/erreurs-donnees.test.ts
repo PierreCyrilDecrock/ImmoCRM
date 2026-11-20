@@ -34,4 +34,36 @@ describe('traduireErreurDonnees', () => {
     expect(erreur.message).toBe("Une erreur inattendue s'est produite. Réessayez dans un instant.")
     expect(traduireErreurDonnees({}).message).not.toMatch(/XX000|internal/)
   })
+
+  it('affiche l’explication écrite par la base, en français', () => {
+    const erreur = traduireErreurDonnees({
+      code: '23514',
+      message: 'Proposez au moins un bien avant de passer aux visites.',
+    })
+    expect(erreur.genre).toBe('invalide')
+    expect(erreur.message).toBe('Proposez au moins un bien avant de passer aux visites.')
+    expect(traduireErreurDonnees({ code: 'P0002', message: 'Tâche introuvable.' })).toEqual({
+      genre: 'introuvable',
+      message: 'Tâche introuvable.',
+    })
+  })
+
+  it('n’affiche jamais un message technique de PostgreSQL', () => {
+    const contrainte = traduireErreurDonnees({
+      code: '23514',
+      message: 'new row for relation "biens" violates check constraint "biens_prix_plausible"',
+    })
+    expect(contrainte.message).toBe(
+      "Une des informations saisies n'est pas acceptée. Vérifiez-les, puis réessayez.",
+    )
+    const autreCode = traduireErreurDonnees({ code: '23505', message: 'Doublon fictif.' })
+    expect(autreCode.message).toBe('Cet élément existe déjà.')
+  })
+
+  it('remplace les messages internes de la base par le message générique', () => {
+    const erreur = traduireErreurDonnees({ code: '22023', message: 'Sortie inconnue.' })
+    expect(erreur.message).toBe(
+      "Une des informations saisies n'est pas acceptée. Vérifiez-les, puis réessayez.",
+    )
+  })
 })

@@ -38,11 +38,41 @@ function genreErreur({ code = '', message = '', status }: ErreurBrute): GenreErr
   // Valeur manquante, trop longue, mal formée ou refusée par une contrainte.
   if (code === '23502' || code === '23514' || code.startsWith('22')) return 'invalide'
   // Aucune ligne là où on en attendait une.
-  if (code === 'PGRST116') return 'introuvable'
+  if (code === 'PGRST116' || code === 'P0002') return 'introuvable'
   return 'inconnue'
+}
+
+/** Codes employés par les fonctions de la base pour refuser une action avec une explication. */
+const CODES_EXPLIQUES = new Set(['22023', '23514', 'P0001', 'P0002'])
+
+/**
+ * Messages écrits par la base qui trahissent un défaut de l'application, pas une erreur de
+ * saisie : ils n'aideraient pas l'utilisateur, le message générique les remplace.
+ */
+const MESSAGES_INTERNES = new Set([
+  'Occurrence suivante incohérente.',
+  'Clôture impossible : état inconnu.',
+  'Sortie inconnue.',
+  'Choix contradictoire : une prochaine action et son refus.',
+])
+
+/**
+ * Explication écrite en français par une fonction de la base (« Proposez au moins un bien
+ * avant de passer aux visites. »), ou `null`. Les messages des migrations sont des phrases
+ * terminées par un point ; ceux de PostgreSQL, en anglais, n'en ont jamais et citent les
+ * noms techniques entre guillemets droits : ils ne sont donc jamais affichés.
+ */
+export function explicationBase({ code = '', message = '' }: ErreurBrute): string | null {
+  const texte = message.trim()
+  if (!CODES_EXPLIQUES.has(code)) return null
+  if (!texte.endsWith('.') || texte.includes('"') || texte.length > 200) return null
+  if (MESSAGES_INTERNES.has(texte)) return null
+  return texte
 }
 
 /** Traduit une erreur de Supabase en message clair, en français. Ne lève jamais d'erreur. */
 export function traduireErreurDonnees(erreur: ErreurBrute): ErreurDonnees {
-  return erreurDonnees(genreErreur(erreur))
+  const genre = genreErreur(erreur)
+  const explication = explicationBase(erreur)
+  return explication === null ? erreurDonnees(genre) : { genre, message: explication }
 }

@@ -36,11 +36,12 @@ export default function MiseEnPage({ enTete, flottant }: Props) {
           « relative » : les textes réservés aux lecteurs d'écran (« sr-only », placés en
           absolu) restent dans la zone qui défile, au lieu d'allonger tout le document (ce qui
           créait un second défilement et un grand vide sous l'application).
-          Marge du bas : la fin de la page défile au-dessus du bouton flottant.
+          Marge du bas : la fin de la page défile au-dessus du bouton flottant (sa hauteur et
+          son écart au bord : 4,75 rem sur téléphone, 5,75 rem au-delà).
         */}
         <main
           ref={contenu}
-          className={`relative min-h-0 flex-1 overflow-y-auto ${flottant !== undefined ? 'pb-12 md:pb-16' : ''}`}
+          className={`relative min-h-0 flex-1 overflow-y-auto ${flottant !== undefined ? 'pb-20 md:pb-24' : ''}`}
         >
           <Outlet key={version} />
         </main>

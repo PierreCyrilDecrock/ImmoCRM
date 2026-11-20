@@ -198,7 +198,7 @@ export function preparerTache(
 
   const duree = brouillon.duree === '' ? null : Number(brouillon.duree)
   if (duree !== null && (!Number.isInteger(duree) || duree < 1 || duree > 1440)) {
-    erreurs.duree = 'Durée illisible.'
+    erreurs.duree = 'Durée non reconnue : choisissez-en une dans la liste.'
   } else if (duree !== null && heure === '') {
     erreurs.duree = 'Une durée demande une heure de début.'
   }

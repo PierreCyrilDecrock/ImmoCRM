@@ -106,7 +106,7 @@ describe('preparerActivite', () => {
       erreurs: {
         date: 'Choisissez une date.',
         heure: 'Heure illisible. Exemple : 14:30.',
-        duree: 'Durée illisible.',
+        duree: 'Durée non reconnue : choisissez-en une dans la liste.',
       },
     })
   })
