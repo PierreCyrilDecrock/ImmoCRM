@@ -167,7 +167,13 @@ export async function enregistrerContactExpress(
     )
     const creee: Resultat<unknown> = activite.ok
       ? await creerActivite(client, activite.valeurs)
-      : { ok: false, erreur: { genre: 'invalide', message: 'Note illisible.' } }
+      : {
+          ok: false,
+          erreur: {
+            genre: 'invalide',
+            message: 'Elle est peut-être trop longue : ajoutez-la depuis la fiche du contact.',
+          },
+        }
     if (!creee.ok) {
       return {
         ok: false,
@@ -185,7 +191,13 @@ export async function enregistrerContactExpress(
   })
   const creee: Resultat<Tache> = tache.ok
     ? await creer(client, 'taches', tache.valeurs)
-    : { ok: false, erreur: { genre: 'invalide', message: 'Prochaine action illisible.' } }
+    : {
+        ok: false,
+        erreur: {
+          genre: 'invalide',
+          message: 'Vérifiez son titre et sa date, puis ajoutez-la depuis la fiche du contact.',
+        },
+      }
   if (!creee.ok) {
     return {
       ok: false,

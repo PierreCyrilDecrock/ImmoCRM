@@ -173,7 +173,7 @@ export default function TableauPipeline<E extends string, P>({
               key={etape}
               data-etape={etape}
               aria-label={libelle}
-              className={`flex min-h-64 min-w-44 flex-1 flex-col gap-2 rounded-2xl p-2 ring-2 transition-colors ${
+              className={`flex min-h-64 min-w-48 flex-1 flex-col gap-2 rounded-2xl p-2 ring-2 transition-colors ${
                 cible ? 'bg-accent-doux ring-accent' : 'bg-creux/60 ring-transparent'
               }`}
             >

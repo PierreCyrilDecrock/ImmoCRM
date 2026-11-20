@@ -21,7 +21,7 @@ Pour voir tous les composants à l'écran : dans l'application, **Plus → Compo
 | Tablette | 768 à 1023 px | Colonne étroite à gauche (dessin + libellé) | `md:` |
 | Ordinateur | 1024 px et plus | Colonne large à gauche, avec le nom de l'application | `lg:` |
 
-L'application occupe exactement l'écran : le bandeau « Connexion perdue » (si besoin), la navigation, et la page, **seule zone qui défile**. Le contenu d'une page est limité à une colonne lisible (`max-w-5xl`), gérée par le composant `Page`.
+L'application occupe exactement l'écran : le bandeau « Connexion perdue » (si besoin), la navigation, et la page, **seule zone qui défile**. Le contenu d'une page est limité à une colonne lisible (`max-w-5xl`), gérée par le composant `Page` ; seule la page Pipelines, dont le tableau a besoin de place sur ordinateur, prend toute la largeur (`large`, jusqu'à `max-w-[100rem]`).
 
 ## Couleurs
 
@@ -78,7 +78,7 @@ Les gestes sur une tâche (cocher avec la boucle de relance, reporter, ouvrir, r
 | --- | --- | --- |
 | `MiseEnPage` | Coquille une fois connecté : navigation + page en cours, et le bouton flottant de la saisie rapide. Déjà en place dans `App.tsx`, rien à faire. Le bas de chaque page garde une marge pour que le bouton ne cache pas la dernière ligne. La zone de page sert de repère (`relative`) : un élément placé en absolu, comme un texte `sr-only`, reste dans ce qui défile. | `enTete?`, `flottant?` (reçoit de quoi faire relire la page) |
 | `Navigation` | Barre du bas ou colonne de gauche. Les entrées sont dans `src/lib/navigation.ts` (six au maximum). | — |
-| `Page` | Gabarit de **toute** page : titre, lien de retour, actions, contenu. Met aussi à jour le titre de l'onglet. | `titre`, `retour?` (`{ vers, libelle }`), `actions?` |
+| `Page` | Gabarit de **toute** page : titre, lien de retour, actions, contenu. Met aussi à jour le titre de l'onglet. | `titre`, `retour?` (`{ vers, libelle }`), `actions?`, `large?` (toute la largeur : tableaux) |
 | `Carte` | Bloc de contenu sur fond `surface`. | `titre?` |
 | `Liste` + `LigneListe` | Liste de lignes séparées par un filet. Une ligne ouvre une page (`vers`), lance une action (`onAction`) ou reste inerte. | `titre`, `detail?`, `icone?`, `vignette?` (petite photo carrée à gauche ; `null` : le dessin `icone` tient la place), `fin?`, `vers?`, `onAction?` |
 | `Information` | Une information d'une fiche : son nom, sa valeur. À placer dans une liste `<dl className="divide-y divide-bord">`. | `nom`, valeur en contenu |

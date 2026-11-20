@@ -108,6 +108,8 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 
 Chaque fonction renvoie soit `{ ok: true, donnees }`, soit `{ ok: false, erreur }`, sans jamais lever d'erreur. `erreur.message` est une phrase en français, affichable telle quelle ; `erreur.genre` permet à un écran de réagir (`reseau`, `session`, `droits`, `doublon`, `lien`, `invalide`, `introuvable`, `inconnue`). La traduction est dans `src/lib/erreurs-donnees.ts`.
 
+Quand une fonction de la base refuse une action, elle l'explique : `raise exception 'Proposez au moins un bien avant de passer aux visites.' using errcode = '22023'` (ou `23514` pour une règle métier, `P0002` pour une ligne introuvable). Ce texte est affiché tel quel ; il doit donc être une phrase française complète, compréhensible sans jargon, **terminée par un point** (c'est ainsi que l'application le distingue des messages techniques de PostgreSQL, en anglais, qui ne sont jamais montrés). Un refus qui trahit un défaut de l'application plutôt qu'une erreur de saisie s'ajoute à `MESSAGES_INTERNES` : le message générique le remplace.
+
 ```ts
 const resultat = await lister(exigerSupabase(), 'reglages', { limite: 1 })
 if (!resultat.ok) notifier('erreur', resultat.erreur.message)
@@ -410,7 +412,7 @@ Cette protection est un garde-fou contre une fausse manœuvre, pas une barrière
 
 **Ce qu'on vérifie :** une requête sans session ne renvoie aucune ligne, et un compte connecté ne voit que ses propres lignes.
 
-**Quand :** après chaque migration, sur le projet de test puis sur le projet réel.
+**Quand :** après chaque migration, sur le projet de test puis sur le projet réel. La recette de chaque version y ajoute le test d'écriture.
 
 ### Dans Supabase (test complet)
 
@@ -431,6 +433,16 @@ Le test se met tour à tour à la place d'un visiteur sans session, puis d'un co
 Les espaces de stockage passent la même épreuve : leurs lignes s'appellent « stockage : photos-biens ». Le test y vérifie en plus que l'espace est bien privé.
 
 Tout verdict commençant par `ÉCHEC` est une faille : ne plus rien enregistrer dans la table concernée tant qu'une migration ne l'a pas corrigée.
+
+### Dans Supabase (écriture)
+
+Second volet, ajouté à la recette de la version 1 (étape 1.14) : `supabase/tests/securite-ecriture.sql`, à coller et lancer de la même façon. Pour chaque table et chaque espace de stockage, il tente, sans session puis avec un autre compte, d'ajouter une ligne au nom du vrai propriétaire, de modifier et de supprimer toutes les lignes. Chaque essai est annulé aussitôt : le test ne change rien, même en cas de faille.
+
+| Colonne | Valeur attendue (ajout / modification / suppression) |
+| --- | --- |
+| `sans_session` | `refus` partout (`0 ligne` possible pour la modification d'un fichier) |
+| `autre_compte` | `refus` ou `0 ligne` partout |
+| `verdict` | `OK` |
 
 ### Dans l'application (contrôle rapide)
 

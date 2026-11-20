@@ -333,7 +333,7 @@ export function preparerActivite(
 
   const duree = brouillon.duree === '' ? null : Number(brouillon.duree)
   if (duree !== null && (!Number.isInteger(duree) || duree < 1 || duree > 1440)) {
-    erreurs.duree = 'Durée illisible.'
+    erreurs.duree = 'Durée non reconnue : choisissez-en une dans la liste.'
   }
 
   if (Object.keys(erreurs).length > 0) return { ok: false, erreurs }

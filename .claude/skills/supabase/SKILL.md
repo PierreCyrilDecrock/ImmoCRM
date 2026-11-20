@@ -26,7 +26,8 @@ Avant chaque action, vérifier l'identifiant du projet visé. Si `list_projects`
 4. Vérifier :
    - `list_tables` : les tables attendues existent et les règles d'accès par ligne sont activées sur chacune ;
    - `get_advisors` (sécurité) : aucune alerte nouvelle. Une table sans règle d'accès est une erreur à corriger, pas un avertissement à signaler ;
-   - le test de sécurité `supabase/tests/securite-acces.sql`, lancé avec `execute_sql` : « OK » sur chaque table.
+   - le test de sécurité `supabase/tests/securite-acces.sql`, lancé avec `execute_sql` : « OK » sur chaque table ;
+   - pour une nouvelle table, ou à chaque recette de version, le test d'écriture `supabase/tests/securite-ecriture.sql` : « OK » sur chaque table.
 5. Régénérer les types (`generate_typescript_types`), les enregistrer dans `src/lib/types-base.ts` en gardant l'en-tête du fichier, lancer `npm run format`, puis déclarer toute nouvelle table dans `TABLES` (`src/lib/donnees.ts`).
 6. Dire dans la réponse finale ce qui a été appliqué, et sur quel projet.
 

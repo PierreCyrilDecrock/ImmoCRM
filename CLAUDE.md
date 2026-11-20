@@ -14,6 +14,8 @@ Documents de référence :
 - [docs/design.md](docs/design.md) — les composants d'interface disponibles, à réutiliser dans chaque écran.
 - [docs/donnees.md](docs/donnees.md) — les conventions des tables, la couche d'accès aux données, les données fictives et le test de sécurité.
 - [docs/sauvegarde.md](docs/sauvegarde.md) — l'export, la sauvegarde automatique chiffrée et la restauration, pas à pas.
+- [docs/guide-utilisateur.md](docs/guide-utilisateur.md) — les trois rituels (matin, après chaque échange, vendredi), en une page.
+- [docs/recette-v1.md](docs/recette-v1.md) — la recette de la version 1 : ce qui est fait, les vérifications, le scénario d'une journée type.
 
 ## Les trois règles du dépôt public
 
