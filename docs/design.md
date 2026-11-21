@@ -187,6 +187,28 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 `<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
+## Composants prévus (phase D)
+
+Les maquettes de la version 3 (canevas « ImmoCRM — nouveau style ») montrent des composants qui n'existent pas encore. Ils sont construits par les étapes D.1 à D.7 du plan ; chaque étape déplace ses composants de ce tableau vers les rubriques ci-dessus quand ils existent. Les noms sont indicatifs.
+
+| Composant | Rôle | Étape |
+| --- | --- | --- |
+| `ReportsRapides` | Rangée « Demain », « Dans 3 jours », « Lundi » et calendrier ; enregistre aussitôt, avec « Annuler » dans la notification | D.1 |
+| `BoutonCopier` | « Copier » à côté d'un numéro, d'un courriel, d'une adresse ; visible au survol sur ordinateur, toujours sur écran tactile | D.1 |
+| `LigneGlissable` | Ligne qui, glissée vers la gauche sur écran tactile, découvre « Reporter » et « Fait » ; jamais le seul chemin | D.1 |
+| Colonne de navigation | Recherche, six entrées, « Consultés récemment », bouton « Créer » (N), état d'enregistrement | D.2 |
+| Pastille des retards | Nombre de tâches en retard sur l'entrée Tâches (point rouge sur téléphone) | D.2 |
+| `CarteMaintenant` | Le prochain rendez-vous sur fond encre : temps restant, Itinéraire, Appeler, « À préparer » | D.3 |
+| `AnneauProgression` | « 3 sur 7 faits » : tâches et relances du jour closes sur prévues | D.3 |
+| Trait « maintenant » | Ligne rouge avec l'heure dans l'agenda du jour | D.3 |
+| `ProfilFiche` | Colonne gauche d'une fiche : identité, température, touches d'action, prochaine action, coordonnées | D.5 |
+| `OngletsFiche` | Onglets d'une fiche avec compteurs, gardés dans l'adresse, touches 1 à 4 | D.5 |
+| `BarreActionsFiche` | Sur téléphone, Appeler, SMS et Consigner en bas d'une fiche, à la place de la navigation | D.5 |
+| `NavigationFiche` | « 12 sur 48 » et flèches précédent / suivant (J, K) | D.5 |
+| `BarreEtapes` | Étapes d'un projet en barre, avec le critère pour passer à la suivante | D.5 |
+| `ConsignerEchange` | Bloc de compte rendu en tête de l'onglet Activité : type, texte, résultat, « Ensuite », ⌘ Entrée | D.6 |
+| `HistoriqueParJour` | Activités groupées par jour, en cartes, avec leur résultat en pastille | D.6 |
+
 ## Installation sur l'écran d'accueil
 
 - `public/manifest.webmanifest` : nom, couleurs, icônes. Les chemins y sont relatifs, pour fonctionner quel que soit le chemin de base du site.

@@ -118,6 +118,29 @@ Pour les tâches, trois règles simples valent mieux qu'un système riche :
 2. Les tâches récurrentes de la vie professionnelle (compte rendu vendeur, publication sur les réseaux, comptabilité du mois) sont créées une fois et se régénèrent.
 3. Le temps de prospection se bloque dans l'agenda comme un rendez-vous client, sinon il disparaît.
 
+## L'interface
+
+L'outil est ouvert dix fois par jour, souvent d'une main, entre deux rendez-vous. L'interface vise trois choses : **voir l'essentiel sans chercher, agir en un geste, ne jamais se perdre.**
+
+Le style a été choisi le 21 novembre 2026 sur maquettes (version 3) : fond gris chaud, cartes blanches, encre presque noire, un seul bleu pour l'action, thème sombre, police Inter. Il est installé ; le détail est dans [design.md](design.md). Les gestes et l'organisation des écrans montrés par les mêmes maquettes sont construits par la phase D du plan (étapes D.1 à D.8), avant la version 2 :
+
+| Écran ou geste | Ce qu'il apporte | Étape |
+| --- | --- | --- |
+| Gestes rapides | Reporter une tâche en un geste (demain, dans 3 jours, lundi), avec « Annuler » ; copier un numéro ou une adresse ; sur téléphone, glisser une ligne pour la reporter ou la clore | D.1 |
+| Navigation | Sur ordinateur, la recherche, les fiches consultées récemment et le bouton « Créer » dans la colonne de gauche ; partout, le nombre de tâches en retard sur l'entrée Tâches | D.2 |
+| En-tête d'Aujourd'hui | La journée résumée en une phrase, la progression « 3 sur 7 faits » | D.3 |
+| Carte « Maintenant » | Le prochain rendez-vous, le temps restant, l'itinéraire et l'appel en un geste, ce qu'il reste à préparer | D.3 |
+| Relances parlantes | Pourquoi appeler, depuis quand on ne s'est pas parlé, filtre vendeurs ou acquéreurs, reporter ou clore sans quitter l'écran | D.4 |
+| Fiches en deux temps | Le profil (coordonnées, prochaine action, Appeler) toujours visible ; le reste rangé en onglets ; passer au contact précédent ou suivant ; sur téléphone, Appeler, SMS et Consigner en bas de l'écran | D.5, D.7 |
+| Compte rendu dans la fiche | Consigner l'échange et fixer la suite depuis la fiche, sans fenêtre ; l'historique groupé par jour | D.6 |
+
+Quatre règles valent pour tous les écrans :
+
+1. Chaque geste rapide a un équivalent visible : glisser une ligne n'est jamais le seul chemin.
+2. Tout se fait au clavier sur ordinateur, et ce qui a le clavier se voit.
+3. Tout ce qui se touche fait au moins 44 px.
+4. Les contrastes sont vérifiés dans les deux thèmes.
+
 ## Suivi de prospection
 
 La prospection se pilote sur deux axes : **d'où vient le contact** (la source) et **quand il aura un projet** (la température). Chaque contact porte ces deux informations dès sa création.
@@ -206,6 +229,8 @@ La première version doit être utilisable tous les jours avec six briques seule
 | V2 — Les dossiers | Sécuriser mandats et ventes | Mandats et échéances, pipeline transaction, checklists, automatisations de tâches, rapprochement acquéreurs-biens, modèles de messages, synchronisation de l'agenda | Aucune échéance manquée sur un trimestre |
 | V3 — Le pilotage | Décider avec des chiffres | Tableau de bord, objectifs, suivi des sources, zones et campagnes de prospection, carte du secteur | La revue du vendredi se fait entièrement dans le CRM |
 | V4 — Le confort | Gagner du temps | Notes vocales transcrites, résumé automatique d'une fiche avant un appel, envois groupés, suivi des commissions et des frais | Moins de 15 minutes de saisie par jour |
+
+Entre la V1 et la V2, la phase D modernise l'interface et accélère les gestes quotidiens (voir « L'interface »), sans changer ce périmètre.
 
 Ce qui est volontairement exclu : la rédaction des mandats et compromis, la diffusion des annonces sur les portails, la signature électronique, la facturation, ainsi que la location et la gestion locative. D'autres outils couvrent les quatre premiers points, et les refaire alourdirait le projet pour peu de valeur.
 
