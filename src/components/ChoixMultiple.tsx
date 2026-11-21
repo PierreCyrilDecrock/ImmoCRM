@@ -45,8 +45,8 @@ export default function ChoixMultiple<V extends string>({
               onClick={() => basculer(option.valeur)}
               className={`min-h-11 rounded-full px-4 text-base font-medium ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                 cochee
-                  ? 'bg-accent text-sur-plein ring-accent'
-                  : 'bg-surface text-encre ring-bord-fort hover:bg-creux'
+                  ? 'bg-encre text-fond ring-encre'
+                  : 'bg-surface text-encre ring-bord-fort/40 hover:bg-creux'
               }`}
             >
               {option.libelle}

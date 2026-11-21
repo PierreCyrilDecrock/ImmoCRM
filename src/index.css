@@ -1,51 +1,58 @@
 @import 'tailwindcss';
 
 /*
- * Couleurs du système de design (voir docs/design.md).
+ * Police : Inter, servie avec le site (aucun appel à un service extérieur, rien à installer).
+ */
+@import '@fontsource-variable/inter';
+
+/*
+ * Couleurs du système de design (voir docs/design.md), version 3 : fond gris chaud, cartes
+ * blanches, encre presque noire, un seul bleu vif pour l'action.
  * Chaque couleur a une valeur claire et une valeur sombre ; le thème suit le réglage de l'appareil.
  * Dans les composants, on utilise les noms (bg-fond, text-encre, border-bord…), jamais une couleur en dur.
+ * Contrastes vérifiés : texte courant au moins 4,5:1 sur son fond, contours des champs au moins 3:1.
  */
 :root {
   color-scheme: light dark;
 
-  --fond: #f8fafc;
+  --fond: #f6f6f3;
   --surface: #ffffff;
-  --creux: #f1f5f9;
-  --bord: #e2e8f0;
-  --bord-fort: #94a3b8;
-  --encre: #0f172a;
-  --encre-douce: #475569;
-  --accent: #0369a1;
-  --accent-fort: #075985;
-  --accent-doux: #e0f2fe;
+  --creux: #f0f0ec;
+  --bord: #e6e6e1;
+  --bord-fort: #8a8d95;
+  --encre: #0e0f12;
+  --encre-douce: #5c5f67;
+  --accent: #3d3af5;
+  --accent-fort: #2f2cd6;
+  --accent-doux: #ececfe;
   --sur-plein: #ffffff;
-  --danger: #b91c1c;
-  --danger-doux: #fef2f2;
-  --succes: #047857;
-  --succes-doux: #ecfdf5;
-  --alerte: #92400e;
-  --alerte-doux: #fef3c7;
+  --danger: #b42a18;
+  --danger-doux: #fcebe8;
+  --succes: #127a4a;
+  --succes-doux: #e5f4ec;
+  --alerte: #8a5a00;
+  --alerte-doux: #fbf1dc;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --fond: #020617;
-    --surface: #0f172a;
-    --creux: #1e293b;
-    --bord: #1e293b;
-    --bord-fort: #64748b;
-    --encre: #f1f5f9;
-    --encre-douce: #94a3b8;
-    --accent: #38bdf8;
-    --accent-fort: #7dd3fc;
-    --accent-doux: #0c4a6e;
-    --sur-plein: #020617;
-    --danger: #f87171;
-    --danger-doux: #450a0a;
-    --succes: #34d399;
-    --succes-doux: #022c22;
-    --alerte: #fcd34d;
-    --alerte-doux: #451a03;
+    --fond: #0d0e11;
+    --surface: #17181c;
+    --creux: #24252b;
+    --bord: #2a2c33;
+    --bord-fort: #6b6e76;
+    --encre: #f2f2f0;
+    --encre-douce: #a8abb3;
+    --accent: #8c8aff;
+    --accent-fort: #b4b3ff;
+    --accent-doux: #23224a;
+    --sur-plein: #0d0e11;
+    --danger: #ff8a78;
+    --danger-doux: #3a1a16;
+    --succes: #4fd08c;
+    --succes-doux: #14301f;
+    --alerte: #f2c25b;
+    --alerte-doux: #352914;
   }
 }
 
@@ -69,6 +76,20 @@
   --color-alerte-doux: var(--alerte-doux);
 }
 
+/*
+ * Police et arrondis. Les arrondis de Tailwind sont un peu agrandis, pour que tous les écrans
+ * suivent sans retoucher chaque fichier : rounded-lg (12 px) pour les boutons et les champs,
+ * rounded-xl (16 px) pour les petits blocs, rounded-2xl (20 px) pour les cartes.
+ */
+@theme {
+  --font-sans:
+    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+}
+
 /* L'application occupe exactement l'écran : seule la zone de contenu défile. */
 html,
 body,
@@ -79,8 +100,20 @@ body,
 body {
   background-color: var(--fond);
   color: var(--encre);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * Repère du clavier : tout élément atteint avec Tab porte un contour bleu bien visible, même
+ * s'il n'a pas de style propre. La souris et le doigt ne le font pas apparaître.
+ */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /*

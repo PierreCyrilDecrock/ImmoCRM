@@ -13,7 +13,7 @@ type Props = {
 /** À afficher quand une page ou une liste n'a encore rien à montrer. */
 export default function EtatVide({ titre, children, icone = 'vide', action }: Props) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-bord-fort px-4 py-10 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-bord-fort/50 px-4 py-10 text-center">
       <Icone nom={icone} className="size-10 text-encre-douce" />
       <p className="text-lg font-semibold text-encre">{titre}</p>
       {children !== undefined && (

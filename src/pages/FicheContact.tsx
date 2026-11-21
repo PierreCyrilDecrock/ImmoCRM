@@ -317,11 +317,13 @@ export default function FicheContact() {
         <LienAction
           libelle="SMS"
           icone="sms"
+          variante="secondaire"
           href={portable === undefined ? undefined : lienSms(portable)}
         />
         <LienAction
           libelle="Courriel"
           icone="courriel"
+          variante="secondaire"
           href={courriel === undefined ? undefined : `mailto:${courriel}`}
         />
       </div>

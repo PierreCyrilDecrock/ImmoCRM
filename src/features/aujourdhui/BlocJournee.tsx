@@ -62,7 +62,7 @@ export default function BlocJournee({
           <span className="min-w-0 flex-1 text-lg font-semibold text-encre">{titre}</span>
           {compteur !== null && (
             <span
-              className={`min-w-8 rounded-full px-2.5 py-0.5 text-center text-sm font-bold ${couleurCompteur}`}
+              className={`min-w-8 rounded-full px-2.5 py-0.5 text-center text-sm font-bold tabular-nums ${couleurCompteur}`}
             >
               {compteur}
               <span className="sr-only"> {compteur > 1 ? 'éléments' : 'élément'}</span>

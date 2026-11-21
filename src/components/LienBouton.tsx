@@ -18,7 +18,7 @@ type Props = {
 }
 
 const COULEURS = {
-  secondaire: 'bg-surface text-encre ring-1 ring-inset ring-bord-fort hover:bg-creux',
+  secondaire: 'bg-surface text-encre shadow-xs ring-1 ring-inset ring-bord-fort/40 hover:bg-creux',
   discret: 'text-accent hover:bg-accent-doux',
 }
 

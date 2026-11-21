@@ -6,9 +6,9 @@ export type GenreMessage = 'erreur' | 'succes' | 'info'
 type Props = { genre: GenreMessage; children: ReactNode }
 
 const COULEURS: Record<GenreMessage, string> = {
-  erreur: 'bg-danger-doux text-danger ring-danger/30',
-  succes: 'bg-succes-doux text-succes ring-succes/30',
-  info: 'bg-accent-doux text-accent-fort ring-accent/30',
+  erreur: 'bg-danger-doux text-danger ring-danger/20',
+  succes: 'bg-succes-doux text-succes ring-succes/20',
+  info: 'bg-accent-doux text-accent-fort ring-accent/20',
 }
 
 /**
@@ -19,7 +19,7 @@ export default function Message({ genre, children }: Props) {
   return (
     <div
       role={genre === 'erreur' ? 'alert' : 'status'}
-      className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm font-medium ring-1 ${COULEURS[genre]}`}
+      className={`flex items-start gap-2 rounded-xl px-3.5 py-3 text-sm font-medium ring-1 ${COULEURS[genre]}`}
     >
       <Icone nom={genre} className="mt-px size-5" />
       <div className="min-w-0 flex-1">{children}</div>
