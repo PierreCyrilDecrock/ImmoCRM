@@ -174,7 +174,7 @@ export default function Composants() {
       <Carte titre="Liens d'action">
         <div className="flex gap-2 md:max-w-md">
           <LienAction libelle="Appeler" icone="telephone" href="tel:+33639980000" />
-          <LienAction libelle="SMS" icone="sms" href="sms:+33639980000" />
+          <LienAction libelle="SMS" icone="sms" variante="secondaire" href="sms:+33639980000" />
           <LienAction libelle="Courriel" icone="courriel" />
         </div>
         <div className="mt-3 flex flex-wrap gap-2">

@@ -25,20 +25,22 @@ export default function Page({ titre, retour, actions, large = false, children }
 
   return (
     <div
-      className={`mx-auto flex w-full ${large ? 'max-w-[100rem]' : 'max-w-5xl'} flex-col gap-4 px-4 pt-4 pb-8 md:px-8 md:pt-8`}
+      className={`mx-auto flex w-full ${large ? 'max-w-[100rem]' : 'max-w-5xl'} flex-col gap-5 px-4 pt-4 pb-8 md:px-8 md:pt-8`}
     >
       <header>
         {retour !== undefined && (
           <Link
             to={retour.vers}
-            className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-accent hover:bg-accent-doux focus-visible:outline-2 focus-visible:outline-accent"
+            className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-encre-douce hover:bg-creux hover:text-encre focus-visible:outline-2 focus-visible:outline-accent"
           >
             <Icone nom="retour" className="size-5" />
             {retour.libelle}
           </Link>
         )}
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-encre md:text-3xl">{titre}</h1>
+          <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-encre md:text-4xl">
+            {titre}
+          </h1>
           {actions}
         </div>
       </header>

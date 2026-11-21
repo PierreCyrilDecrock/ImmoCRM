@@ -17,10 +17,10 @@ export default function Pastille({ choisie, onClick, children }: Props) {
       type="button"
       aria-pressed={choisie}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-medium ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         choisie
-          ? 'bg-accent text-sur-plein ring-accent'
-          : 'bg-surface text-encre ring-bord-fort hover:bg-creux'
+          ? 'bg-encre font-semibold text-fond ring-encre'
+          : 'bg-surface font-medium text-encre ring-bord-fort/40 hover:bg-creux'
       }`}
     >
       {children}

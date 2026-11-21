@@ -6,12 +6,17 @@ Pour voir tous les composants à l'écran : dans l'application, **Plus → Compo
 
 ## Principes
 
+**Le style (version 3, novembre 2026).** Un fond gris chaud, des cartes blanches au contour léger, une encre presque noire et **un seul bleu vif** réservé à l'action principale. Les choix allumés (pastilles, rôles) sont en noir, pour ne pas concurrencer le bleu. Beaucoup d'air, des titres serrés, des arrondis francs. Les maquettes de référence sont dans le canevas « ImmoCRM — nouveau style » (rangée « Version 3 »).
+
 - **Mobile d'abord.** Chaque écran est pensé pour le téléphone tenu d'une main, puis élargi.
 - **44 px minimum** pour tout ce qui se touche (boutons, lignes, liens, croix de fermeture) : classe `min-h-11` ou `size-11`.
 - **L'action principale est en bas** sur téléphone (navigation, boutons de formulaire, pied de fenêtre modale), là où le pouce arrive.
 - **Texte de saisie en 16 px** (`text-base`) : en dessous, l'iPhone zoome sur le champ.
 - **Tout en français**, sans jargon, messages d'erreur compris.
 - **Clair et sombre** suivent le réglage de l'appareil, sans réglage dans l'application.
+- **Contrastes vérifiés** dans les deux thèmes : texte courant au moins 4,5:1 sur son fond, contours des champs au moins 3:1. Une couleur qui distingue deux états diffère aussi en clarté, pas seulement en teinte.
+- **Le clavier se voit.** Tout élément atteint avec Tab porte un contour bleu (règle commune dans `src/index.css`) ; la souris et le doigt ne l'affichent pas.
+- **Les petits détails comptent** : les compteurs et les heures en chiffres de même largeur (classe `tabular-nums`, à ne pas mettre sur un texte courant : elle élargit le tiret d'Inter) ; un état vide dit quelque chose de positif ; une action qui n'apparaît qu'au survol sur ordinateur reste visible sur téléphone (`@media (hover: none)`) et au clavier (`focus-within`).
 
 ## Trois tailles d'écran
 
@@ -26,6 +31,8 @@ L'application occupe exactement l'écran : le bandeau « Connexion perdue » (si
 ## Couleurs
 
 Les couleurs sont des noms, définis dans `src/index.css` avec une valeur claire et une valeur sombre. **Ne jamais écrire une couleur en dur** (`bg-white`, `text-slate-700`…) : le thème sombre ne suivrait pas.
+
+Repères : fond `#f6f6f3` (sombre `#0d0e11`), surface `#ffffff` (`#17181c`), encre `#0e0f12` (`#f2f2f0`), accent `#3d3af5` (`#8c8aff`). Les autres valeurs sont dans `src/index.css`.
 
 | Nom | Usage | Exemples de classes |
 | --- | --- | --- |
@@ -44,14 +51,28 @@ Les couleurs sont des noms, définis dans `src/index.css` avec une valeur claire
 | `succes` / `succes-doux` | Confirmations | `text-succes`, `bg-succes-doux` |
 | `alerte` / `alerte-doux` | Avertissements (bandeau « Connexion perdue ») | `text-alerte`, `bg-alerte-doux` |
 
+## Arrondis et ombres
+
+Les arrondis de Tailwind sont agrandis dans `src/index.css` (bloc `@theme`), pour que tous les écrans suivent :
+
+| Classe | Taille | Usage |
+| --- | --- | --- |
+| `rounded-lg` | 12 px | Boutons, champs, onglets |
+| `rounded-xl` | 16 px | Petits blocs, cartes du pipeline, messages, capsule d'onglets |
+| `rounded-2xl` | 20 px | Cartes, listes, grosses touches d'action |
+| `rounded-3xl` | 28 px | Fenêtres modales et menu de création sur grand écran |
+| `rounded-full` | — | Pastilles, étiquettes, compteurs |
+
+Les cartes se détachent par un **contour d'un pixel** (`ring-1 ring-bord`), pas par une ombre. L'ombre est réservée à ce qui flotte (fenêtres, bouton « + », onglet actif) et au bouton principal (`shadow-sm shadow-accent/25`).
+
 ## Typographie
 
-Police du système de l'appareil (aucun fichier à télécharger).
+Police **Inter**, servie avec le site (paquet `@fontsource-variable/inter`, importé dans `src/index.css`) : aucun appel à un service extérieur, le même rendu sur iPhone, Android et ordinateur. Si elle manque, la police du système prend le relais.
 
 | Usage | Classes |
 | --- | --- |
-| Titre de page | `text-2xl font-bold tracking-tight` (`md:text-3xl`) — fourni par `Page` |
-| Titre de carte ou de section | `text-lg font-semibold` — fourni par `Carte` |
+| Titre de page | `text-[1.75rem] font-bold tracking-tight` (`md:text-4xl`) — fourni par `Page` |
+| Titre de carte ou de section | `text-lg font-semibold tracking-tight` — fourni par `Carte` |
 | Texte courant, saisie, boutons | `text-base` |
 | Texte secondaire, aide, erreur de champ | `text-sm` |
 | Mentions (version) | `text-xs` |
@@ -77,7 +98,7 @@ Les gestes sur une tâche (cocher avec la boucle de relance, reporter, ouvrir, r
 | Composant | Rôle | Propriétés principales |
 | --- | --- | --- |
 | `MiseEnPage` | Coquille une fois connecté : navigation + page en cours, et le bouton flottant de la saisie rapide. Déjà en place dans `App.tsx`, rien à faire. Le bas de chaque page garde une marge pour que le bouton ne cache pas la dernière ligne. La zone de page sert de repère (`relative`) : un élément placé en absolu, comme un texte `sr-only`, reste dans ce qui défile. | `enTete?`, `flottant?` (reçoit de quoi faire relire la page) |
-| `Navigation` | Barre du bas ou colonne de gauche. Les entrées sont dans `src/lib/navigation.ts` (six au maximum). | — |
+| `Navigation` | Barre du bas (translucide, l'entrée active repérée par une capsule bleue autour de son dessin) ou colonne de gauche (l'entrée active en blanc). Les entrées sont dans `src/lib/navigation.ts` (six au maximum). | — |
 | `Page` | Gabarit de **toute** page : titre, lien de retour, actions, contenu. Met aussi à jour le titre de l'onglet. | `titre`, `retour?` (`{ vers, libelle }`), `actions?`, `large?` (toute la largeur : tableaux) |
 | `Carte` | Bloc de contenu sur fond `surface`. | `titre?` |
 | `Liste` + `LigneListe` | Liste de lignes séparées par un filet. Une ligne ouvre une page (`vers`), lance une action (`onAction`) ou reste inerte. | `titre`, `detail?`, `icone?`, `vignette?` (petite photo carrée à gauche ; `null` : le dessin `icone` tient la place), `fin?`, `vers?`, `onAction?` |
@@ -101,16 +122,16 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 
 | Composant | Rôle | Propriétés principales |
 | --- | --- | --- |
-| `Bouton` | Bouton d'action. `principal` (un seul par écran), `secondaire`, `discret` (action de faible poids), `danger` (suppression). | `variante?`, `pleineLargeur?`, `icone?`, plus celles d'un bouton HTML |
+| `Bouton` | Bouton d'action. `principal` (bleu plein, un seul par écran), `secondaire` (blanc, contour léger), `discret` (texte bleu, action de faible poids), `danger` (suppression). | `variante?`, `pleineLargeur?`, `icone?`, plus celles d'un bouton HTML |
 | `ChampSaisie` | Champ sur une ligne : texte, courriel, téléphone, date, nombre. | `libelle`, `aide?`, `erreur?`, plus celles d'un champ HTML |
 | `ChampTexteLong` | Champ sur plusieurs lignes : note, compte rendu. Le micro du clavier du téléphone permet de dicter. | `libelle`, `aide?`, `erreur?`, `rows?` |
 | `ChampRecherche` | Champ de recherche : loupe, saisie, croix pour effacer. Pas de libellé visible. | `libelle` (lu par les lecteurs d'écran), `valeur`, `onChange(valeur)`, plus celles d'un champ HTML |
 | `ChampChoix` | Liste déroulante (sélecteur natif du téléphone). | `libelle`, `options` (`{ valeur, libelle }`), `optionVide?`, `aide?`, `erreur?` |
-| `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
-| `Pastille` | Une pastille à toucher, allumée quand elle est choisie : un choix en un geste (type d'activité, résultat d'un appel, température, raccourci de date). À grouper dans un `fieldset` avec sa `legend`, ou un `div role="group"` avec `aria-label`. | `choisie`, `onClick`, contenu |
+| `ChoixMultiple` | Plusieurs choix parmi quelques valeurs (les rôles d'un contact) : des pastilles à toucher, qui s'allument en noir. | `libelle`, `options`, `valeurs`, `onChange`, `aide?` |
+| `Pastille` | Une pastille à toucher, allumée en noir quand elle est choisie : un choix en un geste (type d'activité, résultat d'un appel, température, raccourci de date). À grouper dans un `fieldset` avec sa `legend`, ou un `div role="group"` avec `aria-label`. | `choisie`, `onClick`, contenu |
 | `ChampEtiquettes` | Étiquettes libres : on écrit, on valide par « Entrée », une virgule ou « Ajouter » ; on touche une étiquette pour la retirer. | `libelle`, `etiquettes`, `onChange`, `ajouter` (règle de nettoyage et de doublon), `aide?` |
-| `Onglets` | Vues d'une même liste (En retard, Aujourd'hui…) : des pastilles, une seule allumée, avec un compteur facultatif. Elles passent à la ligne sur téléphone. | `libelle`, `options` (`{ valeur, libelle, compteur? }`), `valeur`, `onChange` |
-| `LienAction` | Grosse touche qui ouvre une autre application du téléphone (`tel:`, `sms:`, `mailto:`). Sans `href`, elle reste visible mais grisée. | `libelle`, `icone`, `href?` |
+| `Onglets` | Vues d'une même liste (En retard, Aujourd'hui…) : une commande segmentée (capsule grise, l'onglet choisi en blanc), avec un compteur facultatif. Sur téléphone, la capsule défile de côté et ramène l'onglet choisi dans la partie visible. | `libelle`, `options` (`{ valeur, libelle, compteur? }`), `valeur`, `onChange` |
+| `LienAction` | Grosse touche qui ouvre une autre application du téléphone (`tel:`, `sms:`, `mailto:`). Sans `href`, elle reste visible mais grisée. Dans un groupe, une seule est `principal` (Appeler, en bleu) ; les autres sont `secondaire` (blanches). | `libelle`, `icone`, `href?`, `variante?` |
 | `LienBouton` | Lien à l'allure d'un petit bouton (44 px), pour les gestes d'une ligne de liste : ouvrir une fiche (`vers`), appeler ou lancer l'itinéraire (`href`, avec `nouvelOnglet` pour les cartes). | `icone`, `vers?` ou `href?`, `variante?` (`secondaire`, `discret`), `nouvelOnglet?`, `onClick?` |
 
 Une `LigneListe` coupe un texte trop long : placée dans une grille, son conteneur doit porter `min-w-0`, sinon la page s'élargit sur téléphone.
@@ -171,5 +192,6 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 - `public/manifest.webmanifest` : nom, couleurs, icônes. Les chemins y sont relatifs, pour fonctionner quel que soit le chemin de base du site.
 - `public/favicon.svg` et `public/icones/` : icône de l'application (192 et 512 px, version « masquable » pour Android, version Apple).
 - `index.html` : lien vers le manifeste, icône Apple, couleur de thème claire et sombre.
+- L'icône est une maison blanche sur le bleu d'accent (`#3d3af5`). Les images PNG ont été produites à partir de `favicon.svg` ; à refaire si l'icône change.
 
 Il n'y a **pas de mode hors réseau** (aucun fichier n'est mis en réserve dans l'appareil) : sans réseau, l'application affiche le bandeau et les enregistrements échouent.

@@ -13,8 +13,8 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'> & {
 }
 
 const COULEURS: Record<VarianteBouton, string> = {
-  principal: 'bg-accent text-sur-plein hover:bg-accent-fort',
-  secondaire: 'bg-surface text-encre ring-1 ring-inset ring-bord-fort hover:bg-creux',
+  principal: 'bg-accent text-sur-plein shadow-sm shadow-accent/25 hover:bg-accent-fort',
+  secondaire: 'bg-surface text-encre shadow-xs ring-1 ring-inset ring-bord-fort/40 hover:bg-creux',
   discret: 'text-accent hover:bg-accent-doux',
   danger: 'bg-danger text-sur-plein hover:opacity-90',
 }

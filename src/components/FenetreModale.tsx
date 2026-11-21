@@ -45,12 +45,15 @@ export default function FenetreModale({ ouverte, titre, onFermer, children, pied
       onClick={(evenement) => {
         if (evenement.target === evenement.currentTarget) onFermer()
       }}
-      className="m-0 h-dvh max-h-none w-full max-w-none bg-surface text-encre backdrop:bg-black/50 md:m-auto md:h-fit md:max-h-[85dvh] md:max-w-lg md:rounded-2xl md:shadow-xl md:ring-1 md:ring-bord"
+      className="m-0 h-dvh max-h-none w-full max-w-none bg-surface text-encre backdrop:bg-black/45 backdrop:backdrop-blur-[2px] md:m-auto md:h-fit md:max-h-[85dvh] md:max-w-lg md:rounded-3xl md:shadow-2xl md:ring-1 md:ring-bord"
     >
       {ouverte && (
         <div className="flex h-dvh flex-col md:h-auto md:max-h-[85dvh]">
           <header className="flex items-center gap-2 border-b border-bord py-1 pr-1 pl-4">
-            <h2 id={idTitre} className="min-w-0 flex-1 truncate text-lg font-semibold">
+            <h2
+              id={idTitre}
+              className="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight"
+            >
               {titre}
             </h2>
             <button

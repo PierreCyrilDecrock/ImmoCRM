@@ -79,7 +79,7 @@ export default function SaisieRapide({ rafraichir }: Props) {
         aria-haspopup="dialog"
         aria-keyshortcuts="N"
         title="Saisie rapide (N)"
-        className="absolute right-[max(1rem,env(safe-area-inset-right))] bottom-4 z-10 flex size-14 items-center justify-center rounded-full bg-accent text-sur-plein shadow-lg ring-4 ring-fond hover:bg-accent-fort focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:right-8 md:bottom-8"
+        className="absolute right-[max(1rem,env(safe-area-inset-right))] bottom-4 z-10 flex size-14 items-center justify-center rounded-2xl bg-accent text-sur-plein shadow-lg shadow-accent/30 ring-4 ring-fond hover:bg-accent-fort focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:right-8 md:bottom-8"
       >
         <Icone nom="ajouter" className="size-7" />
       </button>
