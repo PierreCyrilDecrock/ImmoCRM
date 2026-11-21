@@ -1,11 +1,16 @@
 import BandeauHorsLigne from './components/BandeauHorsLigne'
+import EtatEnregistrement from './components/EtatEnregistrement'
 import FournisseurNotifications from './components/FournisseurNotifications'
 import MiseEnPage from './components/MiseEnPage'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import FournisseurSession from './features/connexion/FournisseurSession'
 import { useSession } from './features/connexion/session-contexte'
 import BarreRecherche from './features/recherche/BarreRecherche'
+import BoutonCreer from './features/saisie/BoutonCreer'
+import RecentesColonne from './features/saisie/RecentesColonne'
 import SaisieRapide from './features/saisie/SaisieRapide'
+import { pastilleRetards } from './features/taches/retards'
+import { useTachesEnRetard } from './features/taches/suivi-retards'
 import { erreurConfigSupabase, supabase } from './lib/supabase'
 import Aujourdhui from './pages/Aujourdhui'
 import Biens from './pages/Biens'
@@ -28,6 +33,32 @@ import Pipelines from './pages/Pipelines'
 import Plus from './pages/Plus'
 import Reglages from './pages/Reglages'
 import Taches from './pages/Taches'
+
+/**
+ * La coquille une fois connecté : la navigation et ce qu'elle porte (recherche, fiches
+ * récentes, « Créer », état des enregistrements, pastille des tâches en retard), la page en
+ * cours et la saisie rapide.
+ */
+function Coquille() {
+  const retards = pastilleRetards(useTachesEnRetard())
+  return (
+    <MiseEnPage
+      enTete={<BarreRecherche />}
+      colonne={{
+        recherche: <BarreRecherche disposition="colonne" />,
+        suite: <RecentesColonne />,
+        pied: (
+          <>
+            <BoutonCreer />
+            <EtatEnregistrement />
+          </>
+        ),
+      }}
+      pastilles={retards === null ? {} : { '/taches': retards }}
+      flottant={(rafraichir) => <SaisieRapide rafraichir={rafraichir} />}
+    />
+  )
+}
 
 /**
  * Choisit ce qui s'affiche selon la session. Sans session, seuls les écrans de connexion
@@ -57,14 +88,7 @@ function Pages() {
   return (
     <HashRouter>
       <Routes>
-        <Route
-          element={
-            <MiseEnPage
-              enTete={<BarreRecherche />}
-              flottant={(rafraichir) => <SaisieRapide rafraichir={rafraichir} />}
-            />
-          }
-        >
+        <Route element={<Coquille />}>
           <Route path="/" element={<Aujourdhui />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/contacts/:id" element={<FicheContact />} />

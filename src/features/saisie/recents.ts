@@ -44,6 +44,20 @@ export function libelleGenreFiche(genre: GenreFiche): string {
   return GENRES[genre].libelle
 }
 
+/**
+ * Initiales d'une fiche, pour la pastille ronde qui la représente : les premières lettres
+ * des deux premiers mots (« Camille Fictif » : « CF »). Texte vide s'il n'y a aucune lettre.
+ */
+export function initialesDe(titre: string): string {
+  return titre
+    .split(/[\s-]+/)
+    .map((mot) => mot.match(/\p{L}/u)?.[0] ?? '')
+    .filter((lettre) => lettre !== '')
+    .slice(0, 2)
+    .join('')
+    .toLocaleUpperCase('fr')
+}
+
 /** Ajoute (ou remonte en tête) une fiche consultée ; la liste reste bornée. */
 export function noterConsultation(
   liste: readonly FicheRecente[],

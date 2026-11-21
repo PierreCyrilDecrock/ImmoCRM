@@ -30,3 +30,20 @@ export function estAnnulation(appui: AppuiAnnuler): boolean {
   if (appui.dansUnChamp || appui.altKey || appui.shiftKey) return false
   return (appui.ctrlKey || appui.metaKey) && appui.key.toLowerCase() === 'z'
 }
+
+/** Vrai sur un appareil Apple (Mac, iPad avec clavier) : la touche de commande y est ⌘. */
+export function estAppareilApple(systeme: string): boolean {
+  return /mac|iphone|ipad|ipod/i.test(systeme)
+}
+
+/** Le système de l'appareil, tel que le navigateur le décrit (texte vide si inconnu). */
+function systemeDeLAppareil(): string {
+  if (typeof navigator === 'undefined') return ''
+  const donnees = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
+  return donnees?.platform ?? navigator.platform ?? navigator.userAgent
+}
+
+/** Le rappel du raccourci de la recherche : « ⌘K » sur un appareil Apple, « Ctrl K » ailleurs. */
+export function rappelRecherche(systeme: string = systemeDeLAppareil()): string {
+  return estAppareilApple(systeme) ? '⌘K' : 'Ctrl K'
+}

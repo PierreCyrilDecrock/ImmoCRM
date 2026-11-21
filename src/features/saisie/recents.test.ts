@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   adresseFiche,
+  initialesDe,
   lireRecentes,
   MAX_RECENTES,
   noterConsultation,
@@ -74,5 +75,19 @@ describe('adresseFiche', () => {
     expect(adresseFiche({ genre: 'bien', id: '2' })).toBe('/biens/2')
     expect(adresseFiche({ genre: 'vendeur', id: '3' })).toBe('/pipelines/vendeurs/3')
     expect(adresseFiche({ genre: 'acquereur', id: '4' })).toBe('/pipelines/acquereurs/4')
+  })
+})
+
+describe('initialesDe', () => {
+  it('prend la première lettre des deux premiers mots', () => {
+    expect(initialesDe('Camille Fictif')).toBe('CF')
+    expect(initialesDe('Jean-Pierre Martin-Exemple')).toBe('JP')
+    expect(initialesDe('élodie test')).toBe('ÉT')
+  })
+
+  it('se contente d’une lettre pour un seul mot, et de rien sans lettre', () => {
+    expect(initialesDe('Fictif')).toBe('F')
+    expect(initialesDe('  ')).toBe('')
+    expect(initialesDe('12 bis')).toBe('B')
   })
 })
