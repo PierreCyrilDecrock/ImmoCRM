@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Bouton from '../components/Bouton'
+import BoutonCopier from '../components/BoutonCopier'
 import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
 import Etiquette, { type GenreEtiquette } from '../components/Etiquette'
@@ -340,7 +341,11 @@ export default function FicheContact() {
             <dl className="divide-y divide-bord">
               {joindre !== '' && <Information nom="Personne à joindre">{joindre}</Information>}
               {contact.telephones.map((numero, rang) => (
-                <Information key={numero} nom={rang === 0 ? 'Téléphone' : `Téléphone ${rang + 1}`}>
+                <Information
+                  key={numero}
+                  nom={rang === 0 ? 'Téléphone' : `Téléphone ${rang + 1}`}
+                  fin={<BoutonCopier valeur={formaterTelephone(numero)} quoi="le numéro" />}
+                >
                   {appelPermis ? (
                     <a href={lienAppel(numero)} className={CLASSES_LIEN}>
                       {formaterTelephone(numero)}
@@ -354,13 +359,18 @@ export default function FicheContact() {
                 <Information
                   key={adresseCourriel}
                   nom={rang === 0 ? 'Courriel' : `Courriel ${rang + 1}`}
+                  fin={<BoutonCopier valeur={adresseCourriel} quoi="le courriel" />}
                 >
                   <a href={`mailto:${adresseCourriel}`} className={CLASSES_LIEN}>
                     {adresseCourriel}
                   </a>
                 </Information>
               ))}
-              {adresse !== '' && <Information nom="Adresse">{adresse}</Information>}
+              {adresse !== '' && (
+                <Information nom="Adresse" fin={<BoutonCopier valeur={adresse} quoi="l'adresse" />}>
+                  {adresse}
+                </Information>
+              )}
             </dl>
           )}
         </Carte>

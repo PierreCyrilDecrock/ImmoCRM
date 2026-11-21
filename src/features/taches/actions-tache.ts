@@ -57,18 +57,36 @@ export function useActionsTache(onChangement: () => void) {
     })
   }
 
+  /**
+   * Reporte une tâche et propose « Annuler » dans la confirmation, qui rétablit l'ancienne
+   * date tant que le message est affiché.
+   */
+  function reporter(tache: Tache, echeance: string, aujourdhui: string): Promise<boolean> {
+    const ancienne = tache.echeance
+    return executer(tache.id, async () => {
+      const resultat = await reporterTache(exigerSupabase(), tache.id, echeance)
+      if (!resultat.ok) return `Le report a échoué. ${resultat.erreur.message}`
+      notifier('succes', `Reportée au ${ouRetrouver(echeance, aujourdhui)}`, {
+        libelle: 'Annuler',
+        onAction: () => {
+          void executer(tache.id, async () => {
+            const retour = await reporterTache(exigerSupabase(), tache.id, ancienne)
+            if (!retour.ok) return `L'annulation a échoué. ${retour.erreur.message}`
+            notifier('succes', `Report annulé : de retour au ${ouRetrouver(ancienne, aujourdhui)}`)
+            return null
+          })
+        },
+      })
+      return null
+    })
+  }
+
   return {
     occupee,
     cocher: (tache: Tache, aujourdhui: string) => cloturer(tache, aujourdhui, 'faite'),
     annuler: (tache: Tache, aujourdhui: string, arreterSerie: boolean) =>
       cloturer(tache, aujourdhui, 'annulee', arreterSerie),
-    reporter: (tache: Tache, echeance: string, aujourdhui: string) =>
-      executer(tache.id, async () => {
-        const resultat = await reporterTache(exigerSupabase(), tache.id, echeance)
-        if (!resultat.ok) return `Le report a échoué. ${resultat.erreur.message}`
-        notifier('succes', `Reportée au ${ouRetrouver(echeance, aujourdhui)}`)
-        return null
-      }),
+    reporter,
     rouvrir: (tache: Tache) =>
       executer(tache.id, async () => {
         const resultat = await rouvrirTache(exigerSupabase(), tache.id)

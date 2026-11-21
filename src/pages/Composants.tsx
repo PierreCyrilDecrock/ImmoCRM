@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Bouton from '../components/Bouton'
+import BoutonCopier from '../components/BoutonCopier'
 import Carte from '../components/Carte'
 import ChampChoix from '../components/ChampChoix'
 import ChampEtiquettes from '../components/ChampEtiquettes'
@@ -10,14 +11,19 @@ import EtatChargement from '../components/EtatChargement'
 import EtatVide from '../components/EtatVide'
 import Etiquette from '../components/Etiquette'
 import FenetreModale from '../components/FenetreModale'
+import Information from '../components/Information'
 import LienAction from '../components/LienAction'
 import LienBouton from '../components/LienBouton'
+import LigneGlissable from '../components/LigneGlissable'
 import LigneListe from '../components/LigneListe'
 import Liste from '../components/Liste'
 import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
 import Onglets from '../components/Onglets'
+import { libelleJour } from '../features/taches/echeances'
+import ReportsRapides from '../features/taches/ReportsRapides'
+import { dateDuJour } from '../lib/dates'
 
 /**
  * Vitrine du système de design : tous les composants réutilisables, avec des données
@@ -29,6 +35,18 @@ export default function Composants() {
   const [roles, setRoles] = useState<string[]>(['vendeur'])
   const [etiquettes, setEtiquettes] = useState(['investisseur'])
   const [onglet, setOnglet] = useState('aujourdhui')
+  const aujourdhui = dateDuJour()
+  const [echeance, setEcheance] = useState(aujourdhui)
+
+  /** Report d'exemple : enregistré aussitôt, avec « Annuler » dans la confirmation. */
+  function reporterExemple(date: string) {
+    const ancienne = echeance
+    setEcheance(date)
+    notifier('succes', `Reportée : ${libelleJour(date, aujourdhui)} (exemple).`, {
+      libelle: 'Annuler',
+      onAction: () => setEcheance(ancienne),
+    })
+  }
 
   return (
     <Page titre="Composants de l'interface" retour={{ vers: '/plus', libelle: 'Plus' }}>
@@ -187,6 +205,68 @@ export default function Composants() {
           <LienBouton icone="contacts" variante="discret" vers="/contacts">
             Fiche
           </LienBouton>
+        </div>
+      </Carte>
+
+      <Carte titre="Gestes rapides">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-encre-douce">
+              Reports en un geste. Échéance de l'exemple :{' '}
+              <span className="font-semibold text-encre">{libelleJour(echeance, aujourdhui)}</span>
+            </p>
+            <ReportsRapides
+              aujourdhui={aujourdhui}
+              titre="Rappeler Camille Fictif"
+              avecLibelle
+              onReporter={reporterExemple}
+              onAutreDate={() => notifier('succes', 'Ici s’ouvre la fenêtre « Reporter à… ».')}
+            />
+          </div>
+
+          <dl className="divide-y divide-bord">
+            <Information
+              nom="Téléphone"
+              fin={<BoutonCopier valeur="06 39 98 00 00" quoi="le numéro" />}
+            >
+              06 39 98 00 00
+            </Information>
+            <Information
+              nom="Adresse"
+              fin={<BoutonCopier valeur="12 rue Imaginaire, 00000 Fictiveville" quoi="l'adresse" />}
+            >
+              12 rue Imaginaire, 00000 Fictiveville
+            </Information>
+          </dl>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-encre-douce">
+              Sur écran tactile, glissez une ligne vers la gauche.
+            </p>
+            <ul className="divide-y divide-bord overflow-hidden rounded-xl ring-1 ring-bord">
+              {['Envoyer l’avis de valeur', 'Rappeler Dominique Exemple'].map((titre) => (
+                <LigneGlissable
+                  key={titre}
+                  actions={[
+                    {
+                      libelle: 'Reporter',
+                      icone: 'horloge',
+                      genre: 'alerte',
+                      onAction: () => notifier('succes', `« ${titre} » reportée (exemple).`),
+                    },
+                    {
+                      libelle: 'Fait',
+                      icone: 'succes',
+                      genre: 'succes',
+                      onAction: () => notifier('succes', `« ${titre} » faite (exemple).`),
+                    },
+                  ]}
+                >
+                  <p className="min-h-11 px-4 py-3 text-base text-encre">{titre}</p>
+                </LigneGlissable>
+              ))}
+            </ul>
+          </div>
         </div>
       </Carte>
 

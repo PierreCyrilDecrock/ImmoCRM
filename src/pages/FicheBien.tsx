@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Bouton from '../components/Bouton'
+import BoutonCopier from '../components/BoutonCopier'
 import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
 import Etiquette from '../components/Etiquette'
@@ -263,11 +264,14 @@ export default function FicheBien() {
       )}
 
       <div className="flex flex-col gap-2">
-        {(bien.complement !== '' || commune !== '') && (
-          <p className="text-base break-words text-encre-douce">
-            {[bien.complement, commune].filter((morceau) => morceau !== '').join(' · ')}
-          </p>
-        )}
+        <div className="group/ligne flex min-w-0 items-center gap-1">
+          {(bien.complement !== '' || commune !== '') && (
+            <p className="min-w-0 text-base break-words text-encre-douce">
+              {[bien.complement, commune].filter((morceau) => morceau !== '').join(' · ')}
+            </p>
+          )}
+          <BoutonCopier valeur={adresseBien(bien)} quoi="l'adresse" />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {archive && <Etiquette genre="alerte">Archivé</Etiquette>}
           <Etiquette genre={genreStatut(bien.statut)}>{libelleStatut(bien.statut)}</Etiquette>

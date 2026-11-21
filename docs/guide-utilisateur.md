@@ -40,6 +40,9 @@ Les objectifs et le tableau de bord de la revue arriveront avec la version 3.
 ## Bon à savoir
 
 - **Retrouver quelqu'un** : le champ en haut de chaque page cherche par nom, téléphone (sous toutes ses formes), courriel ou adresse. Sur ordinateur, « / » y mène directement et « N » ouvre le menu « + ».
+- **Reporter en un toucher** : sur la prochaine action d'un contact et dans la page Tâches, « Demain », « Dans 3 jours », « Lundi », ou le calendrier pour une autre date. Une erreur ? « Annuler » dans le message qui confirme (ou Ctrl Z sur ordinateur) remet l'ancienne date.
+- **Sur téléphone, page Tâches** : glisser une tâche vers la gauche découvre « Reporter » et « Fait ». Les boutons de la ligne font la même chose.
+- **Copier** un numéro, un courriel ou une adresse : le petit bouton « Copier » à côté (sur ordinateur, il apparaît au survol de la ligne).
 - **Les biens** se cherchent depuis la page Biens (par morceau d'adresse).
 - **Le journal complet** est dans Plus → Journal, filtrable par période et par type.
 - **Hors réseau**, l'application ne s'ouvre pas : il faut une connexion.

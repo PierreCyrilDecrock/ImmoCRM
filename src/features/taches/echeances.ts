@@ -1,4 +1,10 @@
-import { ajouterJours, ecartJours, finDeSemaine, formaterJourCourt } from '../../lib/dates'
+import {
+  ajouterJours,
+  ecartJours,
+  finDeSemaine,
+  formaterJourCourt,
+  jourDeSemaine,
+} from '../../lib/dates'
 
 /**
  * Où tombe une tâche (les vues de la page Tâches) et comment la reporter. Toutes les dates
@@ -71,4 +77,28 @@ export function libelleJour(date: string, aujourdhui: string): string {
   if (ecart === 1) return 'Demain'
   if (ecart === -1) return 'Hier'
   return formaterJourCourt(date, aujourdhui)
+}
+
+/** Les reports proposés d'un toucher, sans fenêtre (rangée `ReportsRapides`). */
+export type ReportRapide = 'demain' | 'trois_jours' | 'lundi'
+
+/** Le prochain lundi strictement après ce jour : un lundi renvoie le lundi suivant. */
+export function prochainLundi(aujourdhui: string): string {
+  return ajouterJours(aujourdhui, 8 - jourDeSemaine(aujourdhui))
+}
+
+/**
+ * Les trois reports en un geste et leur date, comptée depuis aujourd'hui : demain, dans
+ * 3 jours, lundi prochain. Deux choix peuvent tomber le même jour (le vendredi, « Dans 3
+ * jours » est lundi ; le dimanche, « Demain » aussi) : la rangée garde ses trois boutons à
+ * leur place, pour que le geste reste le même chaque jour.
+ */
+export function reportsRapides(
+  aujourdhui: string,
+): readonly { valeur: ReportRapide; libelle: string; date: string }[] {
+  return [
+    { valeur: 'demain', libelle: 'Demain', date: ajouterJours(aujourdhui, 1) },
+    { valeur: 'trois_jours', libelle: 'Dans 3 jours', date: ajouterJours(aujourdhui, 3) },
+    { valeur: 'lundi', libelle: 'Lundi', date: prochainLundi(aujourdhui) },
+  ]
 }

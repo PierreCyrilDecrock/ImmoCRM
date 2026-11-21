@@ -10,7 +10,7 @@ Ce tableau suit les 53 étapes du [plan de développement](plan-developpement.md
 | --- | --- | --- |
 | Phase 0 — Fondations | 5 sur 5 | terminée |
 | Version 1 — Le quotidien | 14 sur 14 | livrée (version 1.0.0, 20/11/2026) |
-| Interface — version 3 | 0 sur 8 (D.0 faite) | en cours |
+| Interface — version 3 | 1 sur 8 (D.0 faite) | en cours |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
 | Version 4 — Le confort | 0 sur 7 | à faire |
@@ -49,7 +49,7 @@ Ce tableau suit les 53 étapes du [plan de développement](plan-developpement.md
 | Étape | Intitulé | État | Date | Notes |
 | --- | --- | --- | --- | --- |
 | D.0 | Système de design « version 3 » | terminée | 21/11/2026 | Nouveau style choisi sur maquettes (canevas « ImmoCRM — nouveau style », version 3) et installé dans le code, sans réorganiser les écrans : couleurs claires et sombres (fond gris chaud, encre presque noire, un seul bleu vif, contrastes vérifiés), police Inter servie avec le site, arrondis agrandis pour tous les écrans, contour bleu au clavier partout. Composants repris : boutons, cartes, onglets en commande segmentée, pastilles et rôles choisis en noir, étiquettes, messages, fenêtres, navigation (capsule autour de l'entrée active), titres de page, grosses touches d'action (Appeler en bleu, SMS et Courriel en blanc), bouton « + ». Icône de l'application et couleurs de thème mises à jour. `docs/design.md` à jour. Aucune migration. |
-| D.1 | Gestes rapides communs | à faire | | |
+| D.1 | Gestes rapides communs | terminée | 21/11/2026 | Trois gestes communs. Reports en un geste (`ReportsRapides` : demain, dans 3 jours, lundi prochain, calendrier) enregistrés aussitôt, confirmés avec « Annuler » (aussi Ctrl Z) qui rétablit l'ancienne date ; sur la prochaine action de la fiche Contact et les lignes de la page Tâches. « Copier » (`BoutonCopier`) à côté des téléphones, courriels et adresse de la fiche Contact et de l'adresse de la fiche Bien, visible au survol sur ordinateur, toujours sur écran tactile. Ligne glissable au doigt (`LigneGlissable`) sur la page Tâches : « Reporter » ouvre la fenêtre de report, « Fait » coche (boucle de relance si un contact est lié). Logique testée (dates proposées, seuil du glisser, copie, Ctrl Z). Vérifié au navigateur en téléphone tactile et ordinateur. Aucune migration. |
 | D.2 | Navigation : fiches récentes, création et retards | à faire | | |
 | D.3 | Aujourd'hui : en-tête, carte « Maintenant » et progression | à faire | | |
 | D.4 | Aujourd'hui : relances plus parlantes et gestes rapides | à faire | | |

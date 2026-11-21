@@ -20,7 +20,10 @@ export function useGestesTache(options: {
 }): {
   occupee: string | null
   cocher: (affichee: TacheAffichee) => void
+  /** Ouvre la fenêtre de report (délais et calendrier). */
   reporter: (affichee: TacheAffichee) => void
+  /** Reporte aussitôt à cette date, avec « Annuler » dans la confirmation. */
+  reporterA: (affichee: TacheAffichee, echeance: string) => void
   ouvrir: (affichee: TacheAffichee) => void
   rouvrir: (affichee: TacheAffichee) => void
   fenetres: ReactNode
@@ -82,6 +85,7 @@ export function useGestesTache(options: {
     occupee: actions.occupee,
     cocher,
     reporter: setAReporter,
+    reporterA: (affichee, echeance) => void actions.reporter(affichee.tache, echeance, aujourdhui),
     ouvrir: setOuverte,
     rouvrir: (affichee) => void actions.rouvrir(affichee.tache),
     fenetres,

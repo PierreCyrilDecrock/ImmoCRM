@@ -45,16 +45,5 @@ export function raccourciDe(appui: Appui): Raccourci | null {
   return creation === undefined ? null : { genre: 'creer', creation: creation.creation }
 }
 
-/** Vrai si l'élément reçoit du texte tapé (champ, zone de texte, liste, zone éditable). */
-export function estUnChamp(element: Element | null): boolean {
-  if (element === null) return false
-  if (element instanceof HTMLElement && element.isContentEditable) return true
-  const balise = element.tagName
-  if (balise === 'TEXTAREA' || balise === 'SELECT') return true
-  if (balise !== 'INPUT') return false
-  // Une case à cocher ou un bouton ne reçoit pas de texte.
-  const type = (element.getAttribute('type') ?? 'text').toLowerCase()
-  return !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file'].includes(
-    type,
-  )
-}
+/** Vrai si l'élément reçoit du texte tapé : commun à tous les raccourcis (`src/lib/clavier.ts`). */
+export { estUnChamp } from '../../lib/clavier'

@@ -1,0 +1,32 @@
+/** Outils communs aux raccourcis clavier. */
+
+/** Vrai si l'élément reçoit du texte tapé (champ, zone de texte, liste, zone éditable). */
+export function estUnChamp(element: Element | null): boolean {
+  if (element === null) return false
+  if (element instanceof HTMLElement && element.isContentEditable) return true
+  const balise = element.tagName
+  if (balise === 'TEXTAREA' || balise === 'SELECT') return true
+  if (balise !== 'INPUT') return false
+  // Une case à cocher ou un bouton ne reçoit pas de texte.
+  const type = (element.getAttribute('type') ?? 'text').toLowerCase()
+  return !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file'].includes(
+    type,
+  )
+}
+
+/** Ce qu'on lit d'un appui de touche pour « Annuler » (un `KeyboardEvent` convient). */
+export type AppuiAnnuler = {
+  key: string
+  ctrlKey: boolean
+  metaKey: boolean
+  altKey: boolean
+  shiftKey: boolean
+  /** Dans un champ, Ctrl Z défait la saisie : il ne commande rien d'autre. */
+  dansUnChamp: boolean
+}
+
+/** Vrai pour Ctrl Z (⌘ Z sur Mac) hors d'un champ : le geste « Annuler » du clavier. */
+export function estAnnulation(appui: AppuiAnnuler): boolean {
+  if (appui.dansUnChamp || appui.altKey || appui.shiftKey) return false
+  return (appui.ctrlKey || appui.metaKey) && appui.key.toLowerCase() === 'z'
+}
