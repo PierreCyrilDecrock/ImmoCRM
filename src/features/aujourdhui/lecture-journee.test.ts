@@ -62,11 +62,32 @@ describe('lireJournee', () => {
     expect(groupe?.alertes).toEqual([{ genre: 'export_a_faire', cle: 'export', jours: 7 }])
   })
 
+  it('compte les tâches faites depuis minuit, heure de Paris, sans lire de ligne', async () => {
+    const { client, appels } = fauxClient({ data: [], error: null, count: 3 })
+    const journee = await lireJournee(client, '2026-11-17')
+    expect(journee.faitesDuJour).toEqual({ ok: true, donnees: 3 })
+    expect(appels).toContainEqual(['select', 'id', { count: 'exact', head: true }])
+    expect(appels).toContainEqual(['eq', 'etat', 'faite'])
+    expect(appels).toContainEqual(['gte', 'cloturee_le', '2026-11-16T23:00:00.000Z'])
+  })
+
+  it('reprend le nom affiché des réglages déjà lus pour les sauvegardes', async () => {
+    const { client } = fauxClient({
+      data: [{ nom_affiche: 'Camille', dernier_export_le: '2026-11-15T09:00:00Z' }],
+      error: null,
+      count: 0,
+    })
+    const journee = await lireJournee(client, '2026-11-17')
+    expect(journee.nomAffiche).toBe('Camille')
+  })
+
   it('montre l’erreur dans chaque bloc quand la base ne répond pas', async () => {
     const { client } = fauxClient('panne')
     const journee = await lireJournee(client, '2026-11-17')
     expect(journee.agenda.ok).toBe(false)
     expect(journee.alertes.ok).toBe(false)
     expect(journee.nouveautes.ok).toBe(false)
+    expect(journee.faitesDuJour.ok).toBe(false)
+    expect(journee.nomAffiche).toBe('')
   })
 })

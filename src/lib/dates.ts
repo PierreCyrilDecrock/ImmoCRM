@@ -185,3 +185,31 @@ export function instantDeParis(date: string, heure: string): string {
   const affiche = new Date(`${dateDuJour(supposition)}T${heureDuMoment(supposition)}:00Z`)
   return new Date(2 * supposition.getTime() - affiche.getTime()).toISOString()
 }
+
+/**
+ * Numéro de la semaine, à la norme ISO (celle des agendas français) : la semaine 1 est celle
+ * qui contient le premier jeudi de l'année. `2026-11-21` est en semaine 47 ; `2027-01-01`,
+ * un vendredi, est encore en semaine 53 de 2026.
+ */
+export function numeroSemaine(date: string): number {
+  // Le jeudi de la même semaine décide de l'année à laquelle elle appartient.
+  const jeudi = ajouterJours(date, 4 - jourDeSemaine(date))
+  const premierJanvier = `${jeudi.slice(0, 4)}-01-01`
+  return Math.floor(ecartJours(premierJanvier, jeudi) / 7) + 1
+}
+
+/** « Samedi 21 novembre · semaine 47 ». Vide si la date est illisible. */
+export function formaterJourEtSemaine(date: string): string {
+  if (!estDateValide(date)) return ''
+  return `${formaterJourLong(date)} · semaine ${numeroSemaine(date)}`
+}
+
+/** Les minutes écoulées depuis minuit pour une heure `HH:MM` (ou `HH:MM:SS`) ; `null` si illisible. */
+export function minutesDuJour(heure: string): number | null {
+  const correspondance = /^(\d{1,2}):(\d{2})/.exec(heure)
+  if (correspondance === null) return null
+  const heures = Number(correspondance[1])
+  const minutes = Number(correspondance[2])
+  if (heures > 23 || minutes > 59) return null
+  return heures * 60 + minutes
+}

@@ -4,14 +4,15 @@ Une seule question chaque matin : **qui dois-je contacter aujourd'hui, et pourqu
 
 ## Le matin — 5 minutes
 
-1. Ouvrir **Aujourd'hui** (la page d'accueil).
-2. Lire les blocs dans l'ordre :
-   - **Agenda du jour** : rendez-vous, visites, estimations, avec l'adresse. « Itinéraire » ouvre la carte, « Appeler » compose le numéro.
+1. Ouvrir **Aujourd'hui** (la page d'accueil). L'en-tête dit la journée en trois secondes : la date et la semaine, puis une phrase (« 4 rendez-vous et 4 personnes à rappeler. Votre dernier rendez-vous finit vers 18 h 15. ») et l'anneau **« 3 sur 7 faits »**, qui avance à chaque tâche ou relance cochée. Pour être salué par votre prénom, indiquez-le dans Plus → Réglages (« Votre nom »).
+2. Regarder la carte noire **« Maintenant »** : le rendez-vous en cours ou le prochain, avec le temps qui reste (« Dans 25 min », « En cours »), l'adresse, et d'un toucher **Itinéraire**, **Appeler** ou la fiche. Dessous, **« À préparer »** liste les tâches du jour pour la même personne ou le même bien (imprimer le mandat…) : cochez-les depuis la carte. Après le dernier rendez-vous, elle montre la première relance.
+3. Lire les blocs dans l'ordre :
+   - **Agenda du jour** : rendez-vous, visites, estimations, avec l'adresse. Un trait rouge marque l'heure qu'il est ; les rendez-vous finis, au-dessus, sont estompés. « Itinéraire » ouvre la carte, « Appeler » compose le numéro.
    - **À relancer** : les relances du jour et celles en retard, les plus anciennes d'abord, avec leur motif et le dernier échange.
    - **Tâches** : le reste (envoyer un document, commander un diagnostic…). On coche ou on reporte.
    - **Alertes** : projets sans nouvelles depuis 15 jours, contacts sans prochaine action, export à refaire.
    - **Nouveautés** : demandes entrantes à qualifier, en rouge au-delà d'une heure.
-3. Écrire en haut **les trois actions qui comptent** aujourd'hui. Elles restent jusqu'au soir, sur tous les appareils.
+4. Écrire **les trois actions qui comptent** aujourd'hui (à côté de la carte sur ordinateur, dessous sur téléphone). Elles restent jusqu'au soir, sur tous les appareils.
 
 ## Après chaque échange — 30 secondes
 

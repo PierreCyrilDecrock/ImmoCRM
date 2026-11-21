@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import EtatChargement from '../components/EtatChargement'
 import Page from '../components/Page'
+import AnneauProgression from '../features/aujourdhui/AnneauProgression'
 import BlocJournee from '../features/aujourdhui/BlocJournee'
+import CarteMaintenant from '../features/aujourdhui/CarteMaintenant'
 import {
   basculerRepli,
   cartesDeLAppareil,
@@ -15,6 +17,17 @@ import LigneAlerte from '../features/aujourdhui/LigneAlerte'
 import LigneNouveaute from '../features/aujourdhui/LigneNouveaute'
 import LigneRelance from '../features/aujourdhui/LigneRelance'
 import LigneRendezVous from '../features/aujourdhui/LigneRendezVous'
+import {
+  aPreparer,
+  choisirMaintenant,
+  etatRendezVous,
+  finDuDernierRendezVous,
+  placeDuTrait,
+  progression,
+  resumeJournee,
+  salutation,
+} from '../features/aujourdhui/maintenant'
+import TraitMaintenant from '../features/aujourdhui/TraitMaintenant'
 import TroisActions from '../features/aujourdhui/TroisActions'
 import type { Contact } from '../features/contacts/contacts'
 import { FILTRES_VIDES, memoriserFiltres } from '../features/contacts/filtres'
@@ -22,8 +35,9 @@ import { titreRelance } from '../features/relances/boucle'
 import FormulaireTache from '../features/taches/FormulaireTache'
 import { useGestesTache } from '../features/taches/gestes-tache'
 import ListeTaches from '../features/taches/ListeTaches'
-import { dateDuJour, formaterJourLong } from '../lib/dates'
+import { dateDuJour, formaterJourEtSemaine, heureDuMoment, minutesDuJour } from '../lib/dates'
 import type { Resultat } from '../lib/donnees'
+import { useMaintenant } from '../lib/horloge'
 import { exigerSupabase } from '../lib/supabase'
 
 /** Au retour sur l'écran après ce délai (application remise au premier plan), il se relit. */
@@ -67,12 +81,18 @@ function VoirTout({
 }
 
 /**
- * Écran « Aujourd'hui », page d'accueil : qui contacter aujourd'hui, et pourquoi. La date et
- * les trois actions qui comptent, puis cinq blocs dans l'ordre où la journée se vit :
- * agenda, relances, tâches, alertes, nouveautés. Chaque bloc a son compteur et se replie.
+ * Écran « Aujourd'hui », page d'accueil : qui contacter aujourd'hui, et pourquoi. En tête, la
+ * date, la salutation, la journée résumée en une phrase et l'anneau de progression ; puis la
+ * carte « Maintenant » (le rendez-vous en cours ou le prochain) à côté des trois actions qui
+ * comptent ; enfin cinq blocs dans l'ordre où la journée se vit : agenda, relances, tâches,
+ * alertes, nouveautés. Chaque bloc a son compteur et se replie. L'écran suit l'heure à la
+ * minute (temps restant, trait « maintenant ») sans relire la base.
  */
 export default function Aujourdhui() {
-  const aujourdhui = dateDuJour()
+  const maintenant = useMaintenant()
+  const aujourdhui = dateDuJour(maintenant)
+  const heure = heureDuMoment(maintenant)
+  const minutes = minutesDuJour(heure) ?? 0
   const [journee, setJournee] = useState<Journee | null>(null)
   const [lecture, setLecture] = useState(true)
   const [version, setVersion] = useState(0)
@@ -126,7 +146,6 @@ export default function Aujourdhui() {
     onBasculer: () => basculer(bloc),
   })
 
-  const maintenant = new Date()
   const agenda = journee?.agenda
   const relances = journee?.relances
   const taches = journee?.taches
@@ -137,11 +156,67 @@ export default function Aujourdhui() {
       ? alertes.donnees.reduce((somme, groupe) => somme + groupe.total, 0)
       : null
 
-  return (
-    <Page titre="Aujourd'hui">
-      <p className="-mt-3 text-base text-encre-douce">{formaterJourLong(aujourdhui)}</p>
+  // Tout ce qui suit se calcule sur les données déjà lues : aucune requête de plus.
+  const lignesAgenda = agenda?.ok ? agenda.donnees.lignes : []
+  const lignesRelances = relances?.ok ? relances.donnees.lignes : []
+  const lignesTaches = taches?.ok ? taches.donnees.lignes : []
+  const choix = agenda?.ok ? choisirMaintenant(lignesAgenda, lignesRelances, minutes) : null
+  const resume =
+    agenda?.ok && relances?.ok
+      ? resumeJournee({
+          rendezVous: agenda.donnees.total,
+          rappels: relances.donnees.total,
+          fin: finDuDernierRendezVous(lignesAgenda.map((affichee) => affichee.tache)),
+          minutes,
+        })
+      : null
+  const avancement =
+    agenda?.ok && relances?.ok && taches?.ok && journee?.faitesDuJour.ok
+      ? progression(
+          agenda.donnees.total + relances.donnees.total + taches.donnees.total,
+          journee.faitesDuJour.donnees,
+        )
+      : null
+  const placeTrait = placeDuTrait(lignesAgenda, minutes)
 
-      <TroisActions key={aujourdhui} jour={aujourdhui} />
+  return (
+    <Page
+      titre={salutation(journee?.nomAffiche ?? '')}
+      titreOnglet="Aujourd'hui"
+      surtitre={
+        <p className="text-base font-medium text-encre-douce">
+          {formaterJourEtSemaine(aujourdhui)}
+        </p>
+      }
+    >
+      {(resume !== null || avancement !== null) && (
+        <div className="-mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
+          {resume !== null && <p className="text-base text-encre">{resume}</p>}
+          {avancement !== null && <AnneauProgression progression={avancement} />}
+        </div>
+      )}
+
+      <div
+        className={`grid gap-4 ${choix !== null ? 'lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start' : ''}`}
+      >
+        {choix !== null && (
+          <CarteMaintenant
+            choix={choix}
+            minutes={minutes}
+            aujourdhui={aujourdhui}
+            aPreparer={
+              choix.genre === 'rendez_vous'
+                ? aPreparer(choix.affichee, [...lignesTaches, ...lignesRelances])
+                : []
+            }
+            cartes={cartes}
+            occupee={gestes.occupee}
+            onCocher={gestes.cocher}
+            onOuvrir={gestes.ouvrir}
+          />
+        )}
+        <TroisActions key={aujourdhui} jour={aujourdhui} />
+      </div>
 
       {journee === null ? (
         <EtatChargement libelle="Lecture de la journée…" />
@@ -160,16 +235,20 @@ export default function Aujourdhui() {
           >
             {agenda?.ok && (
               <ul className="divide-y divide-bord">
-                {agenda.donnees.lignes.map((affichee) => (
-                  <LigneRendezVous
-                    key={affichee.id}
-                    affichee={affichee}
-                    cartes={cartes}
-                    occupee={gestes.occupee === affichee.id}
-                    onCocher={() => gestes.cocher(affichee)}
-                    onOuvrir={() => gestes.ouvrir(affichee)}
-                  />
+                {lignesAgenda.map((affichee, rang) => (
+                  <Fragment key={affichee.id}>
+                    {rang === placeTrait && <TraitMaintenant heure={heure} />}
+                    <LigneRendezVous
+                      affichee={affichee}
+                      cartes={cartes}
+                      occupee={gestes.occupee === affichee.id}
+                      onCocher={() => gestes.cocher(affichee)}
+                      onOuvrir={() => gestes.ouvrir(affichee)}
+                      passe={etatRendezVous(affichee.tache, minutes) === 'passe'}
+                    />
+                  </Fragment>
                 ))}
+                {placeTrait === lignesAgenda.length && <TraitMaintenant heure={heure} />}
               </ul>
             )}
           </BlocJournee>

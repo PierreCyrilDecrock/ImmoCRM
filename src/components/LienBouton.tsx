@@ -11,8 +11,12 @@ type Props = {
   href?: string
   /** Ouvre l'adresse externe dans un nouvel onglet (cartes sur ordinateur). */
   nouvelOnglet?: boolean
-  /** `secondaire` (par défaut) : contour ; `discret` : texte seul. */
-  variante?: 'secondaire' | 'discret'
+  /**
+   * `secondaire` (par défaut) : contour ; `discret` : texte seul ; `principal` : bleu plein
+   * (le geste attendu, un seul par groupe) ; `inverse` : sur le fond encre de la carte
+   * « Maintenant ».
+   */
+  variante?: 'secondaire' | 'discret' | 'principal' | 'inverse'
   onClick?: MouseEventHandler<HTMLAnchorElement>
   'aria-label'?: string
 }
@@ -20,6 +24,9 @@ type Props = {
 const COULEURS = {
   secondaire: 'bg-surface text-encre shadow-xs ring-1 ring-inset ring-bord-fort/40 hover:bg-creux',
   discret: 'text-accent hover:bg-accent-doux',
+  principal: 'bg-accent text-sur-plein shadow-sm shadow-accent/25 hover:bg-accent-fort',
+  inverse:
+    'bg-inverse-creux text-sur-inverse ring-1 ring-inset ring-sur-inverse-doux/30 hover:bg-sur-inverse/20',
 }
 
 /**
