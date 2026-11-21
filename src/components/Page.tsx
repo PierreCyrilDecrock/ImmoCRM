@@ -10,18 +10,31 @@ type Props = {
   actions?: ReactNode
   /** Page qui a besoin de toute la largeur de l'écran (le tableau des pipelines). */
   large?: boolean
+  /** Ligne au-dessus du titre (la date sur l'écran Aujourd'hui). */
+  surtitre?: ReactNode
+  /** Titre de l'onglet du navigateur, s'il diffère du titre affiché. */
+  titreOnglet?: string
   children: ReactNode
 }
 
 /** Gabarit de toutes les pages : titre, actions, puis le contenu dans une colonne lisible. */
-export default function Page({ titre, retour, actions, large = false, children }: Props) {
+export default function Page({
+  titre,
+  retour,
+  actions,
+  large = false,
+  surtitre,
+  titreOnglet,
+  children,
+}: Props) {
+  const onglet = titreOnglet ?? titre
   // Le titre de l'onglet (et de l'historique) suit la page affichée.
   useEffect(() => {
-    document.title = `${titre} · ImmoCRM`
+    document.title = `${onglet} · ImmoCRM`
     return () => {
       document.title = 'ImmoCRM'
     }
-  }, [titre])
+  }, [onglet])
 
   return (
     <div
@@ -37,6 +50,7 @@ export default function Page({ titre, retour, actions, large = false, children }
             {retour.libelle}
           </Link>
         )}
+        {surtitre}
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-encre md:text-4xl">
             {titre}

@@ -13,6 +13,8 @@ type Props = {
   occupee: boolean
   onCocher: () => void
   onOuvrir: () => void
+  /** Rendez-vous fini (au-dessus du trait « maintenant ») : il s'estompe légèrement. */
+  passe?: boolean
 }
 
 /**
@@ -21,7 +23,14 @@ type Props = {
  * rendez-vous pour le modifier ou le reporter ; la case le clôt (avec le compte rendu si un
  * contact y est lié).
  */
-export default function LigneRendezVous({ affichee, cartes, occupee, onCocher, onOuvrir }: Props) {
+export default function LigneRendezVous({
+  affichee,
+  cartes,
+  occupee,
+  onCocher,
+  onOuvrir,
+  passe = false,
+}: Props) {
   const { tache, contact, bien } = affichee
   const adresse = adresseRendezVous(tache, bien, contact)
   const liens = [
@@ -41,11 +50,18 @@ export default function LigneRendezVous({ affichee, cartes, occupee, onCocher, o
           className="block w-full rounded-lg py-1 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent"
         >
           <span className="block text-sm text-encre-douce">
-            <span className="font-bold text-encre">{horaireTache(tache)}</span>
+            <span className={`font-bold ${passe ? 'text-encre-douce' : 'text-encre'}`}>
+              {horaireTache(tache)}
+            </span>
             {' · '}
             {libelleCategorie(tache.categorie)}
           </span>
-          <span className="block text-base font-medium break-words text-encre">{tache.titre}</span>
+          <span
+            className={`block text-base font-medium break-words ${passe ? 'text-encre-douce' : 'text-encre'}`}
+          >
+            {passe && <span className="sr-only">Terminé : </span>}
+            {tache.titre}
+          </span>
           {liens.length > 0 && (
             <span className="block truncate text-sm text-encre-douce">{liens.join(' · ')}</span>
           )}

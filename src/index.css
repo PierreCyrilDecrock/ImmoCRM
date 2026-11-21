@@ -32,6 +32,12 @@
   --succes-doux: #e5f4ec;
   --alerte: #8a5a00;
   --alerte-doux: #fbf1dc;
+  /* Carte « Maintenant » : fond encre, texte clair. */
+  --inverse: #0e0f12;
+  --inverse-creux: #26272d;
+  --sur-inverse: #ffffff;
+  --sur-inverse-doux: #b4b7bf;
+  --bord-inverse: #0e0f12;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -53,6 +59,12 @@
     --succes-doux: #14301f;
     --alerte: #f2c25b;
     --alerte-doux: #352914;
+    --inverse: #2a2b31;
+    --inverse-creux: #3a3b42;
+    --sur-inverse: #f2f2f0;
+    --sur-inverse-doux: #b9bcc4;
+    /* En sombre, un filet plus clair détache la carte du fond. */
+    --bord-inverse: #4a4c54;
   }
 }
 
@@ -74,6 +86,11 @@
   --color-succes-doux: var(--succes-doux);
   --color-alerte: var(--alerte);
   --color-alerte-doux: var(--alerte-doux);
+  --color-inverse: var(--inverse);
+  --color-inverse-creux: var(--inverse-creux);
+  --color-sur-inverse: var(--sur-inverse);
+  --color-sur-inverse-doux: var(--sur-inverse-doux);
+  --color-bord-inverse: var(--bord-inverse);
 }
 
 /*
@@ -114,6 +131,14 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/*
+ * Sur un fond encre (carte « Maintenant »), le contour bleu se verrait mal : il passe au
+ * blanc. Règle hors des couches de Tailwind, elle l'emporte sur les classes des composants.
+ */
+.zone-inverse :focus-visible {
+  outline-color: var(--sur-inverse);
 }
 
 /*

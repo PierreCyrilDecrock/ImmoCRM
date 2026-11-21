@@ -15,7 +15,10 @@ import {
   formaterJourLong,
   heureDeFin,
   instantDeParis,
+  formaterJourEtSemaine,
   jourDeSemaine,
+  minutesDuJour,
+  numeroSemaine,
 } from './dates'
 
 describe('formaterDate', () => {
@@ -184,5 +187,41 @@ describe('formaterJourLong', () => {
 
   it('reste vide pour une date illisible', () => {
     expect(formaterJourLong('2026-02-30')).toBe('')
+  })
+})
+
+describe('numeroSemaine', () => {
+  it('suit la norme ISO des agendas français', () => {
+    expect(numeroSemaine('2026-11-21')).toBe(47)
+    expect(numeroSemaine('2026-01-01')).toBe(1)
+    expect(numeroSemaine('2026-01-04')).toBe(1)
+    expect(numeroSemaine('2026-01-05')).toBe(2)
+  })
+
+  it('rattache les jours de fin et de début d’année à la bonne semaine', () => {
+    expect(numeroSemaine('2025-12-29')).toBe(1)
+    expect(numeroSemaine('2026-12-31')).toBe(53)
+    expect(numeroSemaine('2027-01-01')).toBe(53)
+    expect(numeroSemaine('2027-01-04')).toBe(1)
+  })
+})
+
+describe('formaterJourEtSemaine', () => {
+  it('donne le jour en toutes lettres et la semaine', () => {
+    expect(formaterJourEtSemaine('2026-11-21')).toBe('Samedi 21 novembre · semaine 47')
+    expect(formaterJourEtSemaine('n’importe quoi')).toBe('')
+  })
+})
+
+describe('minutesDuJour', () => {
+  it('compte les minutes depuis minuit', () => {
+    expect(minutesDuJour('00:00')).toBe(0)
+    expect(minutesDuJour('09:30:00')).toBe(570)
+    expect(minutesDuJour('23:59')).toBe(1439)
+  })
+
+  it('refuse une heure illisible', () => {
+    expect(minutesDuJour('24:00')).toBeNull()
+    expect(minutesDuJour('midi')).toBeNull()
   })
 })

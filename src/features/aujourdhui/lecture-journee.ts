@@ -1,10 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { appeler, listerPage, type Filtre, type PageLignes, type Resultat } from '../../lib/donnees'
+import { instantDeParis } from '../../lib/dates'
+import {
+  appeler,
+  compter,
+  listerPage,
+  type Filtre,
+  type PageLignes,
+  type Resultat,
+} from '../../lib/donnees'
 import type { Activite } from '../activites/activites'
 import type { ProjetAcquereur } from '../acquereurs/pipeline-acquereur'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
-import { lireDatesSauvegarde, type DatesSauvegarde } from '../reglages/reglages'
+import { lireReglagesEtSauvegardes, type DatesSauvegarde } from '../reglages/reglages'
 import { exportARappeler, joursDepuisExport } from '../sauvegarde/rappel-export'
 import { fichesDe, lireFiches, type AvecLiens, type FichesLues } from '../liens/fiches-liees'
 import type { Tache, TacheAffichee } from '../taches/taches'
@@ -76,6 +84,10 @@ export type Journee = {
   taches: Resultat<ContenuBloc<TacheAffichee>>
   alertes: Resultat<GroupeAlertes[]>
   nouveautes: Resultat<ContenuBloc<Nouveaute>>
+  /** Le nom affiché (Réglages), vide s'il n'est pas indiqué ou n'a pas pu être lu. */
+  nomAffiche: string
+  /** Le nombre de tâches faites aujourd'hui, pour l'anneau de progression. */
+  faitesDuJour: Resultat<number>
 }
 
 /** Ordre des tâches : par jour, puis par heure, priorité et ancienneté. */
@@ -136,7 +148,8 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
     sansAction,
     calmes,
     demandes,
-    sauvegardes,
+    reglages,
+    faitesDuJour,
   ] = await Promise.all([
     lireTaches(client, conditionsAgenda(aujourdhui), LIMITES.agenda),
     lireTaches(client, conditionsRelances('en_retard', aujourdhui), LIMITES.relances),
@@ -168,8 +181,17 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
       taille: LIMITES.nouveautes,
       compter: true,
     }),
-    lireDatesSauvegarde(client),
+    lireReglagesEtSauvegardes(client),
+    // Un simple comptage, sans lire de ligne : les tâches faites depuis minuit (Paris).
+    compter(client, 'taches', {
+      filtres: [
+        { colonne: 'etat', genre: 'egal', valeur: 'faite' },
+        { colonne: 'cloturee_le', genre: 'min', valeur: instantDeParis(aujourdhui, '00:00') },
+      ],
+    }),
   ])
+  const sauvegardes = reglages.ok ? reglages.donnees.sauvegardes : null
+  const nomAffiche = reglages.ok ? reglages.donnees.reglages.nom_affiche : ''
 
   const blocAgenda = reunir([agenda], LIMITES.agenda)
   const blocRelances = reunir([relancesEnRetard, relancesDuJour], LIMITES.relances)
@@ -210,6 +232,8 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
       taches: fiches,
       alertes: fiches,
       nouveautes: fiches,
+      nomAffiche,
+      faitesDuJour,
     }
   }
   const lues = fiches.donnees
@@ -231,7 +255,7 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
       calmes.ok ? { ok: true, donnees: lignesCalmes } : calmes,
       lues,
       // Si les réglages n'ont pas pu être lus, le rappel est simplement omis.
-      sauvegardes.ok ? sauvegardes.donnees : null,
+      sauvegardes,
       aujourdhui,
     ),
     nouveautes: demandes.ok
@@ -247,6 +271,8 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
           },
         }
       : demandes,
+    nomAffiche,
+    faitesDuJour,
   }
 }
 

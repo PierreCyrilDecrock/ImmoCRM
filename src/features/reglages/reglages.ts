@@ -47,20 +47,34 @@ function depuisLigne(ligne: Partial<Ligne<'reglages'>>): Reglages {
   }
 }
 
-/** Lit les dates des sauvegardes du compte connecté ; aucune si rien n'est enregistré. */
-export async function lireDatesSauvegarde(
+/**
+ * Lit, en une seule requête, les réglages et les dates des sauvegardes du compte connecté
+ * (l'écran Aujourd'hui a besoin des deux : le nom affiché et le rappel d'export).
+ */
+export async function lireReglagesEtSauvegardes(
   client: SupabaseClient,
-): Promise<Resultat<DatesSauvegarde>> {
+): Promise<Resultat<{ reglages: Reglages; sauvegardes: DatesSauvegarde }>> {
   const resultat = await lister(client, 'reglages', { limite: 1 })
   if (!resultat.ok) return resultat
   const ligne = resultat.donnees[0]
   return {
     ok: true,
     donnees: {
-      dernier_export_le: ligne?.dernier_export_le ?? null,
-      derniere_sauvegarde_le: ligne?.derniere_sauvegarde_le ?? null,
+      reglages: ligne === undefined ? REGLAGES_PAR_DEFAUT : depuisLigne(ligne),
+      sauvegardes: {
+        dernier_export_le: ligne?.dernier_export_le ?? null,
+        derniere_sauvegarde_le: ligne?.derniere_sauvegarde_le ?? null,
+      },
     },
   }
+}
+
+/** Lit les dates des sauvegardes du compte connecté ; aucune si rien n'est enregistré. */
+export async function lireDatesSauvegarde(
+  client: SupabaseClient,
+): Promise<Resultat<DatesSauvegarde>> {
+  const resultat = await lireReglagesEtSauvegardes(client)
+  return resultat.ok ? { ok: true, donnees: resultat.donnees.sauvegardes } : resultat
 }
 
 /** Inscrit le moment d'un export complet réussi (la ligne est créée au besoin). */

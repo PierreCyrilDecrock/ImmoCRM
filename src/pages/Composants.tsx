@@ -21,6 +21,9 @@ import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
 import Onglets from '../components/Onglets'
+import AnneauProgression from '../features/aujourdhui/AnneauProgression'
+import { progression } from '../features/aujourdhui/maintenant'
+import TraitMaintenant from '../features/aujourdhui/TraitMaintenant'
 import { libelleJour } from '../features/taches/echeances'
 import ReportsRapides from '../features/taches/ReportsRapides'
 import { dateDuJour } from '../lib/dates'
@@ -267,6 +270,38 @@ export default function Composants() {
               ))}
             </ul>
           </div>
+        </div>
+      </Carte>
+
+      <Carte titre="Écran Aujourd'hui">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-wrap gap-6">
+            {[
+              [4, 3],
+              [0, 7],
+            ].map(([aFaire = 0, faites = 0]) => {
+              const exemple = progression(aFaire, faites)
+              return exemple === null ? null : (
+                <AnneauProgression key={faites} progression={exemple} />
+              )
+            })}
+          </div>
+          <div className="zone-inverse flex flex-wrap gap-2 rounded-2xl bg-inverse p-4 ring-1 ring-bord-inverse">
+            <LienBouton icone="itineraire" variante="inverse" href="#/plus/composants">
+              Itinéraire
+            </LienBouton>
+            <LienBouton icone="telephone" variante="principal" href="#/plus/composants">
+              Appeler
+            </LienBouton>
+            <Bouton variante="inverse" icone="journal">
+              Consigner
+            </Bouton>
+          </div>
+          <ul className="divide-y divide-bord">
+            <li className="py-2 text-base text-encre-douce">9 h – 10 h · Estimation (passée)</li>
+            <TraitMaintenant heure="11:10" />
+            <li className="py-2 text-base text-encre">14 h – 15 h 30 · Signature du mandat</li>
+          </ul>
         </div>
       </Carte>
 
