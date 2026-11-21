@@ -1,6 +1,6 @@
 # ImmoCRM — Plan de développement
 
-Ce plan découpe la construction d'ImmoCRM en 45 étapes, de la fondation technique à la version 4. Il s'appuie sur le [document de cadrage](cadrage.md), qui reste la référence fonctionnelle.
+Ce plan découpe la construction d'ImmoCRM en 53 étapes, de la fondation technique à la version 4 : les 45 étapes d'origine, plus 8 étapes d'interface (phase D) ajoutées le 21 novembre 2026, à faire entre la version 1 et la version 2. Il s'appuie sur le [document de cadrage](cadrage.md), qui reste la référence fonctionnelle.
 
 ## Mode d'emploi
 
@@ -38,6 +38,7 @@ Ces choix découlent de l'architecture du cadrage (site statique sur GitHub Page
 | --- | --- | --- |
 | Phase 0 — Fondations | Un site vide, déployé, connecté, sécurisé | 0.1 à 0.5 |
 | Version 1 — Le quotidien | Ne plus rien oublier | 1.1 à 1.14 |
+| Interface — version 3 | Voir l'essentiel sans chercher, agir en un geste | D.1 à D.8 (D.0 déjà faite) |
 | Version 2 — Les dossiers | Sécuriser mandats et ventes | 2.1 à 2.11 |
 | Version 3 — Le pilotage | Décider avec des chiffres | 3.1 à 3.8 |
 | Version 4 — Le confort | Gagner du temps | 4.1 à 4.7 |
@@ -546,6 +547,264 @@ Applique la procédure de fin d'étape et marque la version 1 comme livrée.
 
 ---
 
+# Interface — version 3
+
+Le style de la version 3 a été choisi sur maquettes (canevas « ImmoCRM — nouveau style », rangée « Version 3 ») puis installé le 21 novembre 2026 : couleurs claires et sombres, police Inter, arrondis et composants communs. C'est l'étape **D.0**, faite sans prompt (pull request #28).
+
+Les maquettes montraient aussi une nouvelle organisation des écrans et de nouveaux gestes. Les huit étapes qui suivent les construisent **avant la version 2**, parce qu'ils servent chaque jour. Elles ne changent pas le périmètre du cadrage : aucune nouvelle donnée métier, aucune migration attendue. Elles sont décrites dans la section « L'interface » du cadrage, et leurs composants sont annoncés dans `docs/design.md` (« Composants prévus »).
+
+Les maquettes sont dans le canevas cité plus haut : si une session a besoin de les voir, collez-lui le lien du canevas.
+
+## Étape D.1 — Gestes rapides communs
+
+```text
+Lis CLAUDE.md, docs/cadrage.md (section « L'interface »), docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.1 Gestes rapides communs
+Les étapes D.3 à D.7 réutilisent trois gestes. Construis-les une fois, comme composants partagés, et branche-les dès maintenant là où ils servent déjà.
+- Reports en un geste : une rangée de boutons « Demain », « Dans 3 jours », « Lundi » (le prochain lundi après aujourd'hui) et un bouton calendrier qui ouvre la fenêtre ReportTache existante pour une autre date. Le report s'enregistre aussitôt, sans fenêtre ; une notification passagère le confirme avec « Annuler », qui rétablit l'ancienne date pendant quelques secondes. Branche-la sur la prochaine action de la fiche Contact (ProchaineAction) et sur les lignes de la page Tâches. Les dates proposées viennent d'une fonction pure testée.
+- Copier : un petit bouton « Copier » à côté du téléphone et du courriel (fiche Contact) et de l'adresse (fiches Contact et Bien). Il copie la valeur et affiche « Copié » deux secondes, annoncé aux lecteurs d'écran. Sur ordinateur, il n'apparaît qu'au survol de la ligne ou au clavier ; sur un écran tactile, il est toujours visible. Si le navigateur refuse la copie, un message le dit.
+- Ligne glissable, sur écran tactile : une ligne de liste qui, glissée vers la gauche, découvre deux actions, « Reporter » (ambre) et « Fait » (vert), comme dans les maquettes. Le geste se déclenche au-delà d'un seuil et se remet en place sinon ; il ne gêne ni le défilement vertical ni le toucher normal ; il est inactif à la souris. Chaque action garde son bouton visible : le glisser est un raccourci, jamais le seul chemin. Branche-la sur les lignes de la page Tâches ; « Fait » passe par la boucle de relance quand la tâche est liée à un contact (étape 1.8).
+- Décris les trois composants dans docs/design.md (et retire-les de « Composants prévus ») et ajoute-les à la page « Composants de l'interface ».
+- Teste la logique (dates proposées, seuil du glisser) avec Vitest.
+
+À TESTER
+- Sur la fiche d'un contact, reporter sa prochaine action à « Dans 3 jours » en un toucher, puis « Annuler » : la date d'origine revient.
+- Copier un numéro de téléphone, puis le coller dans une autre application.
+- Sur téléphone, page Tâches : glisser une tâche vers la gauche découvre Reporter et Fait ; glisser à moitié puis relâcher la remet en place ; la liste défile toujours normalement.
+- Au clavier seul, chaque action reste atteignable.
+
+ÉTAPE SUIVANTE
+D.2 : la colonne de navigation enrichie et la pastille des retards.
+
+Applique la procédure de fin d'étape.
+```
+
+## Étape D.2 — Navigation : fiches récentes, création et retards
+
+```text
+Lis CLAUDE.md, docs/cadrage.md (section « L'interface »), docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.2 Navigation : fiches récentes, création et retards
+Sur ordinateur, la colonne de gauche a de la place : elle devient le point de départ de tous les gestes.
+- Colonne de gauche sur ordinateur (1024 px et plus), de haut en bas :
+  - le nom de l'application ;
+  - le champ de recherche, qui quitte le bandeau du haut sur ordinateur, avec le rappel « ⌘K » ou « Ctrl K » selon le système (« / » marche toujours) ;
+  - les six entrées ;
+  - « Consultés récemment » : les trois dernières fiches (src/features/saisie/recents.ts), chacune avec ses initiales ou son dessin ;
+  - en bas, un bouton « Créer » avec le rappel « N », qui ouvre le menu de création ; sur ordinateur, le bouton « + » flottant disparaît (il reste sur téléphone et tablette) ;
+  - la version, et l'état : « Tout est enregistré », « Enregistrement… » pendant une écriture (compteur tenu par src/lib/donnees.ts), « Connexion perdue » sans réseau.
+- Tablette : la colonne étroite garde ses entrées ; la recherche et le « + » restent comme aujourd'hui.
+- Pastille des retards : l'entrée Tâches porte le nombre de tâches en retard (rouge, « 9+ » au-delà) sur ordinateur et tablette, un point rouge sur téléphone. Le nombre est annoncé aux lecteurs d'écran (« Tâches, 3 en retard »). Il se relit quand une tâche est cochée ou reportée, et au retour dans l'application. Une seule requête de comptage, légère.
+- Mets à jour docs/design.md (Navigation, MiseEnPage) et docs/guide-utilisateur.md.
+
+À TESTER
+- Sur ordinateur, ouvrir trois fiches : elles apparaissent sous « Consultés récemment », la plus récente en haut.
+- « Créer » et la touche N ouvrent le menu de création ; « / » et ⌘K (ou Ctrl K) placent le curseur dans la recherche.
+- Reporter la dernière tâche en retard : la pastille disparaît sans recharger la page.
+- Sur téléphone, le point rouge apparaît sur Tâches ; le reste de la barre du bas ne change pas.
+
+ÉTAPE SUIVANTE
+D.3 : l'en-tête de l'écran Aujourd'hui et la carte « Maintenant ».
+
+Applique la procédure de fin d'étape.
+```
+
+## Étape D.3 — Aujourd'hui : en-tête, carte « Maintenant » et progression
+
+```text
+Lis CLAUDE.md, docs/cadrage.md (sections « La journée type et l'écran Aujourd'hui » et « L'interface »), docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.3 Aujourd'hui : en-tête, carte « Maintenant » et progression
+Le matin, l'écran doit dire en trois secondes à quoi ressemble la journée et ce qui vient ensuite.
+- En-tête : la date avec la semaine (« Samedi 21 novembre · semaine 47 »), « Bonjour » suivi du nom affiché (Réglages) s'il existe, et une phrase de résumé : nombre de rendez-vous, de personnes à rappeler, heure de fin du dernier rendez-vous (« 4 rendez-vous et 4 personnes à rappeler. Votre dernier rendez-vous finit vers 18 h 15. »). Zéro et un ont leur propre phrase.
+- Progression : un anneau « 3 sur 7 faits » qui compte les tâches et relances prévues aujourd'hui ou en retard, et celles closes aujourd'hui (colonne cloturee_le). Il avance dès qu'on coche. S'il n'y a rien de prévu, il disparaît. Un texte équivalent est lu par les lecteurs d'écran.
+- Carte « Maintenant », en tête, sur fond encre (presque noir en clair, gris foncé en sombre) :
+  - le rendez-vous en cours ou le prochain de la journée, avec le temps restant (« Dans 25 min », « En cours », « Dans 2 h »), mis à jour chaque minute ;
+  - l'heure de début et de fin, le titre, le contact et son rôle, l'adresse ;
+  - les gestes Itinéraire (comme l'agenda), Appeler le contact (BoutonAppel, qui respecte l'accord pour être appelé) et l'ouverture de la fiche du bien ou du contact ;
+  - « À préparer » : les tâches à faire aujourd'hui liées au même contact ou au même bien, à cocher depuis la carte.
+  Après le dernier rendez-vous, la carte montre la première relance du jour ; s'il n'y a plus rien, elle disparaît.
+- Agenda du jour : un trait rouge « maintenant », avec l'heure, entre les rendez-vous passés et à venir ; les rendez-vous passés s'estompent légèrement.
+- « Les trois actions qui comptent » se rangent à côté de la carte sur ordinateur, dessous sur téléphone.
+- Résumé, temps restant, choix du rendez-vous et progression sont des fonctions pures testées. Pas de requête de plus si les données sont déjà lues par l'écran ; sinon une seule, bornée. L'écran reste sous deux secondes.
+- Mets à jour docs/design.md et docs/guide-utilisateur.md (rituel du matin).
+
+À TESTER
+- Avec des rendez-vous fictifs à différentes heures, la carte montre le bon rendez-vous et son temps restant change à la minute.
+- Cocher une tâche fait avancer l'anneau sans recharger.
+- Le trait « maintenant » se place entre le bon rendez-vous passé et le suivant.
+- En thème sombre, la carte reste lisible et se distingue du fond.
+- Sur téléphone, la carte tient sans défilement horizontal et ses boutons font au moins 44 px.
+
+ÉTAPE SUIVANTE
+D.4 : les relances plus parlantes et les gestes rapides sur Aujourd'hui.
+
+Applique la procédure de fin d'étape.
+```
+
+## Étape D.4 — Aujourd'hui : relances plus parlantes et gestes rapides
+
+```text
+Lis CLAUDE.md, docs/cadrage.md (sections « La journée type et l'écran Aujourd'hui » et « L'interface »), docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.4 Aujourd'hui : relances plus parlantes et gestes rapides
+Le bloc des relances doit dire pourquoi appeler avant même d'ouvrir la fiche, et se traiter sans quitter l'écran.
+- Le bloc s'appelle « À rappeler », avec la mention « la plus urgente en premier ». Chaque ligne montre :
+  - les initiales, le nom et le rôle (Vendeur, Acquéreur, Prospect…) ;
+  - le retard en pastille rouge (« En retard · 2 j ») ;
+  - le motif (titre de la tâche) comme texte principal ;
+  - dessous, « Dernier échange il y a 8 jours · rendez-vous » (date et type de la dernière activité).
+- Un filtre Tous, Vendeurs, Acquéreurs (commande segmentée), d'après les rôles du contact, gardé sur l'appareil. Le compteur du bloc suit le filtre.
+- Sur ordinateur, au survol ou au clavier, « Reporter » (reports en un geste, étape D.1) et « Fait » (boucle de relance) apparaissent à côté d'« Appeler ». Sur téléphone, la ligne se glisse (ligne glissable, étape D.1). Les boutons actuels restent accessibles.
+- Bloc Tâches : regroupé en « En retard » puis « Aujourd'hui », l'échéance à droite (« Hier », « 17 h 30 ») en chiffres alignés, la ligne glissable sur téléphone.
+- L'ordre et les regroupements sont des fonctions pures testées.
+- Mets à jour docs/design.md et docs/guide-utilisateur.md.
+
+À TESTER
+- Le filtre Acquéreurs ne montre que des acquéreurs, et le compteur suit.
+- Reporter une relance en un toucher : elle disparaît, et la notification permet d'annuler.
+- Sur téléphone, glisser une relance puis toucher « Fait » ouvre la boucle de relance.
+- Avec 20 relances fictives, l'écran reste lisible sur téléphone.
+
+ÉTAPE SUIVANTE
+D.5 : la fiche Contact, avec son profil toujours visible et ses onglets.
+
+Applique la procédure de fin d'étape.
+```
+
+## Étape D.5 — Fiche Contact : profil toujours visible et onglets
+
+```text
+Lis CLAUDE.md, docs/cadrage.md (sections « Les objets du CRM » et « L'interface »), docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.5 Fiche Contact : profil toujours visible et onglets
+La fiche Contact empile aujourd'hui une dizaine de rubriques. Ce qu'on cherche à chaque appel doit rester sous les yeux ; le reste se range en onglets. Aucune information ne disparaît : elle change de place.
+- Ordinateur (1024 px et plus), deux colonnes :
+  - À gauche, le profil, qui reste visible quand on change d'onglet :
+    - les initiales, le nom, les rôles ;
+    - la température en commande segmentée Froid, Tiède, Chaud, enregistrée d'un toucher ;
+    - quatre touches : Appeler (bleue, BoutonAppel avec l'accord pour être appelé), SMS, Courriel, Itinéraire ;
+    - la prochaine action, avec « C'est fait » (boucle de relance) et les reports en un geste ;
+    - le téléphone, le courriel et l'adresse, avec Copier ; l'origine ;
+    - l'accord pour être appelé en une ligne verte, ou l'avertissement actuel ;
+    - « Fiche créée le … · modifiée il y a … », Modifier, et un menu « … » (fusionner, exporter, archiver, supprimer définitivement).
+  - À droite, des onglets avec leur compteur : Activité (journal et tâches à venir), Projets (vente et achat), Tâches, Biens. Les rubriques actuelles (consentement détaillé, notes, étiquettes…) y trouvent leur place : décide, et explique dans la pull request où chacune est allée.
+- Tablette et téléphone :
+  - en-tête compact : initiales, nom, rôles, température, « Dernier échange il y a … » ;
+  - la prochaine action et ses reports ;
+  - les onglets en commande segmentée : Activité, Projets, Tâches, Infos (coordonnées, origine, consentement, notes).
+  Sur téléphone, une barre d'actions fixe en bas remplace la navigation sur cette page : Appeler (large, bleue), SMS, Consigner (le compte rendu express, sur ce contact). On revient par « ‹ Contacts » en haut.
+- L'onglet choisi est dans l'adresse (#/contacts/…?onglet=projets) : le retour du navigateur et un lien gardé le respectent. Sur ordinateur, les touches 1 à 4 changent d'onglet, hors des champs.
+- Projets : chaque projet montre ses étapes en barre (passées, en cours, à venir), l'ancienneté dans l'étape, et « Pour passer à l'étape suivante : … » (critères des étapes 1.9 et 1.10), avec « Étape suivante » (useChangementEtape, et FenetrePassage si un critère manque).
+- Contact précédent ou suivant : sur ordinateur, « 12 sur 48 » et deux flèches en haut de la fiche parcourent la liste Contacts dans l'ordre et avec les filtres où on l'a laissée (touches J et K). Quand on arrive d'ailleurs (recherche, Aujourd'hui), les flèches n'apparaissent pas.
+- Rien ne change dans la base : réutilise les sections existantes (SectionTaches, SectionJournal, SectionProjetsVendeurs, SectionProjetsAcquereurs).
+- Mets à jour docs/design.md et docs/guide-utilisateur.md.
+
+À TESTER
+- Sur ordinateur, changer d'onglet ne fait pas bouger le profil : Appeler, la prochaine action et les coordonnées restent visibles.
+- Toutes les informations de l'ancienne fiche se retrouvent (à comparer sur une fiche fictive complète).
+- Sur téléphone, la barre du bas propose Appeler, SMS et Consigner à portée de pouce, sans cacher le bas de la page.
+- Un contact sans accord pour être appelé n'a pas de bouton Appeler actif, comme avant.
+- Depuis la liste filtrée, ouvrir un contact puis « suivant » : on passe au contact suivant de cette liste.
+- Le retour du navigateur ramène à l'onglet précédent.
+
+ÉTAPE SUIVANTE
+D.6 : le compte rendu tapé directement dans la fiche, et l'historique par jour.
+
+Applique la procédure de fin d'étape.
+```
+
+## Étape D.6 — Fiche Contact : compte rendu dans la fiche et historique par jour
+
+```text
+Lis CLAUDE.md, docs/cadrage.md (sections « La journée type et l'écran Aujourd'hui » et « L'interface »), docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.6 Fiche Contact : compte rendu dans la fiche et historique par jour
+Le rituel « après chaque échange » (30 secondes) doit pouvoir se faire depuis la fiche, sans ouvrir de fenêtre.
+- En tête de l'onglet Activité, un bloc « Consigner un échange » :
+  - le type en pastilles (Appel, Rendez-vous, Visite, Message, Note ; Appel par défaut) ;
+  - un champ « Qu'avez-vous échangé avec <prénom> ? », en 16 px, utilisable avec la dictée du clavier ;
+  - le résultat de l'appel quand le type est Appel (pastilles existantes) ;
+  - « Ensuite » : la prochaine action proposée selon la température (mêmes règles que la boucle 1.8 et le compte rendu express 1.12), modifiable d'un toucher (raccourcis de date, « Ne rien prévoir ») ;
+  - « Enregistrer » (ou ⌘ Entrée, Ctrl Entrée) crée l'activité et la tâche suivante, comme la boucle ; le champ se vide et la nouvelle activité apparaît en haut de l'historique.
+- Une visite ouvre les champs du compte rendu structuré existant (ChampsCompteRenduVisite).
+- Un texte non enregistré est gardé sur l'appareil si l'on quitte la fiche, et proposé au retour.
+- « À venir » : les tâches à faire du contact, la plus proche d'abord, avec leur échéance (rouge si en retard), à cocher (boucle).
+- « Historique » : les activités groupées par jour (« Jeudi 13 novembre · il y a 8 jours »). Chaque activité est une carte avec son dessin, son heure, son résultat en pastille (« Intéressé », « Pas de réponse ») et son texte. La lecture par pages actuelle est conservée.
+- Réutilise la logique de la boucle et du compte rendu express (src/features/relances, src/features/saisie) plutôt que de la recopier ; si un morceau doit être partagé, déplace-le dans une fonction commune testée.
+- Mets à jour docs/design.md et docs/guide-utilisateur.md (rituel « après chaque échange »).
+
+À TESTER
+- Depuis la fiche, consigner un appel « Pas de réponse » avec un rappel dans 2 jours : l'activité apparaît en haut et la prochaine action devient ce rappel, sans fenêtre.
+- Quitter la fiche avec un texte non enregistré, puis revenir : le brouillon est proposé.
+- Choisir Visite affiche les champs du compte rendu de visite.
+- La date du dernier contact de la fiche se met à jour.
+
+ÉTAPE SUIVANTE
+D.7 : la même organisation pour les fiches Bien et Projet.
+
+Applique la procédure de fin d'étape.
+```
+
+## Étape D.7 — Fiches Bien et Projet : même organisation
+
+```text
+Lis CLAUDE.md, docs/cadrage.md (section « L'interface »), docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.7 Fiches Bien, projet de vente et projet d'achat : même organisation
+Les fiches doivent se ressembler pour qu'on s'y retrouve sans réfléchir. Applique l'organisation de la fiche Contact (étapes D.5 et D.6) aux trois autres fiches, en réutilisant ses composants : profil, onglets, barre d'actions du téléphone, Copier, reports en un geste, compte rendu dans la fiche.
+- Fiche Bien :
+  - à gauche, la photo principale (galerie au toucher), le type, l'adresse avec Copier et Itinéraire, le prix et la surface, les propriétaires (à appeler d'un toucher), la prochaine tâche ;
+  - onglets Activité, Projets et acquéreurs, Tâches, Détails (caractéristiques, historique des prix, description, photos) ;
+  - sur téléphone, la barre du bas : Itinéraire, Appeler le propriétaire, Consigner.
+- Projet de vente et projet d'achat :
+  - à gauche, l'étape en barre avec « Pour passer à l'étape suivante : … » et « Étape suivante », le contact et le bien liés, la prochaine action ;
+  - onglets Activité, Tâches, Détails, et Biens proposés pour un projet d'achat.
+- Le compte rendu dans la fiche (étape D.6) sur ces trois fiches, lié à la fiche ouverte.
+- Précédent et suivant : pour les biens comme pour les contacts ; pour les projets, dans l'ordre de leur colonne du pipeline.
+- Aucune information ne disparaît : décris dans la pull request où chaque rubrique est allée.
+- Mets à jour docs/design.md et docs/guide-utilisateur.md.
+
+À TESTER
+- Les quatre fiches se ressemblent : profil à gauche et onglets à droite sur ordinateur ; en-tête, onglets et barre du bas sur téléphone.
+- Depuis la fiche d'un bien, lancer l'itinéraire et appeler son propriétaire.
+- Passer un projet de vente à l'étape suivante depuis sa fiche ; un critère manquant ouvre la fenêtre habituelle.
+
+ÉTAPE SUIVANTE
+D.8 : recette de l'interface version 3.
+
+Applique la procédure de fin d'étape.
+```
+
+## Étape D.8 — Recette de l'interface version 3
+
+```text
+Lis CLAUDE.md, docs/cadrage.md, docs/design.md et docs/avancement.md avant de commencer.
+
+ÉTAPE EN COURS — D.8 Recette de l'interface version 3
+Aucune nouvelle fonction.
+- Dresse docs/recette-interface-v3.md : chaque élément des étapes D.0 à D.7 et de la section « L'interface » du cadrage, avec son état. Corrige les écarts.
+- Parcours tous les écrans et toutes les fenêtres aux trois tailles, en clair et en sombre, avec le navigateur automatisé et des données fictives. Rien ne doit défiler de côté, aucun texte ne doit être coupé, aucune cible tactile ne doit faire moins de 44 px, aucun contraste ne doit être insuffisant (mesure-les), et le contour du clavier doit être visible partout.
+- Au clavier seul : déroule la journée type (Aujourd'hui, une relance, la fiche, le compte rendu, le retour) sans souris.
+- Lecteur d'écran : vérifie le nom des boutons à dessin seul, des onglets, de l'anneau de progression, des pastilles, et l'équivalent visible de chaque geste glissé.
+- Compte de nouveau les gestes des cinq saisies courantes (mesures de l'étape 1.12) et note l'écart.
+- Vérifie le temps d'affichage d'Aujourd'hui et de la fiche Contact avec le lot de 30 000 contacts fictifs.
+- Mets à jour docs/guide-utilisateur.md.
+
+À TESTER
+- Le rituel du matin puis une journée type, sur téléphone.
+- Le thème sombre, le soir.
+- Les gestes : reporter, copier, glisser, consigner depuis la fiche.
+
+ÉTAPE SUIVANTE
+2.1 : les mandats, début de la version 2.
+
+Applique la procédure de fin d'étape et marque l'interface version 3 comme livrée.
+```
+
+---
+
 # Version 2 — Les dossiers
 
 Objectif du cadrage : sécuriser mandats et ventes. Critère de réussite : aucune échéance manquée sur un trimestre.
@@ -783,7 +1042,7 @@ La V2 a ajouté beaucoup d'alertes. L'écran doit rester lisible en cinq minutes
 - Bloc Alertes : regroupe et hiérarchise mandats qui expirent, délais de rétractation, conditions suspensives proches, vendeurs sans nouvelles depuis 15 jours, checklists en retard, export de sauvegarde en retard. Les plus urgentes d'abord ; chaque alerte se traite ou se planifie en un geste.
 - Bloc Nouveautés : demandes entrantes à qualifier et nouveaux rapprochements acquéreurs-biens.
 - Une alerte traitée ou reportée ne réapparaît pas le jour même.
-- Une pastille sur l'icône de navigation indique le nombre d'éléments en retard.
+- La pastille de l'entrée Tâches (étape D.2) compte aussi les alertes en retard, ou une seconde pastille apparaît sur Aujourd'hui : choisis la plus lisible.
 - Vérifie le temps d'affichage avec un jeu de données fictif chargé (30 000 contacts, 200 mandats, 50 transactions).
 
 À TESTER
@@ -1195,12 +1454,12 @@ Applique la procédure de fin d'étape et marque la version 4 comme livrée.
 
 | Section du cadrage | Étapes qui la réalisent |
 | --- | --- |
-| Écran « Aujourd'hui » | 1.11, 2.10, 3.2 |
+| Écran « Aujourd'hui » | 1.11, D.3, D.4, 2.10, 3.2 |
 | Aucun contact sans prochaine action | 1.8, 2.6, 3.4 |
-| Contacts | 1.1, 1.2, 1.3 |
-| Biens de tous types | 1.4, 1.5 |
-| Tâches et agenda | 1.6, 2.9 |
-| Journal d'activité | 1.7, 1.12, 4.1 |
+| Contacts | 1.1, 1.2, 1.3, D.5 |
+| Biens de tous types | 1.4, 1.5, D.7 |
+| Tâches et agenda | 1.6, D.1, 2.9 |
+| Journal d'activité | 1.7, 1.12, D.6, 4.1 |
 | Pipeline vendeur | 1.9 |
 | Pipeline acquéreur | 1.10, 2.7 |
 | Mandats | 2.1, 2.2, 2.5 |
@@ -1212,3 +1471,4 @@ Applique la procédure de fin d'étape et marque la version 4 comme livrée.
 | Administratif | 4.4, 4.5 |
 | Conformité | 1.3, 2.1, 2.4, 2.5, 4.3, 4.5, 4.6 |
 | Architecture technique et sauvegardes | 0.1 à 0.5, 1.13, 4.7 |
+| L'interface | D.0 à D.8 |
