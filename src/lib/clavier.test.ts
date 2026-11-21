@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { estAnnulation } from './clavier'
+import { estAnnulation, estAppareilApple, rappelRecherche } from './clavier'
 
 const appui = { key: 'z', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }
 
@@ -19,5 +19,20 @@ describe('estAnnulation', () => {
       false,
     )
     expect(estAnnulation({ ...appui, key: 'y', ctrlKey: true, dansUnChamp: false })).toBe(false)
+  })
+})
+
+describe('rappelRecherche', () => {
+  it('montre ⌘K sur un Mac ou un iPad', () => {
+    expect(rappelRecherche('macOS')).toBe('⌘K')
+    expect(rappelRecherche('MacIntel')).toBe('⌘K')
+    expect(rappelRecherche('iPad')).toBe('⌘K')
+    expect(estAppareilApple('iPhone')).toBe(true)
+  })
+
+  it('montre Ctrl K ailleurs, et quand le système est inconnu', () => {
+    expect(rappelRecherche('Windows')).toBe('Ctrl K')
+    expect(rappelRecherche('Linux x86_64')).toBe('Ctrl K')
+    expect(rappelRecherche('')).toBe('Ctrl K')
   })
 })

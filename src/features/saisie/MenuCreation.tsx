@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
 import Icone, { type NomIcone } from '../../components/Icone'
+import { rappelRecherche } from '../../lib/clavier'
 import FichesRecentes from './FichesRecentes'
 import { CREATIONS, type Creation } from './raccourcis'
 import { useFichesRecentes } from './recents'
@@ -37,9 +38,10 @@ const LIBELLES: Record<Creation, { libelle: string; detail: string; icone: NomIc
 }
 
 /**
- * Menu du bouton « + » : les cinq créations, et les fiches consultées récemment. Sur
- * téléphone, il monte du bas de l'écran, sous le pouce ; sur ordinateur, il s'ouvre près
- * du bouton et chaque création montre sa touche de clavier.
+ * Menu du bouton « + » (et du bouton « Créer » sur ordinateur) : les cinq créations, et les
+ * fiches consultées récemment. Sur téléphone, il monte du bas de l'écran, sous le pouce ;
+ * sur tablette, il s'ouvre près du « + », en bas à droite ; sur ordinateur, près de
+ * « Créer », en bas de la colonne de gauche, et chaque création montre sa touche de clavier.
  */
 export default function MenuCreation({ onChoisir, onFermer }: Props) {
   const dialogue = useRef<HTMLDialogElement>(null)
@@ -65,7 +67,7 @@ export default function MenuCreation({ onChoisir, onFermer }: Props) {
       onClick={(evenement) => {
         if (evenement.target === evenement.currentTarget) onFermer()
       }}
-      className="m-0 mt-auto max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-surface text-encre backdrop:bg-black/40 backdrop:backdrop-blur-[2px] md:mr-8 md:mb-8 md:ml-auto md:w-96 md:rounded-3xl md:shadow-2xl md:ring-1 md:ring-bord"
+      className="m-0 mt-auto max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-surface text-encre backdrop:bg-black/40 backdrop:backdrop-blur-[2px] md:mr-8 md:mb-8 md:ml-auto md:w-96 md:rounded-3xl lg:mr-auto lg:mb-6 lg:ml-64 md:shadow-2xl md:ring-1 md:ring-bord"
     >
       <div className="flex flex-col gap-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <header className="-mt-1 -mr-1 flex items-center gap-2">
@@ -124,7 +126,7 @@ export default function MenuCreation({ onChoisir, onFermer }: Props) {
           <p className="hidden text-sm text-encre-douce lg:block">
             Au clavier : <kbd className="font-sans font-semibold">N</kbd> ouvre ce menu,{' '}
             <kbd className="font-sans font-semibold">/</kbd> ou{' '}
-            <kbd className="font-sans font-semibold">Ctrl K</kbd> (⌘K sur Mac) va à la recherche.
+            <kbd className="font-sans font-semibold">{rappelRecherche()}</kbd> va à la recherche.
           </p>
         </section>
       </div>

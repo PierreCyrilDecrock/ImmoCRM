@@ -10,10 +10,15 @@ type Props = Omit<
   libelle: string
   valeur: string
   onChange: (valeur: string) => void
+  /** Rappel du raccourci clavier (« ⌘K »), affiché à droite tant que le champ est vide. */
+  rappel?: string
 }
 
-/** Champ de recherche sur une ligne : une loupe, la saisie, et une croix pour tout effacer. */
-export default function ChampRecherche({ libelle, valeur, onChange, ...champ }: Props) {
+/**
+ * Champ de recherche sur une ligne : une loupe, la saisie, et une croix pour tout effacer.
+ * Champ vide, il peut rappeler son raccourci clavier.
+ */
+export default function ChampRecherche({ libelle, valeur, onChange, rappel, ...champ }: Props) {
   return (
     <div className="relative">
       <Icone
@@ -35,6 +40,15 @@ export default function ChampRecherche({ libelle, valeur, onChange, ...champ }: 
         // Repère lu par `FenetreModale` pour placer le curseur à l'ouverture.
         data-autofocus={champ.autoFocus === true ? '' : undefined}
       />
+      {valeur === '' && rappel !== undefined && (
+        // Déjà dit aux lecteurs d'écran par `aria-keyshortcuts` sur le champ.
+        <kbd
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded-md px-1.5 py-0.5 font-sans text-xs font-medium text-encre-douce ring-1 ring-bord-fort"
+        >
+          {rappel}
+        </kbd>
+      )}
       {valeur !== '' && (
         <button
           type="button"

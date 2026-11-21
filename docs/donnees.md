@@ -98,6 +98,7 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | --- | --- |
 | `lister(client, table, options)` | Lit les lignes ; écarte les archivées sauf `archives: 'avec'` ou `'seulement'` ; tri et limite facultatifs |
 | `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir. Filtres possibles : `egal`, `contient`, `comprend` (tableau), `parmi` (liste de valeurs), `min` et `max` (nombres ou dates `AAAA-MM-JJ`), `vide` (colonne sans valeur), `nonVide` (colonne renseignée) |
+| `compter(client, table, options)` | Compte les lignes qui remplissent les conditions (mêmes filtres que `listerPage`), sans en lire aucune : une seule requête légère (pastille des tâches en retard) |
 | `lire(client, table, id)` | Lit une ligne |
 | `creer(client, table, valeurs)` | Crée une ligne et la renvoie complète |
 | `modifier(client, table, id, valeurs)` | Modifie une ligne et la renvoie à jour |
@@ -116,6 +117,8 @@ if (!resultat.ok) notifier('erreur', resultat.erreur.message)
 ```
 
 Une valeur choisie dans une liste fermée (type, rôle, source, température) est une colonne de texte, bornée par une contrainte dans la migration ; ses libellés français sont dans le code du domaine (`src/features/contacts/contacts.ts`). Un téléphone est enregistré au format international sans espace (`+33612345678`) et affiché à la française (`src/features/contacts/telephone.ts`).
+
+**Écritures en cours.** `creer`, `modifier`, `archiver`, `restaurer`, `supprimer`, `enregistrerUnique`, l'envoi et la suppression d'un fichier (`src/lib/stockage.ts`) et l'appel d'une fonction qui écrit tiennent un compteur, le temps de la requête (`pendantEcriture`). La colonne de navigation en tire « Enregistrement… » (`useEtatEnregistrement`, `src/lib/etat-enregistrement.ts`) ; la pastille des tâches en retard se recompte quand il retombe à zéro (`suivreEcritures`). Chaque fonction de la base est classée dans `FONCTIONS` (`ecrit: true` ou `false`) : TypeScript refuse de construire le site si une nouvelle fonction y manque.
 
 Supabase renvoie au plus 1 000 lignes par lecture : `lister` ne va pas au-delà. Il est réservé aux petites tables. Une liste qui peut grossir (contacts, biens…) se lit avec `listerPage`, 50 lignes à la fois : l'application ne charge jamais toute une table.
 
@@ -386,6 +389,7 @@ Conséquences pour toute nouvelle table : elle doit avoir une colonne `id` (tri 
 1. le régénère par le connecteur Supabase et remplace le contenu du fichier, en gardant l'en-tête ;
 2. lance `npm run format` ;
 3. déclare la nouvelle table dans `TABLES` (`src/lib/donnees.ts`) — TypeScript refuse de construire le site si elle manque.
+4. déclare toute nouvelle fonction dans `FONCTIONS` (même fichier), en disant si elle écrit.
 
 ## Test ou réel ?
 

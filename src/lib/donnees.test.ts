@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   appeler,
   archiver,
+  compter,
   creer,
   enregistrerUnique,
   lire,
   lister,
   listerPage,
   modifier,
+  nombreEcrituresEnCours,
   restaurer,
+  suivreEcritures,
   supprimer,
   TABLES,
 } from './donnees'
@@ -282,5 +285,73 @@ describe('supprimer', () => {
     const resultat = await supprimer(client, 'biens_photos', 'p1')
     expect(resultat.ok).toBe(false)
     if (!resultat.ok) expect(resultat.erreur.genre).toBe('introuvable')
+  })
+})
+
+describe('compter', () => {
+  it('demande seulement le nombre de lignes, sans les lire', async () => {
+    const { client, appels } = fauxClient({ data: null, error: null, count: 12 })
+    const resultat = await compter(client, 'taches', {
+      filtres: [{ colonne: 'etat', genre: 'egal', valeur: 'a_faire' }],
+    })
+    expect(resultat).toEqual({ ok: true, donnees: 12 })
+    expect(appels).toEqual([
+      ['from', 'taches'],
+      ['select', 'id', { count: 'exact', head: true }],
+      ['is', 'archived_at', null],
+      ['eq', 'etat', 'a_faire'],
+    ])
+  })
+
+  it('compte zéro quand la base ne renvoie pas de nombre', async () => {
+    const { client } = fauxClient({ data: null, error: null })
+    expect(await compter(client, 'reglages')).toEqual({ ok: true, donnees: 0 })
+  })
+
+  it('traduit une erreur en français', async () => {
+    const { client } = fauxClient({ data: null, error: { code: '42501' }, status: 403 })
+    const resultat = await compter(client, 'taches')
+    expect(resultat.ok === false && resultat.erreur.genre).toBe('droits')
+  })
+})
+
+describe('écritures en cours', () => {
+  it('compte une écriture le temps qu’elle dure, réussie ou non', async () => {
+    const vus: number[] = []
+    const arreter = suivreEcritures(() => vus.push(nombreEcrituresEnCours()))
+    try {
+      const reussie = fauxClient({ data: LIGNE, error: null })
+      await modifier(reussie.client, 'reglages', LIGNE.id, { nom_affiche: 'Camille Fictif' })
+      const ratee = fauxClient('panne')
+      await creer(ratee.client, 'reglages', { nom_affiche: 'Camille Fictif' })
+      expect(vus).toEqual([1, 0, 1, 0])
+      expect(nombreEcrituresEnCours()).toBe(0)
+    } finally {
+      arreter()
+    }
+  })
+
+  it('compte l’appel d’une fonction qui écrit, pas celui d’une fonction qui lit', async () => {
+    let prevenu = 0
+    const arreter = suivreEcritures(() => prevenu++)
+    try {
+      const lecture = fauxClient({ data: [], error: null })
+      await appeler(lecture.client, 'etiquettes_contacts')
+      expect(prevenu).toBe(0)
+      const ecriture = fauxClient({ data: [], error: null })
+      await appeler(ecriture.client, 'cloturer_tache', { p_id: LIGNE.id, p_etat: 'faite' })
+      expect(prevenu).toBe(2)
+    } finally {
+      arreter()
+    }
+  })
+
+  it('ne prévient plus une fois le suivi arrêté', async () => {
+    let prevenu = 0
+    const arreter = suivreEcritures(() => prevenu++)
+    arreter()
+    const { client } = fauxClient({ data: LIGNE, error: null })
+    await archiver(client, 'contacts', LIGNE.id)
+    expect(prevenu).toBe(0)
   })
 })

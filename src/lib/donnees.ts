@@ -104,6 +104,72 @@ type FonctionsBase = Database['public']['Functions']
 /** Nom d'une fonction de la base, appelable par l'application. */
 export type NomFonction = keyof FonctionsBase
 
+/**
+ * Toutes les fonctions de la base. À compléter à chaque migration qui en crée une
+ * (TypeScript signale un oubli). `ecrit` : la fonction modifie des lignes ; son appel compte
+ * alors comme une écriture (voir « Écritures en cours » plus bas).
+ */
+export const FONCTIONS: Record<NomFonction, { ecrit: boolean }> = {
+  boucler_tache: { ecrit: true },
+  cloturer_tache: { ecrit: true },
+  dernieres_activites: { ecrit: false },
+  doublons_contact: { ecrit: false },
+  espace_photos: { ecrit: false },
+  etiquettes_contacts: { ecrit: false },
+  fusionner_contacts: { ecrit: true },
+  normaliser_recherche: { ecrit: false },
+  ordonner_photos_bien: { ecrit: true },
+  planifier_visite: { ecrit: true },
+  projets_sans_activite: { ecrit: false },
+  sortir_projet_acquereur: { ecrit: true },
+  sortir_projet_vendeur: { ecrit: true },
+  supprimer_contact_definitivement: { ecrit: true },
+}
+
+// ---------------------------------------------------------------------------
+// Écritures en cours
+// ---------------------------------------------------------------------------
+
+/**
+ * Nombre d'écritures envoyées à la base et pas encore revenues. La colonne de navigation
+ * s'en sert pour afficher « Enregistrement… » ; la pastille des tâches en retard se relit
+ * quand il retombe à zéro.
+ */
+let ecrituresEnCours = 0
+const suiveursEcritures = new Set<() => void>()
+
+function prevenirSuiveurs() {
+  suiveursEcritures.forEach((prevenir) => prevenir())
+}
+
+/** Nombre d'écritures en cours, à l'instant. */
+export function nombreEcrituresEnCours(): number {
+  return ecrituresEnCours
+}
+
+/**
+ * Prévient à chaque écriture qui commence ou se termine (réussie ou non).
+ * Renvoie la fonction qui arrête le suivi.
+ */
+export function suivreEcritures(prevenir: () => void): () => void {
+  suiveursEcritures.add(prevenir)
+  return () => {
+    suiveursEcritures.delete(prevenir)
+  }
+}
+
+/** Compte un travail d'écriture (base ou fichiers) le temps qu'il dure. */
+export async function pendantEcriture<D>(travail: () => PromiseLike<D>): Promise<D> {
+  ecrituresEnCours += 1
+  prevenirSuiveurs()
+  try {
+    return await travail()
+  } finally {
+    ecrituresEnCours -= 1
+    prevenirSuiveurs()
+  }
+}
+
 type Reponse = {
   data: unknown
   error: { code?: string; message?: string } | null
@@ -149,18 +215,23 @@ export function lister<T extends NomTable>(
 }
 
 /**
- * Lit une page de lignes, filtrées et triées par la base : jamais toute la table.
- * À utiliser pour toute liste qui peut grossir (contacts, biens…).
+ * Prépare une lecture filtrée : les lignes actives (ou archivées, selon `archives`) qui
+ * remplissent toutes les conditions. `compte` : la base compte aussi les lignes ;
+ * `'seul'` : elle ne renvoie que ce nombre, sans aucune ligne (lecture légère).
  */
-export async function listerPage<T extends NomTable>(
+function requeteFiltree<T extends NomTable>(
   client: SupabaseClient,
   table: T,
-  options: OptionsPage<T>,
-): Promise<Resultat<PageLignes<Ligne<T>>>> {
-  const { archives = 'sans', filtres = [], tri, debut, taille, compter = false } = options
-  let requete = compter
-    ? client.from(table).select('*', { count: 'exact' })
-    : client.from(table).select('*')
+  archives: 'sans' | 'avec' | 'seulement',
+  filtres: readonly Filtre<T>[],
+  compte: 'non' | 'avec' | 'seul',
+) {
+  let requete =
+    compte === 'seul'
+      ? client.from(table).select('id', { count: 'exact', head: true })
+      : compte === 'avec'
+        ? client.from(table).select('*', { count: 'exact' })
+        : client.from(table).select('*')
   if (TABLES[table].archivable) {
     if (archives === 'sans') requete = requete.is('archived_at', null)
     if (archives === 'seulement') requete = requete.not('archived_at', 'is', null)
@@ -181,6 +252,20 @@ export async function listerPage<T extends NomTable>(
       requete = requete.contains(colonne, valeurs)
     }
   }
+  return requete
+}
+
+/**
+ * Lit une page de lignes, filtrées et triées par la base : jamais toute la table.
+ * À utiliser pour toute liste qui peut grossir (contacts, biens…).
+ */
+export async function listerPage<T extends NomTable>(
+  client: SupabaseClient,
+  table: T,
+  options: OptionsPage<T>,
+): Promise<Resultat<PageLignes<Ligne<T>>>> {
+  const { archives = 'sans', filtres = [], tri, debut, taille, compter = false } = options
+  let requete = requeteFiltree(client, table, archives, filtres, compter ? 'avec' : 'non')
   for (const { colonne, croissant = true } of tri) {
     requete = requete.order(colonne, { ascending: croissant })
   }
@@ -199,6 +284,23 @@ export async function listerPage<T extends NomTable>(
 }
 
 /**
+ * Compte les lignes qui remplissent les conditions, sans en lire aucune : une seule requête,
+ * légère (le compteur des tâches en retard, par exemple).
+ */
+export function compter<T extends NomTable>(
+  client: SupabaseClient,
+  table: T,
+  options: { archives?: 'sans' | 'avec' | 'seulement'; filtres?: readonly Filtre<T>[] } = {},
+): Promise<Resultat<number>> {
+  const { archives = 'sans', filtres = [] } = options
+  const requete: PromiseLike<Reponse> = requeteFiltree(client, table, archives, filtres, 'seul')
+  return executer<number>(
+    requete.then((reponse) => ({ ...reponse, data: reponse.count ?? 0 })),
+    false,
+  )
+}
+
+/**
  * Appelle une fonction de la base (recherche de doublons, fusion…). Elle s'exécute avec
  * les droits du compte connecté : les règles d'accès par ligne s'appliquent.
  */
@@ -207,7 +309,9 @@ export function appeler<F extends NomFonction>(
   fonction: F,
   parametres?: FonctionsBase[F]['Args'],
 ): Promise<Resultat<FonctionsBase[F]['Returns']>> {
-  return executer<FonctionsBase[F]['Returns']>(client.rpc(fonction, parametres ?? {}), false)
+  const appel = () =>
+    executer<FonctionsBase[F]['Returns']>(client.rpc(fonction, parametres ?? {}), false)
+  return FONCTIONS[fonction].ecrit ? pendantEcriture(appel) : appel()
 }
 
 /**
@@ -222,9 +326,11 @@ export function supprimer<T extends TableSupprimable>(
   table: T,
   id: string,
 ): Promise<Resultat<{ id: string }>> {
-  return executer<{ id: string }>(
-    client.from(table).delete().eq('id', id).select('id').maybeSingle(),
-    true,
+  return pendantEcriture(() =>
+    executer<{ id: string }>(
+      client.from(table).delete().eq('id', id).select('id').maybeSingle(),
+      true,
+    ),
   )
 }
 
@@ -243,7 +349,9 @@ export function creer<T extends NomTable>(
   table: T,
   valeurs: Creation<T>,
 ): Promise<Resultat<Ligne<T>>> {
-  return executer<Ligne<T>>(client.from(table).insert(valeurs).select().single(), true)
+  return pendantEcriture(() =>
+    executer<Ligne<T>>(client.from(table).insert(valeurs).select().single(), true),
+  )
 }
 
 /** Modifie une ligne et la renvoie à jour. */
@@ -253,9 +361,11 @@ export function modifier<T extends NomTable>(
   id: string,
   valeurs: Modification<T>,
 ): Promise<Resultat<Ligne<T>>> {
-  return executer<Ligne<T>>(
-    client.from(table).update(valeurs).eq('id', id).select().maybeSingle(),
-    true,
+  return pendantEcriture(() =>
+    executer<Ligne<T>>(
+      client.from(table).update(valeurs).eq('id', id).select().maybeSingle(),
+      true,
+    ),
   )
 }
 
@@ -271,9 +381,8 @@ export function enregistrerUnique<T extends NomTable>(
   colonneUnique: (keyof Ligne<T> & string) | readonly (keyof Ligne<T> & string)[],
 ): Promise<Resultat<Ligne<T>>> {
   const onConflict = typeof colonneUnique === 'string' ? colonneUnique : colonneUnique.join(',')
-  return executer<Ligne<T>>(
-    client.from(table).upsert(valeurs, { onConflict }).select().single(),
-    true,
+  return pendantEcriture(() =>
+    executer<Ligne<T>>(client.from(table).upsert(valeurs, { onConflict }).select().single(), true),
   )
 }
 
@@ -283,9 +392,11 @@ function daterArchivage<T extends TableArchivable>(
   id: string,
   date: string | null,
 ): Promise<Resultat<Ligne<T>>> {
-  return executer<Ligne<T>>(
-    client.from(table).update({ archived_at: date }).eq('id', id).select().maybeSingle(),
-    true,
+  return pendantEcriture(() =>
+    executer<Ligne<T>>(
+      client.from(table).update({ archived_at: date }).eq('id', id).select().maybeSingle(),
+      true,
+    ),
   )
 }
 

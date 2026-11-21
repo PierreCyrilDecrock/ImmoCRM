@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Resultat } from './donnees'
+import { pendantEcriture, type Resultat } from './donnees'
 import { erreurDonnees, traduireErreurDonnees } from './erreurs-donnees'
 
 /**
@@ -36,15 +36,17 @@ export function envoyerFichier(
   chemin: string,
   fichier: Blob,
 ): Promise<Resultat<null>> {
-  return executer(
-    () =>
-      client.storage.from(espace).upload(chemin, fichier, {
-        contentType: fichier.type,
-        // Un fichier envoyé ne change jamais : le navigateur peut le garder longtemps.
-        cacheControl: '31536000',
-        upsert: false,
-      }),
-    () => null,
+  return pendantEcriture(() =>
+    executer(
+      () =>
+        client.storage.from(espace).upload(chemin, fichier, {
+          contentType: fichier.type,
+          // Un fichier envoyé ne change jamais : le navigateur peut le garder longtemps.
+          cacheControl: '31536000',
+          upsert: false,
+        }),
+      () => null,
+    ),
   )
 }
 
@@ -54,9 +56,11 @@ export function supprimerFichiers(
   espace: string,
   chemins: readonly string[],
 ): Promise<Resultat<null>> {
-  return executer(
-    () => client.storage.from(espace).remove([...chemins]),
-    () => null,
+  return pendantEcriture(() =>
+    executer(
+      () => client.storage.from(espace).remove([...chemins]),
+      () => null,
+    ),
   )
 }
 
