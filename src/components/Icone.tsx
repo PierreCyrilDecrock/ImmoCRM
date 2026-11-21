@@ -210,6 +210,19 @@ const TRACES = {
       <path d="M12 2.5v4M10 4.5l2 2 2-2" />
     </>
   ),
+  copier: (
+    <>
+      <rect x="8.5" y="8.5" width="12" height="12" rx="2" />
+      <path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3" />
+    </>
+  ),
+  calendrier: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+      <path d="M8 14h2M14 14h2M8 17h2" />
+    </>
+  ),
   vide: (
     <>
       <path d="M3.5 13 6 5.5A2 2 0 0 1 7.9 4h8.2A2 2 0 0 1 18 5.5L20.5 13" />

@@ -102,7 +102,7 @@ Les gestes sur une tâche (cocher avec la boucle de relance, reporter, ouvrir, r
 | `Page` | Gabarit de **toute** page : titre, lien de retour, actions, contenu. Met aussi à jour le titre de l'onglet. | `titre`, `retour?` (`{ vers, libelle }`), `actions?`, `large?` (toute la largeur : tableaux) |
 | `Carte` | Bloc de contenu sur fond `surface`. | `titre?` |
 | `Liste` + `LigneListe` | Liste de lignes séparées par un filet. Une ligne ouvre une page (`vers`), lance une action (`onAction`) ou reste inerte. | `titre`, `detail?`, `icone?`, `vignette?` (petite photo carrée à gauche ; `null` : le dessin `icone` tient la place), `fin?`, `vers?`, `onAction?` |
-| `Information` | Une information d'une fiche : son nom, sa valeur. À placer dans une liste `<dl className="divide-y divide-bord">`. | `nom`, valeur en contenu |
+| `Information` | Une information d'une fiche : son nom, sa valeur, et un petit geste facultatif après la valeur (`BoutonCopier`), qui n'apparaît qu'au survol de la ligne sur ordinateur. À placer dans une liste `<dl className="divide-y divide-bord">`. | `nom`, `fin?`, valeur en contenu |
 | `SuiteListe` | Bas d'une liste lue page par page : charge la suite à l'approche du bas de l'écran, avec un bouton de secours. Se branche sur `useListePaginee` (`src/lib/liste-paginee.ts`). | `resteALire`, `suiteEnCours`, `erreurSuite`, `chargerSuite` |
 | `CadreConnexion` | Cadre des écrans hors session (connexion, mot de passe). | `titre` |
 | `TableauPipeline` | Tableau d'un pipeline : liste groupée par étape sur téléphone, une colonne par étape sur tablette et ordinateur, cartes à glisser par leur poignée vers une autre colonne. Sans logique métier : sert aux pipelines vendeur et acquéreur. | `colonnes` (`{ etape, libelle, critere, projets }`), `cle`, `etapeDe`, `estEtape`, `nomGlisse`, `carte(projet, { estompee, onSaisir? })`, `onDeposer`, `enCours` |
@@ -140,6 +140,20 @@ Un formulaire long (la modification d'un contact) est découpé en `Carte`, une 
 
 Un formulaire est une colonne `flex flex-col gap-4` ; sur grand écran, une grille `grid gap-4 md:grid-cols-2`. Le bouton d'envoi est en bas, en `pleineLargeur` sur téléphone. Renseigner `type`, `inputMode` et `autoComplete` pour que le téléphone propose le bon clavier.
 
+### Gestes rapides
+
+Trois gestes communs, construits à l'étape D.1 et réutilisés par les écrans de la phase D. **Règle : chaque geste rapide a un équivalent visible** ; le glisser n'est jamais le seul chemin.
+
+| Composant | Rôle | Propriétés principales |
+| --- | --- | --- |
+| `ReportsRapides` (`src/features/taches/`) | Rangée « Demain », « Dans 3 jours », « Lundi » (le prochain lundi après aujourd'hui) et un calendrier. Un toucher reporte aussitôt, sans fenêtre ; le calendrier ouvre `ReportTache` pour une autre date. Les dates viennent de la fonction pure `reportsRapides` (`echeances.ts`) ; les trois boutons restent à leur place même quand deux tombent le même jour (le vendredi, « Dans 3 jours » est lundi). Chaque bouton annonce sa date aux lecteurs d'écran (« Demain, dim. 22 nov. »). | `aujourdhui`, `titre`, `onReporter(date)`, `onAutreDate`, `desactive?`, `auSurvol?` (sur ordinateur, visible au survol de la ligne ou au clavier), `avecLibelle?` (« Reporter » devant, dès la tablette) |
+| `BoutonCopier` (`src/components/`) | Petit « Copier » à côté d'un numéro, d'un courriel, d'une adresse. Copie la valeur, dit « Copié » deux secondes (annoncé aux lecteurs d'écran) ; si le navigateur refuse, un message d'erreur l'explique. Sur ordinateur, visible au survol de la ligne ou au clavier ; sur écran tactile, toujours visible. Se place dans `Information` (`fin`) ou dans toute ligne qui porte `group/ligne`. | `valeur` (texte copié), `quoi` (« le numéro », « l'adresse ») |
+| `LigneGlissable` (`src/components/`) | Ligne de liste (`li`) qui, glissée vers la gauche au doigt, découvre ses actions (« Reporter » en ambre, « Fait » en vert). Au-delà du seuil (60 % des actions découvertes) elle reste ouverte ; sinon elle se remet en place. Un toucher ailleurs ou sur la ligne la referme. Le défilement vertical et le zoom restent au navigateur, un toucher normal reste un toucher ; inactive à la souris et au stylet. Les actions découvertes sont cachées aux lecteurs d'écran et au clavier : la ligne garde ses boutons visibles. Calculs dans `src/lib/glisser.ts` (sens du geste, freinage, seuil). | `actions` (`{ libelle, icone, genre: 'alerte' \| 'succes', onAction }`), `desactivee?`, `className?` |
+
+Un report fait par `useActionsTache().reporter` (rangée, fenêtre de report, glisser) est confirmé avec « Annuler », qui rétablit l'ancienne date. Branchés aujourd'hui : la prochaine action de la fiche Contact (`ProchaineAction`) et les lignes de la page Tâches (`ListeTaches` avec `gestesRapides` : la rangée remplace le bouton « Reporter », la ligne se glisse ; « Fait » passe par la boucle de relance quand la tâche est liée à un contact). Les boutons « Copier » sont sur la fiche Contact (téléphones, courriels, adresse) et la fiche Bien (adresse).
+
+Pour un geste qui n'apparaît qu'au survol, `VISIBLE_AU_SURVOL` (`src/components/survol.ts`) donne les classes : caché sur un appareil à souris tant que la ligne (`group/ligne`) n'est ni survolée ni atteinte au clavier, toujours visible sur écran tactile, sans faire sauter la ligne.
+
 ### Fenêtre modale
 
 `FenetreModale` : plein écran sur téléphone, centrée au-delà. Se ferme par la croix, la touche Échap ou un clic à côté. Les boutons vont dans `pied`, fixé en bas ; mettre l'action principale en premier. Un `ChampSaisie`, un `ChampTexteLong` ou un `ChampRecherche` marqué `autoFocus` reçoit le curseur à l'ouverture (sinon il irait sur la croix) : pour taper aussitôt.
@@ -166,6 +180,7 @@ Un formulaire est une colonne `flex flex-col gap-4` ; sur grand écran, une gril
 | --- | --- |
 | Message qui reste dans la page ou le formulaire (erreur de saisie, information) | `<Message genre="erreur | succes | info">` |
 | Confirmation passagère après une action (« Contact enregistré ») | `useNotifications().notifier('succes', '…')` : disparaît seule après 4 secondes |
+| Confirmation qu'on peut défaire (« Reportée au … ») | `notifier('succes', '…', { libelle: 'Annuler', onAction })` : bouton dans le message, 7 secondes, en pause tant que la souris ou le clavier est dessus ; Ctrl Z (⌘ Z) le déclenche hors d'un champ |
 | Échec d'une action, signalé par-dessus la page | `useNotifications().notifier('erreur', '…')` : reste jusqu'à fermeture |
 | Erreur sur un champ précis | propriété `erreur` du champ |
 
@@ -185,17 +200,14 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 ### Dessins
 
-`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+`<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`, `copier`, `calendrier`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
 ## Composants prévus (phase D)
 
-Les maquettes de la version 3 (canevas « ImmoCRM — nouveau style ») montrent des composants qui n'existent pas encore. Ils sont construits par les étapes D.1 à D.7 du plan ; chaque étape déplace ses composants de ce tableau vers les rubriques ci-dessus quand ils existent. Les noms sont indicatifs.
+Les maquettes de la version 3 (canevas « ImmoCRM — nouveau style ») montrent des composants qui n'existent pas encore. Ils sont construits par les étapes D.2 à D.7 du plan (ceux de D.1 sont décrits dans « Gestes rapides » ci-dessus) ; chaque étape déplace ses composants de ce tableau vers les rubriques ci-dessus quand ils existent. Les noms sont indicatifs.
 
 | Composant | Rôle | Étape |
 | --- | --- | --- |
-| `ReportsRapides` | Rangée « Demain », « Dans 3 jours », « Lundi » et calendrier ; enregistre aussitôt, avec « Annuler » dans la notification | D.1 |
-| `BoutonCopier` | « Copier » à côté d'un numéro, d'un courriel, d'une adresse ; visible au survol sur ordinateur, toujours sur écran tactile | D.1 |
-| `LigneGlissable` | Ligne qui, glissée vers la gauche sur écran tactile, découvre « Reporter » et « Fait » ; jamais le seul chemin | D.1 |
 | Colonne de navigation | Recherche, six entrées, « Consultés récemment », bouton « Créer » (N), état d'enregistrement | D.2 |
 | Pastille des retards | Nombre de tâches en retard sur l'entrée Tâches (point rouge sur téléphone) | D.2 |
 | `CarteMaintenant` | Le prochain rendez-vous sur fond encre : temps restant, Itinéraire, Appeler, « À préparer » | D.3 |

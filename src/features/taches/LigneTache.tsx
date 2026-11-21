@@ -1,11 +1,13 @@
 import Bouton from '../../components/Bouton'
 import Etiquette from '../../components/Etiquette'
 import Icone from '../../components/Icone'
+import LigneGlissable from '../../components/LigneGlissable'
 import { formaterDate } from '../../lib/dates'
 import { adresseBien } from '../biens/biens'
 import { nomComplet } from '../contacts/contacts'
 import { libelleJour } from './echeances'
 import { libelleRecurrence } from './recurrence'
+import ReportsRapides from './ReportsRapides'
 import {
   genreEtatTache,
   horaireTache,
@@ -25,12 +27,19 @@ type Props = {
   onReporter: () => void
   onOuvrir: () => void
   onRouvrir: () => void
+  /**
+   * Gestes rapides (page Tâches) : la rangée de reports en un geste à la place du bouton
+   * « Reporter », et, sur écran tactile, la ligne qui se glisse pour découvrir « Reporter »
+   * et « Fait ». Reçoit la date choisie dans la rangée.
+   */
+  onReporterA?: (echeance: string) => void
 }
 
 /**
  * Une tâche dans une liste : la case à cocher à gauche (faite en un geste), le contenu au
  * milieu (le toucher ouvre la tâche), « Reporter » à droite. Une tâche close montre son état
- * et propose de la rouvrir.
+ * et propose de la rouvrir. Avec `onReporterA`, les reports se font en un geste et la ligne
+ * se glisse au doigt.
  */
 export default function LigneTache({
   affichee,
@@ -41,6 +50,7 @@ export default function LigneTache({
   onReporter,
   onOuvrir,
   onRouvrir,
+  onReporterA,
 }: Props) {
   const { tache, contact, bien } = affichee
   const aFaire = tache.etat === 'a_faire'
@@ -51,9 +61,10 @@ export default function LigneTache({
     masquer === 'contact' || contact === null ? null : nomComplet(contact),
     masquer === 'bien' || bien === null ? null : adresseBien(bien),
   ].filter((lien) => lien !== null)
+  const gestesRapides = aFaire && onReporterA !== undefined
 
-  return (
-    <li className="flex items-start gap-1 py-1 pr-2 pl-1">
+  const contenu = (
+    <div className="flex items-start gap-1 py-1 pr-2 pl-1">
       {aFaire ? (
         <button
           type="button"
@@ -72,63 +83,95 @@ export default function LigneTache({
         </span>
       )}
 
-      <button
-        type="button"
-        onClick={onOuvrir}
-        className="min-w-0 flex-1 rounded-lg py-2 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent"
+      <div
+        className={`flex min-w-0 flex-1 flex-col ${gestesRapides ? 'pb-1 md:flex-row md:items-center md:gap-2 md:pb-0' : ''}`}
       >
-        <span
-          className={`block text-base font-medium break-words ${aFaire ? 'text-encre' : 'text-encre-douce line-through'}`}
+        <button
+          type="button"
+          onClick={onOuvrir}
+          className="min-w-0 flex-1 rounded-lg py-2 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent"
         >
-          {tache.titre}
-        </span>
-        <span className="block text-sm text-encre-douce">
-          <span className={enRetard ? 'font-semibold text-danger' : undefined}>
-            {libelleJour(tache.echeance, aujourdhui)}
-          </span>
-          {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
-          {' · '}
-          {libelleCategorie(tache.categorie)}
-        </span>
-        {tache.lieu !== '' && (
-          <span className="flex items-start gap-1 text-sm break-words text-encre-douce">
-            <Icone nom="lieu" className="mt-0.5 size-4" />
-            {tache.lieu}
-          </span>
-        )}
-        {liens.length > 0 && (
-          <span className="block truncate text-sm text-encre-douce">{liens.join(' · ')}</span>
-        )}
-        {(tache.priorite === 1 || recurrence !== null || !aFaire) && (
-          <span className="mt-1 flex flex-wrap gap-1">
-            {tache.priorite === 1 && aFaire && <Etiquette genre="danger">Priorité haute</Etiquette>}
-            {recurrence !== null && <Etiquette>{recurrence}</Etiquette>}
-            {!aFaire && (
-              <Etiquette genre={genreEtatTache(tache.etat)}>
-                {libelleEtatTache(tache.etat)} le {formaterDate(tache.cloturee_le)}
-              </Etiquette>
-            )}
-          </span>
-        )}
-      </button>
-
-      <div className="shrink-0 pt-0">
-        {aFaire ? (
-          <Bouton
-            variante="discret"
-            icone="horloge"
-            disabled={occupee}
-            onClick={onReporter}
-            aria-label={`Reporter « ${tache.titre} »`}
+          <span
+            className={`block text-base font-medium break-words ${aFaire ? 'text-encre' : 'text-encre-douce line-through'}`}
           >
-            <span className="hidden sm:inline">Reporter</span>
-          </Bouton>
-        ) : (
-          <Bouton variante="discret" disabled={occupee} onClick={onRouvrir}>
-            Rouvrir
-          </Bouton>
+            {tache.titre}
+          </span>
+          <span className="block text-sm text-encre-douce">
+            <span className={enRetard ? 'font-semibold text-danger' : undefined}>
+              {libelleJour(tache.echeance, aujourdhui)}
+            </span>
+            {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
+            {' · '}
+            {libelleCategorie(tache.categorie)}
+          </span>
+          {tache.lieu !== '' && (
+            <span className="flex items-start gap-1 text-sm break-words text-encre-douce">
+              <Icone nom="lieu" className="mt-0.5 size-4" />
+              {tache.lieu}
+            </span>
+          )}
+          {liens.length > 0 && (
+            <span className="block truncate text-sm text-encre-douce">{liens.join(' · ')}</span>
+          )}
+          {(tache.priorite === 1 || recurrence !== null || !aFaire) && (
+            <span className="mt-1 flex flex-wrap gap-1">
+              {tache.priorite === 1 && aFaire && (
+                <Etiquette genre="danger">Priorité haute</Etiquette>
+              )}
+              {recurrence !== null && <Etiquette>{recurrence}</Etiquette>}
+              {!aFaire && (
+                <Etiquette genre={genreEtatTache(tache.etat)}>
+                  {libelleEtatTache(tache.etat)} le {formaterDate(tache.cloturee_le)}
+                </Etiquette>
+              )}
+            </span>
+          )}
+        </button>
+        {gestesRapides && (
+          <ReportsRapides
+            aujourdhui={aujourdhui}
+            titre={tache.titre}
+            desactive={occupee}
+            auSurvol
+            onReporter={onReporterA}
+            onAutreDate={onReporter}
+          />
         )}
       </div>
-    </li>
+
+      {!gestesRapides && (
+        <div className="shrink-0 pt-0">
+          {aFaire ? (
+            <Bouton
+              variante="discret"
+              icone="horloge"
+              disabled={occupee}
+              onClick={onReporter}
+              aria-label={`Reporter « ${tache.titre} »`}
+            >
+              <span className="hidden sm:inline">Reporter</span>
+            </Bouton>
+          ) : (
+            <Bouton variante="discret" disabled={occupee} onClick={onRouvrir}>
+              Rouvrir
+            </Bouton>
+          )}
+        </div>
+      )}
+    </div>
+  )
+
+  if (!gestesRapides) return <li>{contenu}</li>
+  return (
+    <LigneGlissable
+      className="group/ligne"
+      desactivee={occupee}
+      actions={[
+        { libelle: 'Reporter', icone: 'horloge', genre: 'alerte', onAction: onReporter },
+        { libelle: 'Fait', icone: 'succes', genre: 'succes', onAction: onCocher },
+      ]}
+    >
+      {contenu}
+    </LigneGlissable>
   )
 }

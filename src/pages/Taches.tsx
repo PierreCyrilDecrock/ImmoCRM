@@ -171,7 +171,12 @@ export default function Taches() {
         <div className={liste.rafraichissement ? 'opacity-60' : undefined}>
           <Carte>
             <div className="-mx-4 -my-2">
-              <ListeTaches taches={liste.lignes} aujourdhui={aujourdhui} onChangement={relire} />
+              <ListeTaches
+                taches={liste.lignes}
+                aujourdhui={aujourdhui}
+                onChangement={relire}
+                gestesRapides
+              />
             </div>
           </Carte>
           <SuiteListe

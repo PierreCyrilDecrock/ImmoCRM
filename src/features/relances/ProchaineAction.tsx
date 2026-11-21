@@ -6,8 +6,11 @@ import { dateDuJour, formaterDate } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import type { Contact } from '../contacts/contacts'
 import { lireReglages } from '../reglages/reglages'
+import { useActionsTache } from '../taches/actions-tache'
 import { libelleJour } from '../taches/echeances'
 import FormulaireTache from '../taches/FormulaireTache'
+import ReportsRapides from '../taches/ReportsRapides'
+import ReportTache from '../taches/ReportTache'
 import { horaireTache, lireProchaineTache, type Tache } from '../taches/taches'
 import { titreRelance } from './boucle'
 import BoucleRelance from './BoucleRelance'
@@ -28,7 +31,8 @@ type Etat =
 
 /**
  * En tête de la fiche Contact : la prochaine action et sa date, à cocher sur place (ce qui
- * ouvre la boucle de relance) ; ou, s'il n'y en a pas, un avertissement et de quoi
+ * ouvre la boucle de relance) ou à reporter d'un toucher (demain, dans 3 jours, lundi, ou
+ * une autre date), avec « Annuler » dans la confirmation ; ou, s'il n'y en a pas, un avertissement et de quoi
  * planifier une relance à la date que donne la température.
  */
 export default function ProchaineAction({ contact, version, onChangement }: Props) {
@@ -37,6 +41,8 @@ export default function ProchaineAction({ contact, version, onChangement }: Prop
   const [boucle, setBoucle] = useState(false)
   const [nouvelle, setNouvelle] = useState<{ echeance: string } | null>(null)
   const [preparation, setPreparation] = useState(false)
+  const [autreDate, setAutreDate] = useState(false)
+  const actions = useActionsTache(onChangement)
   const aujourdhui = dateDuJour()
 
   useEffect(() => {
@@ -84,22 +90,39 @@ export default function ProchaineAction({ contact, version, onChangement }: Prop
   return (
     <>
       {tache !== null ? (
-        <div className="flex items-center gap-3 rounded-2xl bg-surface p-3 ring-1 ring-bord">
-          <Icone nom="taches" className="size-6 shrink-0 text-accent" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-encre-douce">Prochaine action</p>
-            <p className="text-base font-semibold break-words text-encre">{tache.titre}</p>
-            <p className="text-sm">
-              <span className={enRetard ? 'font-semibold text-danger' : 'text-encre-douce'}>
-                {libelleJour(tache.echeance, aujourdhui)}
-                {enRetard && ' · en retard'}
-              </span>
-              {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
-            </p>
+        <div className="flex flex-col gap-3 rounded-2xl bg-surface p-3 ring-1 ring-bord">
+          <div className="flex items-center gap-3">
+            <Icone nom="taches" className="size-6 shrink-0 text-accent" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-encre-douce">Prochaine action</p>
+              <p className="text-base font-semibold break-words text-encre">{tache.titre}</p>
+              <p className="text-sm">
+                <span className={enRetard ? 'font-semibold text-danger' : 'text-encre-douce'}>
+                  {libelleJour(tache.echeance, aujourdhui)}
+                  {enRetard && ' · en retard'}
+                </span>
+                {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
+              </p>
+            </div>
+            <Bouton
+              variante="secondaire"
+              icone="succes"
+              disabled={actions.occupee === tache.id}
+              onClick={() => setBoucle(true)}
+            >
+              Fait
+            </Bouton>
           </div>
-          <Bouton variante="secondaire" icone="succes" onClick={() => setBoucle(true)}>
-            Fait
-          </Bouton>
+          <div className="md:pl-9">
+            <ReportsRapides
+              aujourdhui={aujourdhui}
+              titre={tache.titre}
+              avecLibelle
+              desactive={actions.occupee === tache.id}
+              onReporter={(date) => void actions.reporter(tache, date, aujourdhui)}
+              onAutreDate={() => setAutreDate(true)}
+            />
+          </div>
         </div>
       ) : (
         <div
@@ -136,6 +159,20 @@ export default function ProchaineAction({ contact, version, onChangement }: Prop
           aujourdhui={aujourdhui}
           onFermer={() => setBoucle(false)}
           onChangement={onChangement}
+        />
+      )}
+
+      {autreDate && tache !== null && (
+        <ReportTache
+          tache={tache}
+          aujourdhui={aujourdhui}
+          envoi={actions.occupee === tache.id}
+          onFermer={() => setAutreDate(false)}
+          onReporter={(echeance) => {
+            void actions.reporter(tache, echeance, aujourdhui).then((reussi) => {
+              if (reussi) setAutreDate(false)
+            })
+          }}
         />
       )}
 
