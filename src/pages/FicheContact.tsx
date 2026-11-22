@@ -397,7 +397,6 @@ export default function FicheContact() {
       case 'activite':
         return (
           <>
-            {ordinateur && <NotesContact contact={contact} />}
             <SectionTaches
               contact={contact}
               version={version}
@@ -414,7 +413,6 @@ export default function FicheContact() {
           <>
             <SectionProjetsVendeurs contact={contact} lectureSeule={lectureSeule} avecEtapes />
             <SectionProjetsAcquereurs contact={contact} lectureSeule={lectureSeule} avecEtapes />
-            {!ordinateur && <BiensContact biens={biens} />}
           </>
         )
       case 'taches':
@@ -503,6 +501,7 @@ export default function FicheContact() {
               cartes={cartes}
             />
             {prochaineAction}
+            <NotesContact contact={contact} />
             <Carte>
               {sansCoordonneesTexte}
               {coordonnees(true)}
