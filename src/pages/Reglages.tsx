@@ -50,6 +50,8 @@ import { controlerAccesAnonyme, type BilanAccesAnonyme } from '../lib/controle-a
 import { TABLES } from '../lib/donnees'
 import {
   insererDonneesFictives,
+  JEU_AUJOURDHUI_CHARGE,
+  JEUX_FICTIFS,
   NOMBRE_BIENS_FICTIFS,
   NOMBRE_CONTACTS_FICTIFS,
   NOMBRE_TACHES_FICTIVES,
@@ -488,13 +490,17 @@ function CarteSecurite() {
 /** Visible uniquement sur le projet de test : aperçu et ajout des données fictives. */
 function CarteDonneesFictives() {
   const { notifier } = useNotifications()
-  const [envoi, setEnvoi] = useState(false)
+  const [envoi, setEnvoi] = useState<'tout' | 'aujourdhui' | null>(null)
 
-  async function ajouter() {
+  async function ajouter(lot: 'tout' | 'aujourdhui') {
     if (environnement === null) return
-    setEnvoi(true)
-    const bilan = await insererDonneesFictives(exigerSupabase(), environnement)
-    setEnvoi(false)
+    setEnvoi(lot)
+    const bilan = await insererDonneesFictives(
+      exigerSupabase(),
+      environnement,
+      lot === 'aujourdhui' ? [JEU_AUJOURDHUI_CHARGE] : JEUX_FICTIFS,
+    )
+    setEnvoi(null)
     if (bilan.ok) notifier('succes', `${bilan.lignes} fiches fictives ajoutées`)
     else notifier('erreur', `L'ajout a échoué. ${bilan.message}`)
   }
@@ -527,10 +533,26 @@ function CarteDonneesFictives() {
           <Bouton
             variante="secondaire"
             pleineLargeur
-            disabled={envoi}
-            onClick={() => void ajouter()}
+            disabled={envoi !== null}
+            onClick={() => void ajouter('tout')}
           >
-            {envoi ? 'Ajout en cours…' : 'Ajouter des données fictives'}
+            {envoi === 'tout' ? 'Ajout en cours…' : 'Ajouter des données fictives'}
+          </Bouton>
+        </div>
+        <p className="text-sm text-encre-douce">
+          Cas d'essai de l'écran Aujourd'hui : 6 contacts (vendeurs, acquéreurs, un prospect), leur
+          dernier échange, et 22 tâches : 17 en retard (8 relances, qui vont dans « À rappeler », et
+          9 autres, dans le bloc Tâches) et 5 aujourd'hui (un rendez-vous à 14 h 30, 2 relances, 2
+          tâches).
+        </p>
+        <div className="md:self-start">
+          <Bouton
+            variante="secondaire"
+            pleineLargeur
+            disabled={envoi !== null}
+            onClick={() => void ajouter('aujourdhui')}
+          >
+            {envoi === 'aujourdhui' ? 'Ajout en cours…' : "Remplir l'écran Aujourd'hui"}
           </Bouton>
         </div>
       </div>

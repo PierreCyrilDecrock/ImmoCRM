@@ -927,6 +927,219 @@ const JEU_JOURNEE: JeuFictif = {
   },
 }
 
+/**
+ * Cas d'essai « Aujourd'hui chargé » : une journée en retard, pour voir comment l'écran
+ * Aujourd'hui répartit les tâches. 17 tâches en retard (8 relances, qui vont dans
+ * « À rappeler », et 9 autres, qui vont dans le groupe « En retard » du bloc Tâches) et 5 du
+ * jour (un rendez-vous à l'heure dans l'agenda, 2 relances, 2 tâches). Six contacts aux
+ * rôles variés (vendeurs, acquéreurs, un vendeur-acquéreur, un prospect sans rôle), tous
+ * d'accord pour être appelés, et leur dernier échange. Lot à part : il n'est ajouté que par
+ * son propre bouton.
+ */
+
+/** Les rôles des six contacts du cas d'essai, dans l'ordre. */
+const ROLES_AUJOURDHUI_CHARGE: readonly Creation<'contacts'>['roles'][] = [
+  ['vendeur'],
+  ['vendeur'],
+  ['acquereur'],
+  ['acquereur'],
+  ['vendeur', 'acquereur'],
+  [],
+]
+
+/** Les six contacts du cas d'essai : des personnes fictives d'accord pour être appelées. */
+export function contactsAujourdhuiCharge(): Creation<'contacts'>[] {
+  return ROLES_AUJOURDHUI_CHARGE.map((roles, rang) => {
+    // Des rangs à part, pour ne pas refaire les personnes des autres lots.
+    const personne = personneFictive(100 + rang)
+    return {
+      type: 'personne',
+      civilite: rang % 2 === 0 ? 'mme' : 'm',
+      prenom: personne.prenom,
+      nom: personne.nom,
+      raison_sociale: '',
+      telephones: [`+33${personne.telephone.replace(/\s/g, '').slice(1)}`],
+      courriels: [personne.courriel],
+      adresse: personne.adresse,
+      code_postal: personne.codePostal,
+      ville: personne.ville,
+      notes: "Fiche fictive, créée pour le cas d'essai « Aujourd'hui chargé ».",
+      roles,
+      etiquettes: ['fictif', 'aujourd’hui chargé'],
+      temperature: rang % 2 === 0 ? 'chaud' : 'tiede',
+      collecte_origine: 'Coordonnées fictives, inventées pour les essais',
+      collecte_date: '2026-05-04',
+      accord_appel: 'oui',
+      accord_appel_date: '2026-09-15',
+      accord_appel_preuve: 'Accord fictif, donné lors d’un échange inventé',
+    }
+  })
+}
+
+/**
+ * Les tâches du cas d'essai. `jours` : écart avec aujourd'hui (négatif : en retard) ;
+ * `contact` : rang du contact lié, `null` pour aucun.
+ */
+const MODELES_AUJOURDHUI_CHARGE: readonly (Omit<Creation<'taches'>, 'echeance'> & {
+  jours: number
+  contact: number | null
+})[] = [
+  // 8 relances en retard : elles vont dans « À rappeler ».
+  {
+    titre: 'Relancer après l’avis de valeur',
+    categorie: 'relance',
+    motif: 'Voulait en parler à ses enfants.',
+    jours: -15,
+    contact: 0,
+  },
+  {
+    titre: 'Confirmer la seconde visite',
+    categorie: 'relance',
+    motif: 'Hésite entre deux biens.',
+    jours: -8,
+    contact: 2,
+  },
+  {
+    titre: 'Proposer le mandat exclusif',
+    categorie: 'relance',
+    jours: -5,
+    contact: 1,
+    priorite: 1,
+  },
+  {
+    titre: 'Faire le point sur le financement',
+    categorie: 'relance',
+    motif: 'Rendez-vous à la banque cette semaine.',
+    jours: -3,
+    contact: 3,
+  },
+  { titre: 'Prendre des nouvelles', categorie: 'relance', jours: -2, contact: 5 },
+  {
+    titre: 'Rappeler pour l’offre',
+    categorie: 'relance',
+    motif: 'Offre fictive à confirmer.',
+    jours: -2,
+    contact: 4,
+  },
+  { titre: 'Envoyer de nouveaux biens', categorie: 'relance', jours: -1, contact: 2 },
+  { titre: 'Relancer pour les diagnostics', categorie: 'relance', jours: -1, contact: 0 },
+  // 9 autres tâches en retard : groupe « En retard » du bloc Tâches.
+  {
+    titre: 'Commander le diagnostic amiante',
+    categorie: 'administratif',
+    jours: -12,
+    contact: null,
+  },
+  { titre: 'Classer les mandats signés', categorie: 'autre', jours: -10, contact: null },
+  { titre: 'Boîtage du quartier fictif', categorie: 'prospection', jours: -6, contact: null },
+  {
+    titre: 'Estimation de la maison',
+    categorie: 'estimation',
+    jours: -4,
+    contact: 1,
+    heure: '10:00',
+  },
+  { titre: 'Envoyer le dossier au notaire', categorie: 'administratif', jours: -3, contact: 4 },
+  { titre: 'Mettre à jour l’annonce', categorie: 'autre', jours: -3, contact: 0 },
+  { titre: 'Visite du bien fictif', categorie: 'visite', jours: -2, contact: 3, heure: '18:00' },
+  {
+    titre: 'Rendez-vous resté ouvert',
+    categorie: 'rendez_vous',
+    jours: -1,
+    contact: 5,
+    heure: '17:30',
+  },
+  { titre: 'Facture du photographe', categorie: 'administratif', jours: -1, contact: null },
+  // 5 du jour : un rendez-vous à l'heure (agenda), 2 relances, 2 tâches.
+  {
+    titre: 'Signature du mandat',
+    categorie: 'rendez_vous',
+    jours: 0,
+    contact: 1,
+    heure: '14:30',
+    duree: 60,
+  },
+  { titre: 'Rappeler après la visite', categorie: 'relance', jours: 0, contact: 3 },
+  { titre: 'Prendre rendez-vous pour l’estimation', categorie: 'relance', jours: 0, contact: 5 },
+  { titre: 'Imprimer le compromis type', categorie: 'administratif', jours: 0, contact: null },
+  { titre: 'Publier la photo du jour', categorie: 'autre', jours: 0, contact: null },
+]
+
+/** Nombre de tâches du cas d'essai. */
+export const NOMBRE_TACHES_AUJOURDHUI_CHARGE = MODELES_AUJOURDHUI_CHARGE.length
+
+/** Les tâches du cas d'essai, datées par rapport à `aujourdhui` et liées aux contacts donnés. */
+export function tachesAujourdhuiCharge(
+  aujourdhui: string,
+  contacts: readonly string[],
+): Creation<'taches'>[] {
+  return MODELES_AUJOURDHUI_CHARGE.map(({ jours, contact, ...valeurs }) => ({
+    ...valeurs,
+    titre: `${valeurs.titre} (fictif)`,
+    motif: valeurs.motif ?? 'Tâche fictive, créée pour les essais.',
+    echeance: ajouterJours(aujourdhui, jours),
+    contact_id: contact === null ? null : (contacts[contact] ?? null),
+  }))
+}
+
+/**
+ * Le dernier échange avec chaque contact du cas d'essai (le dernier contact n'en a pas) :
+ * rendez-vous il y a 8 jours, appel sur messagerie hier, SMS aujourd'hui, visite il y a
+ * 20 jours, courriel il y a 3 jours.
+ */
+export function activitesAujourdhuiCharge(
+  aujourdhui: string,
+  contacts: readonly string[],
+): Creation<'activites'>[] {
+  const echanges = [
+    { type: 'rendez_vous', jours: -8, resultat: null },
+    { type: 'appel', jours: -1, resultat: 'messagerie' },
+    { type: 'sms', jours: 0, resultat: null },
+    { type: 'visite', jours: -20, resultat: null },
+    { type: 'courriel', jours: -3, resultat: null },
+  ] as const
+  return echanges.flatMap((echange, rang) => {
+    const contactId = contacts[rang]
+    if (contactId === undefined) return []
+    return [
+      {
+        type: echange.type,
+        resultat: echange.resultat,
+        date_activite: ajouterJours(aujourdhui, echange.jours),
+        heure: '09:30',
+        compte_rendu: 'Échange fictif, inventé pour les essais.',
+        contact_id: contactId,
+      },
+    ]
+  })
+}
+
+/** Lignes ajoutées par le cas d'essai : contacts, tâches et activités. */
+export const NOMBRE_LIGNES_AUJOURDHUI_CHARGE =
+  ROLES_AUJOURDHUI_CHARGE.length + NOMBRE_TACHES_AUJOURDHUI_CHARGE + 5
+
+export const JEU_AUJOURDHUI_CHARGE: JeuFictif = {
+  libelle: "Aujourd'hui chargé",
+  async inserer(client) {
+    const aujourdhui = dateDuJour()
+    const contacts: string[] = []
+    for (const contact of contactsAujourdhuiCharge()) {
+      const cree = await creer(client, 'contacts', contact)
+      if (!cree.ok) return cree
+      contacts.push(cree.donnees.id)
+    }
+    for (const activite of activitesAujourdhuiCharge(aujourdhui, contacts)) {
+      const creee = await creer(client, 'activites', activite)
+      if (!creee.ok) return creee
+    }
+    for (const tache of tachesAujourdhuiCharge(aujourdhui, contacts)) {
+      const creee = await creer(client, 'taches', tache)
+      if (!creee.ok) return creee
+    }
+    return { ok: true, donnees: NOMBRE_LIGNES_AUJOURDHUI_CHARGE }
+  },
+}
+
 /** Les lots disponibles. Chaque étape qui crée une table y ajoute le sien. */
 export const JEUX_FICTIFS: readonly JeuFictif[] = [
   JEU_CONTACTS,
