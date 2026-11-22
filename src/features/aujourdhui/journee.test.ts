@@ -14,7 +14,6 @@ import {
   lienItineraire,
   lireReplis,
   qualificationEnRetard,
-  resumeDerniereActivite,
   retardRelance,
   tempsEcoule,
 } from './journee'
@@ -34,7 +33,7 @@ describe('répartition des tâches entre les blocs', () => {
     expect(blocDeTache(tache(AUJOURDHUI, '14:00:00', 'relance'), AUJOURDHUI)).toBe('agenda')
   })
 
-  it('met dans « À relancer » les relances sans heure ou en retard', () => {
+  it('met dans « À rappeler » les relances sans heure ou en retard', () => {
     expect(blocDeTache(tache(AUJOURDHUI, null, 'relance'), AUJOURDHUI)).toBe('relances')
     expect(blocDeTache(tache('2026-11-10', '09:00:00', 'relance'), AUJOURDHUI)).toBe('relances')
   })
@@ -140,31 +139,6 @@ describe('relances', () => {
       enRetard: true,
     })
     expect(retardRelance('2026-11-02', AUJOURDHUI).texte).toBe('En retard de 15 jours')
-  })
-
-  it('résume la dernière activité en une ligne', () => {
-    const appel = {
-      type: 'appel',
-      resultat: 'messagerie',
-      date_activite: '2026-11-16',
-      compte_rendu: 'Message laissé,\nrappeler   en fin de semaine',
-    }
-    expect(resumeDerniereActivite(appel, AUJOURDHUI)).toBe(
-      'Appel · Messagerie, hier : « Message laissé, rappeler en fin de semaine »',
-    )
-    expect(
-      resumeDerniereActivite(
-        { ...appel, type: 'sms', resultat: null, date_activite: '2026-11-14', compte_rendu: '' },
-        AUJOURDHUI,
-      ),
-    ).toBe('SMS, il y a 3 jours')
-    expect(
-      resumeDerniereActivite(
-        { ...appel, date_activite: '2026-10-01', compte_rendu: '' },
-        AUJOURDHUI,
-      ),
-    ).toBe('Appel · Messagerie, le jeu. 1 oct.')
-    expect(resumeDerniereActivite(null, AUJOURDHUI)).toBe('Aucune activité au journal')
   })
 
   it('coupe un texte trop long avec des points de suspension', () => {

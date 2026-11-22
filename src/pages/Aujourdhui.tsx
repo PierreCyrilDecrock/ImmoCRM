@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import EtatChargement from '../components/EtatChargement'
+import Onglets from '../components/Onglets'
 import Page from '../components/Page'
 import AnneauProgression from '../features/aujourdhui/AnneauProgression'
 import BlocJournee from '../features/aujourdhui/BlocJournee'
@@ -27,6 +28,20 @@ import {
   resumeJournee,
   salutation,
 } from '../features/aujourdhui/maintenant'
+import {
+  compteurRappels,
+  echeanceADroite,
+  filtrerRappels,
+  filtreRappelsMemorise,
+  FILTRES_RAPPELS,
+  grouperTaches,
+  memoriserFiltreRappels,
+  parUrgence,
+  premieresRelances,
+  RELANCES_D_EMBLEE,
+  videRappels,
+  type FiltreRappels,
+} from '../features/aujourdhui/ordre-journee'
 import TraitMaintenant from '../features/aujourdhui/TraitMaintenant'
 import TroisActions from '../features/aujourdhui/TroisActions'
 import type { Contact } from '../features/contacts/contacts'
@@ -34,7 +49,7 @@ import { FILTRES_VIDES, memoriserFiltres } from '../features/contacts/filtres'
 import { titreRelance } from '../features/relances/boucle'
 import FormulaireTache from '../features/taches/FormulaireTache'
 import { useGestesTache } from '../features/taches/gestes-tache'
-import ListeTaches from '../features/taches/ListeTaches'
+import LigneTache from '../features/taches/LigneTache'
 import { dateDuJour, formaterJourEtSemaine, heureDuMoment, minutesDuJour } from '../lib/dates'
 import type { Resultat } from '../lib/donnees'
 import { useMaintenant } from '../lib/horloge'
@@ -98,6 +113,8 @@ export default function Aujourdhui() {
   const [version, setVersion] = useState(0)
   const [replies, setReplies] = useState<CleBloc[]>(replisMemorises)
   const [aPlanifier, setAPlanifier] = useState<Contact | null>(null)
+  const [filtreRappels, setFiltreRappels] = useState<FiltreRappels>(filtreRappelsMemorise)
+  const [toutesRelances, setToutesRelances] = useState(false)
   const derniereLecture = useRef(0)
   const [cartes] = useState(() => cartesDeLAppareil(navigator.userAgent))
 
@@ -133,6 +150,11 @@ export default function Aujourdhui() {
     document.addEventListener('visibilitychange', auRetour)
     return () => document.removeEventListener('visibilitychange', auRetour)
   }, [relire])
+
+  function choisirFiltreRappels(filtre: FiltreRappels) {
+    setFiltreRappels(filtre)
+    memoriserFiltreRappels(filtre)
+  }
 
   function basculer(bloc: CleBloc) {
     const suivants = basculerRepli(replies, bloc)
@@ -178,6 +200,20 @@ export default function Aujourdhui() {
         )
       : null
   const placeTrait = placeDuTrait(lignesAgenda, minutes)
+  const rappelsAffiches = filtrerRappels(parUrgence(lignesRelances), filtreRappels)
+  const compteRappels = relances?.ok
+    ? compteurRappels(
+        filtreRappels,
+        relances.donnees.total,
+        lignesRelances.length,
+        rappelsAffiches.length,
+      )
+    : null
+  const { affichees: relancesMontrees, reste: relancesRepliees } = premieresRelances(
+    rappelsAffiches,
+    toutesRelances,
+  )
+  const groupesTaches = grouperTaches(lignesTaches, aujourdhui)
 
   return (
     <Page
@@ -255,18 +291,26 @@ export default function Aujourdhui() {
 
           <BlocJournee
             {...proprietesBloc('relances')}
-            titre="À relancer"
+            titre="À rappeler"
+            sousTitre="La plus urgente en premier"
             icone="telephone"
-            compteur={compteur(relances)}
-            compteurAlerte={
-              relances?.ok === true &&
-              relances.donnees.lignes.some((relance) => relance.tache.echeance < aujourdhui)
-            }
+            compteur={compteRappels?.nombre ?? null}
+            compteurPartiel={compteRappels?.partiel === true}
+            compteurAlerte={rappelsAffiches.some((relance) => relance.tache.echeance < aujourdhui)}
             erreur={erreurDe(relances)}
-            vide={{
-              titre: 'Personne à relancer.',
-              texte: 'Toutes vos relances sont à jour.',
-            }}
+            vide={videRappels(
+              relances?.ok === true && relances.donnees.total > 0 ? filtreRappels : 'tous',
+            )}
+            filtre={
+              relances?.ok === true && relances.donnees.total > 0 ? (
+                <Onglets
+                  libelle="Qui rappeler"
+                  options={FILTRES_RAPPELS}
+                  valeur={filtreRappels}
+                  onChange={choisirFiltreRappels}
+                />
+              ) : undefined
+            }
             pied={
               relances?.ok && (
                 <VoirTout
@@ -279,8 +323,8 @@ export default function Aujourdhui() {
             }
           >
             {relances?.ok && (
-              <ul className="divide-y divide-bord">
-                {relances.donnees.lignes.map((relance) => (
+              <ul className="-mx-4 divide-y divide-bord">
+                {relancesMontrees.map((relance) => (
                   <LigneRelance
                     key={relance.id}
                     relance={relance}
@@ -288,10 +332,25 @@ export default function Aujourdhui() {
                     occupee={gestes.occupee === relance.id}
                     onConsigner={() => gestes.cocher(relance)}
                     onReporter={() => gestes.reporter(relance)}
+                    onReporterA={(echeance) => gestes.reporterA(relance, echeance)}
                     onOuvrir={() => gestes.ouvrir(relance)}
                   />
                 ))}
               </ul>
+            )}
+            {/* Le bouton reste en place une fois la liste dépliée : le clavier ne se perd pas. */}
+            {(relancesRepliees > 0 ||
+              (toutesRelances && rappelsAffiches.length > RELANCES_D_EMBLEE)) && (
+              <button
+                type="button"
+                aria-expanded={toutesRelances}
+                onClick={() => setToutesRelances((toutes) => !toutes)}
+                className={`${CLASSES_LIEN} mt-1`}
+              >
+                {toutesRelances
+                  ? `N’afficher que les ${RELANCES_D_EMBLEE} premières`
+                  : `Afficher ${relancesRepliees === 1 ? 'l’autre' : `les ${relancesRepliees} autres`}`}
+              </button>
             )}
           </BlocJournee>
 
@@ -321,12 +380,32 @@ export default function Aujourdhui() {
             }
           >
             {taches?.ok && (
-              <div className="-mx-4">
-                <ListeTaches
-                  taches={taches.donnees.lignes}
-                  aujourdhui={aujourdhui}
-                  onChangement={relire}
-                />
+              <div className="flex flex-col gap-2">
+                {groupesTaches.map((groupe) => (
+                  <section key={groupe.cle} aria-label={groupe.titre}>
+                    <h3
+                      className={`text-sm font-semibold ${groupe.cle === 'en_retard' ? 'text-danger' : 'text-encre-douce'}`}
+                    >
+                      {groupe.titre} ({groupe.lignes.length})
+                    </h3>
+                    <ul className="-mx-4 divide-y divide-bord">
+                      {groupe.lignes.map((affichee) => (
+                        <LigneTache
+                          key={affichee.id}
+                          affichee={affichee}
+                          aujourdhui={aujourdhui}
+                          occupee={gestes.occupee === affichee.id}
+                          onCocher={() => gestes.cocher(affichee)}
+                          onReporter={() => gestes.reporter(affichee)}
+                          onOuvrir={() => gestes.ouvrir(affichee)}
+                          onRouvrir={() => gestes.rouvrir(affichee)}
+                          glissable
+                          echeanceADroite={echeanceADroite(affichee.tache, aujourdhui)}
+                        />
+                      ))}
+                    </ul>
+                  </section>
+                ))}
               </div>
             )}
           </BlocJournee>

@@ -265,12 +265,12 @@ La page d'accueil lit sa journée en deux vagues de requêtes parallèles, toute
 | Bloc | Ce qu'il contient | Ordre, limite |
 | --- | --- | --- |
 | Agenda du jour | Tâches à faire aujourd'hui **qui ont une heure** (rendez-vous, visites, estimations, appel à heure fixe) | Par heure ; 30 |
-| À relancer | Tâches de catégorie « Relance » en retard, ou d'aujourd'hui sans heure, avec la dernière activité du contact | Les plus anciennes d'abord ; 30 |
-| Tâches | Toutes les autres tâches en retard, ou d'aujourd'hui sans heure (un rendez-vous d'un jour passé resté ouvert y figure) | Les plus anciennes d'abord ; 30 |
+| À rappeler | Tâches de catégorie « Relance » en retard, ou d'aujourd'hui sans heure, avec la dernière activité du contact | La plus urgente d'abord (échéance, priorité, heure, ancienneté) ; 30 lues, 10 montrées d'emblée |
+| Tâches | Toutes les autres tâches en retard, ou d'aujourd'hui sans heure (un rendez-vous d'un jour passé resté ouvert y figure) | Groupées « En retard » puis « Aujourd'hui », la plus urgente d'abord ; 30 |
 | Alertes | Projets en cours (vendeur ou acquéreur) sans activité depuis 15 jours ; contacts actifs sans prochaine action | Les plus anciens d'abord (10) ; les fiches les plus récentes d'abord (5) |
 | Nouveautés | Projets acquéreurs à l'étape « Demande » (non qualifiés), avec le temps écoulé depuis leur réception | Les plus anciennes d'abord ; 10 |
 
-Chaque tâche à faire d'aujourd'hui ou en retard apparaît dans **un seul** des trois premiers blocs. Chaque bloc affiche le nombre total, même au-delà des lignes lues, avec un lien vers la liste complète.
+Chaque tâche à faire d'aujourd'hui ou en retard apparaît dans **un seul** des trois premiers blocs. Chaque bloc affiche le nombre total, même au-delà des lignes lues, avec un lien vers la liste complète. Le filtre Tous, Vendeurs, Acquéreurs du bloc « À rappeler » trie les lignes déjà lues, sans requête de plus : avec un filtre, le compteur compte les relances lues qui y correspondent, et s'affiche « 12+ » si toutes n'ont pas pu être lues (plus de 30). L'ordre, le filtre et les groupes sont des fonctions pures testées (`ordre-journee.ts`).
 
 | Élément | Rôle |
 | --- | --- |

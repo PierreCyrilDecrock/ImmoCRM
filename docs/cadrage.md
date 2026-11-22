@@ -101,7 +101,7 @@ L'écran d'accueil présente la journée dans l'ordre où elle se vit, et rien d
 | Bloc | Contenu | Geste principal |
 | --- | --- | --- |
 | Agenda du jour | Rendez-vous, visites, estimations, avec adresse et itinéraire | Ouvrir la fiche, lancer le GPS, appeler |
-| À relancer | Contacts dont la prochaine action tombe aujourd'hui ou est en retard | Appeler, puis consigner le résultat en un geste |
+| À rappeler | Contacts dont la prochaine action tombe aujourd'hui ou est en retard | Appeler, puis consigner le résultat en un geste |
 | Tâches | Actions hors relance : envoyer un document, commander un diagnostic, publier une annonce | Cocher, reporter, déléguer |
 | Alertes | Mandats qui expirent, conditions suspensives proches, vendeurs sans nouvelles depuis 15 jours | Traiter ou planifier |
 | Nouveautés | Demandes entrantes des portails, nouveaux biens correspondant à un acquéreur | Qualifier dans l'heure |

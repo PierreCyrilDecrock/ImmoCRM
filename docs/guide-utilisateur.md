@@ -8,7 +8,7 @@ Une seule question chaque matin : **qui dois-je contacter aujourd'hui, et pourqu
 2. Regarder la carte noire **« Maintenant »** : le rendez-vous en cours ou le prochain, avec le temps qui reste (« Dans 25 min », « En cours »), l'adresse, et d'un toucher **Itinéraire**, **Appeler** ou la fiche. Dessous, **« À préparer »** liste les tâches du jour pour la même personne ou le même bien (imprimer le mandat…) : cochez-les depuis la carte. Après le dernier rendez-vous, elle montre la première relance.
 3. Lire les blocs dans l'ordre :
    - **Agenda du jour** : rendez-vous, visites, estimations, avec l'adresse. Un trait rouge marque l'heure qu'il est ; les rendez-vous finis, au-dessus, sont estompés. « Itinéraire » ouvre la carte, « Appeler » compose le numéro.
-   - **À relancer** : les relances du jour et celles en retard, les plus anciennes d'abord, avec leur motif et le dernier échange.
+   - **À rappeler** : les relances du jour et celles en retard, la plus urgente en premier. Chaque ligne dit qui (initiales, nom, Vendeur, Acquéreur ou Prospect), depuis quand c'est en retard (pastille rouge « En retard · 2 j »), **pourquoi appeler** (le motif, en gros) et **le dernier échange** (« il y a 8 jours · rendez-vous »). Le filtre **Tous, Vendeurs, Acquéreurs** ne garde que les vendeurs ou les acquéreurs ; le compteur suit, et l'appareil s'en souvient. Dix lignes s'affichent d'abord, « Afficher les autres » montre la suite.
    - **Tâches** : le reste (envoyer un document, commander un diagnostic…). On coche ou on reporte.
    - **Alertes** : projets sans nouvelles depuis 15 jours, contacts sans prochaine action, export à refaire.
    - **Nouveautés** : demandes entrantes à qualifier, en rouge au-delà d'une heure.
@@ -18,7 +18,7 @@ Une seule question chaque matin : **qui dois-je contacter aujourd'hui, et pourqu
 
 C'est le seul effort de saisie demandé.
 
-- **Un appel prévu** : dans À relancer, « Appeler » compose le numéro puis ouvre l'écran de compte rendu. Sinon, cocher la tâche.
+- **Un appel prévu** : dans À rappeler, « Appeler » compose le numéro puis ouvre l'écran de compte rendu. « Consigner » (ou « Fait ») l'ouvre sans appeler.
 - **Un échange imprévu** : bouton **« + »** (en bas à droite, partout ; sur ordinateur, **« Créer »** en bas de la colonne de gauche) → Nouvelle activité. La fiche consultée à l'instant est proposée d'emblée.
 - **Une nouvelle personne** : « + » → Nouveau contact : prénom, nom, téléphone, source, température, une note.
 
@@ -43,8 +43,10 @@ Les objectifs et le tableau de bord de la revue arriveront avec la version 3.
 - **Retrouver quelqu'un** : le champ de recherche (en haut de chaque page ; sur ordinateur, en haut de la colonne de gauche) cherche par nom, téléphone (sous toutes ses formes), courriel ou adresse. Au clavier, « / » ou ⌘K (Ctrl K sur PC) y mène directement, et « N » ouvre le menu de création.
 - **La colonne de gauche, sur ordinateur** : sous les entrées, **« Consultés récemment »** rouvre d'un clic les trois dernières fiches vues. En bas, « Créer », puis l'état : « Tout est enregistré », « Enregistrement… » pendant un envoi, « Connexion perdue » sans réseau (attendre « Tout est enregistré » avant de fermer).
 - **Tâches en retard** : leur nombre s'affiche en rouge sur l'entrée Tâches (« 9+ » au-delà de neuf ; un point rouge sur téléphone). Il se met à jour dès qu'une tâche est faite ou reportée.
-- **Reporter en un toucher** : sur la prochaine action d'un contact et dans la page Tâches, « Demain », « Dans 3 jours », « Lundi », ou le calendrier pour une autre date. Une erreur ? « Annuler » dans le message qui confirme (ou Ctrl Z sur ordinateur) remet l'ancienne date.
-- **Sur téléphone, page Tâches** : glisser une tâche vers la gauche découvre « Reporter » et « Fait ». Les boutons de la ligne font la même chose.
+- **Reporter en un toucher** : sur la prochaine action d'un contact, dans la page Tâches et sur les relances d'Aujourd'hui (sur ordinateur), « Demain », « Dans 3 jours », « Lundi », ou le calendrier pour une autre date. Une erreur ? « Annuler » dans le message qui confirme (ou Ctrl Z sur ordinateur) remet l'ancienne date.
+- **Sur téléphone, page Tâches et écran Aujourd'hui** (relances et tâches) : glisser une ligne vers la gauche découvre « Reporter » et « Fait ». Sur une relance, « Fait » ouvre l'écran de compte rendu. Les boutons de la ligne font la même chose.
+- **Sur ordinateur, écran Aujourd'hui** : en passant la souris sur une relance (ou en y arrivant au clavier), « Demain », « Dans 3 jours », « Lundi », le calendrier et « Fait » apparaissent à côté d'« Appeler ». Une relance reportée quitte la liste ; « Annuler » dans le message la fait revenir.
+- **Bloc Tâches d'Aujourd'hui** : « En retard » d'abord, puis « Aujourd'hui », avec l'échéance à droite (« Hier », « 17 h 30 »).
 - **Copier** un numéro, un courriel ou une adresse : le petit bouton « Copier » à côté (sur ordinateur, il apparaît au survol de la ligne).
 - **Les biens** se cherchent depuis la page Biens (par morceau d'adresse).
 - **Le journal complet** est dans Plus → Journal, filtrable par période et par type.

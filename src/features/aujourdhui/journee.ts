@@ -1,6 +1,5 @@
-import { ajouterJours, ecartJours, formaterJourCourt } from '../../lib/dates'
+import { ajouterJours, ecartJours } from '../../lib/dates'
 import type { Filtre } from '../../lib/donnees'
-import { titreActivite, type Activite } from '../activites/activites'
 import { adresseBien, type Bien } from '../biens/biens'
 import { adresseComplete, type Contact } from '../contacts/contacts'
 import { CATEGORIES_TACHE, type Tache } from '../taches/taches'
@@ -13,7 +12,7 @@ import { CATEGORIES_TACHE, type Tache } from '../taches/taches'
  * Chaque tâche à faire, datée d'aujourd'hui ou en retard, apparaît dans un seul bloc :
  *   - Agenda du jour : les tâches d'aujourd'hui qui ont une heure (rendez-vous, visites,
  *     estimations, appels à heure fixe), par heure ;
- *   - À relancer : les relances (catégorie « Relance ») d'aujourd'hui sans heure ou en
+ *   - À rappeler : les relances (catégorie « Relance ») d'aujourd'hui sans heure ou en
  *     retard, les plus anciennes d'abord ;
  *   - Tâches : toutes les autres (hors relance), les plus anciennes d'abord. Un rendez-vous
  *     d'un jour passé, resté ouvert, y apparaît aussi : rien ne se perd.
@@ -68,7 +67,7 @@ export function conditionsAgenda(aujourdhui: string): Filtre<'taches'>[] {
   ]
 }
 
-/** À relancer : les relances en retard, ou d'aujourd'hui sans heure. */
+/** À rappeler : les relances en retard, ou d'aujourd'hui sans heure. */
 export function conditionsRelances(moment: Moment, aujourdhui: string): Filtre<'taches'>[] {
   return [
     A_FAIRE,
@@ -152,7 +151,7 @@ export function lienItineraire(adresse: string, cartes: Cartes): string {
 }
 
 // ---------------------------------------------------------------------------
-// À relancer : retard et dernière activité
+// À rappeler : retard (carte « Maintenant ») et texte sur une ligne
 // ---------------------------------------------------------------------------
 
 /** « Aujourd'hui », « En retard d'un jour », « En retard de 5 jours ». */
@@ -174,26 +173,6 @@ const LONGUEUR_RESUME = 90
 export function enUneLigne(texte: string, longueur: number = LONGUEUR_RESUME): string {
   const ligne = texte.replace(/\s+/g, ' ').trim()
   return ligne.length <= longueur ? ligne : `${ligne.slice(0, longueur - 1).trimEnd()}…`
-}
-
-/** La dernière activité en une ligne : « Appel · Messagerie, hier : « Rappeler lundi » ». */
-export function resumeDerniereActivite(
-  activite: Pick<Activite, 'type' | 'resultat' | 'date_activite' | 'compte_rendu'> | null,
-  aujourdhui: string,
-): string {
-  if (activite === null) return 'Aucune activité au journal'
-  const ecart = ecartJours(activite.date_activite, aujourdhui)
-  const quand =
-    ecart === 0
-      ? "aujourd'hui"
-      : ecart === 1
-        ? 'hier'
-        : ecart > 1 && ecart < 7
-          ? `il y a ${ecart} jours`
-          : `le ${formaterJourCourt(activite.date_activite, aujourdhui)}`
-  const compteRendu = enUneLigne(activite.compte_rendu, 60)
-  const debut = `${titreActivite(activite)}, ${quand}`
-  return compteRendu === '' ? debut : `${debut} : « ${compteRendu} »`
 }
 
 // ---------------------------------------------------------------------------
