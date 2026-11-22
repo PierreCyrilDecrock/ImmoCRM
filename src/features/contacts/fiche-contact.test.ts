@@ -18,27 +18,27 @@ const appui = (key: string, autres: Partial<AppuiFiche> = {}): AppuiFiche => ({
 })
 
 describe('onglets de la fiche', () => {
-  it('range les biens à part sur ordinateur, les infos à part ailleurs', () => {
+  it('garde les mêmes onglets partout, plus « Infos » sans colonne de profil', () => {
     expect(ongletsContact('ordinateur')).toEqual(['activite', 'projets', 'taches', 'biens'])
-    expect(ongletsContact('telephone')).toEqual(['activite', 'projets', 'taches', 'infos'])
+    expect(ongletsContact('telephone')).toEqual(['activite', 'projets', 'taches', 'biens', 'infos'])
     expect(ongletsContact('tablette')).toEqual(ongletsContact('telephone'))
   })
 
-  it('suit l’adresse, et mène un onglet absent vers celui qui porte son contenu', () => {
+  it('suit l’adresse, et mène « Infos » à « Activité » sur grand écran', () => {
     expect(ongletAffiche('projets', 'ordinateur')).toBe('projets')
     expect(ongletAffiche(null, 'telephone')).toBe('activite')
     expect(ongletAffiche('n’importe quoi', 'ordinateur')).toBe('activite')
-    expect(ongletAffiche('biens', 'telephone')).toBe('projets')
+    expect(ongletAffiche('biens', 'telephone')).toBe('biens')
     expect(ongletAffiche('infos', 'ordinateur')).toBe('activite')
     expect(ongletAffiche('infos', 'tablette')).toBe('infos')
   })
 })
 
 describe('raccourciFiche', () => {
-  it('change d’onglet avec 1 à 4, de contact avec J et K', () => {
+  it('change d’onglet avec 1 à 5, de contact avec J et K', () => {
     expect(raccourciFiche(appui('1'))).toEqual({ genre: 'onglet', rang: 0 })
-    expect(raccourciFiche(appui('4'))).toEqual({ genre: 'onglet', rang: 3 })
-    expect(raccourciFiche(appui('5'))).toBeNull()
+    expect(raccourciFiche(appui('5'))).toEqual({ genre: 'onglet', rang: 4 })
+    expect(raccourciFiche(appui('6'))).toBeNull()
     expect(raccourciFiche(appui('j'))).toEqual({ genre: 'suivant' })
     expect(raccourciFiche(appui('K'))).toEqual({ genre: 'precedent' })
   })

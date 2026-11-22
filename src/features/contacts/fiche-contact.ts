@@ -18,14 +18,15 @@ export const LIBELLES_ONGLETS: Record<OngletContact, string> = {
 }
 
 /**
- * Les onglets, dans l'ordre. Sur ordinateur, le profil (à gauche) montre déjà les
- * coordonnées : le quatrième onglet est « Biens ». Sur tablette et téléphone, le profil est
- * réduit à un en-tête : le quatrième onglet est « Infos », et les biens vont dans « Projets ».
+ * Les onglets, dans l'ordre : les mêmes partout, Activité, Projets, Tâches, Biens. Quand le
+ * profil n'a pas sa colonne (écran de moins de 1024 px : téléphone, tablette en hauteur), un
+ * cinquième onglet, « Infos », porte ce que le profil montre sur grand écran (coordonnées,
+ * origine, à savoir, consentement).
  */
 export function ongletsContact(taille: TailleEcran): readonly OngletContact[] {
   return taille === 'ordinateur'
     ? ['activite', 'projets', 'taches', 'biens']
-    : ['activite', 'projets', 'taches', 'infos']
+    : ['activite', 'projets', 'taches', 'biens', 'infos']
 }
 
 function estOnglet(valeur: string): valeur is OngletContact {
@@ -33,14 +34,12 @@ function estOnglet(valeur: string): valeur is OngletContact {
 }
 
 /**
- * L'onglet à montrer d'après l'adresse (`?onglet=projets`). Un onglet absent de cette taille
- * d'écran mène à celui qui porte son contenu (« Biens » est dans « Projets » sur téléphone,
- * « Infos » est dans le profil sur ordinateur) ; une valeur inconnue, à « Activité ».
+ * L'onglet à montrer d'après l'adresse (`?onglet=projets`). « Infos » n'existe pas sur grand
+ * écran (son contenu est dans le profil) : il mène à « Activité », comme une valeur inconnue.
  */
 export function ongletAffiche(demande: string | null, taille: TailleEcran): OngletContact {
   if (demande === null || !estOnglet(demande)) return 'activite'
-  if (ongletsContact(taille).includes(demande)) return demande
-  return demande === 'biens' ? 'projets' : 'activite'
+  return ongletsContact(taille).includes(demande) ? demande : 'activite'
 }
 
 /** Ce qu'on lit d'un appui de touche (un `KeyboardEvent` convient). */
@@ -57,13 +56,13 @@ export type RaccourciFiche =
   { genre: 'onglet'; rang: number } | { genre: 'suivant' } | { genre: 'precedent' }
 
 /**
- * Les raccourcis de la fiche, hors des champs : 1 à 4 pour les onglets, J pour le contact
- * suivant de la liste, K pour le précédent (comme dans une messagerie).
+ * Les raccourcis de la fiche, hors des champs : 1 à 5 pour les onglets (selon leur nombre),
+ * J pour le contact suivant de la liste, K pour le précédent (comme dans une messagerie).
  */
 export function raccourciFiche(appui: AppuiFiche): RaccourciFiche | null {
   if (appui.dansUnChamp || appui.ctrlKey || appui.metaKey || appui.altKey) return null
   const touche = appui.key.toLowerCase()
-  if (/^[1-4]$/.test(touche)) return { genre: 'onglet', rang: Number(touche) - 1 }
+  if (/^[1-5]$/.test(touche)) return { genre: 'onglet', rang: Number(touche) - 1 }
   if (touche === 'j') return { genre: 'suivant' }
   if (touche === 'k') return { genre: 'precedent' }
   return null
