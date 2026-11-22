@@ -40,6 +40,7 @@ import {
 } from '../features/contacts/filtres'
 import FormulaireContact from '../features/contacts/FormulaireContact'
 import { useListeContacts } from '../features/contacts/liste-contacts'
+import { memoriserParcours, type EtatParcours } from '../features/contacts/parcours'
 import { formaterDate } from '../lib/dates'
 import { accorder } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
@@ -177,6 +178,15 @@ export default function Contacts() {
       actif = false
     }
   }, [])
+
+  // La liste lue est gardée pour l'onglet : depuis une fiche ouverte ici, « suivant » mène au
+  // contact suivant de cette liste, dans cet ordre et avec ces filtres.
+  const { cle, total, rafraichissement, erreur, contacts } = liste
+  useEffect(() => {
+    if (cle === null || total === null || rafraichissement || erreur !== null) return
+    memoriserParcours({ cle, total, ids: contacts.map((contact) => contact.id) })
+  }, [cle, total, rafraichissement, erreur, contacts])
+  const etatLien: EtatParcours | undefined = cle === null ? undefined : { parcours: cle }
 
   // Les étiquettes existantes alimentent le filtre ; sans elles, le reste fonctionne.
   useEffect(() => {
@@ -389,6 +399,7 @@ export default function Contacts() {
                 titre={nomDeListe(contact)}
                 detail={sansAction ? detailSansAction(contact) : resumeContact(contact)}
                 vers={`/contacts/${contact.id}`}
+                etat={etatLien}
               />
             ))}
           </Liste>

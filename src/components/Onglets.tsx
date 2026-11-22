@@ -6,6 +6,11 @@ type Props<V extends string> = {
   options: readonly { valeur: V; libelle: string; compteur?: number | null }[]
   valeur: V
   onChange: (valeur: V) => void
+  /**
+   * Identifiant du panneau que les onglets commandent (`OngletsFiche`) : chaque onglet reçoit
+   * l'identifiant `<panneau>-<valeur>` et désigne le panneau.
+   */
+  panneau?: string
 }
 
 /**
@@ -18,6 +23,7 @@ export default function Onglets<V extends string>({
   options,
   valeur,
   onChange,
+  panneau,
 }: Props<V>) {
   const ongletActif = useRef<HTMLButtonElement>(null)
 
@@ -41,6 +47,8 @@ export default function Onglets<V extends string>({
               ref={actif ? ongletActif : undefined}
               type="button"
               role="tab"
+              id={panneau === undefined ? undefined : `${panneau}-${option.valeur}`}
+              aria-controls={panneau}
               aria-selected={actif}
               onClick={() => onChange(option.valeur)}
               className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3.5 text-[0.9375rem] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${

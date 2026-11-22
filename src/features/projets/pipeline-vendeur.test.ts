@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  aideEtapeSuivante,
   ancienneteEtape,
   brouillonPassage,
   brouillonSortie,
@@ -314,5 +315,29 @@ describe('affichage', () => {
     ])
     expect(groupes[3]?.projets.map((p) => p.projet.id)).toEqual(['b', 'a'])
     expect(groupes[0]?.projets).toHaveLength(1)
+  })
+})
+
+describe('aideEtapeSuivante', () => {
+  it('donne le critère de l’étape en cours et ce qui manque pour avancer', () => {
+    expect(aideEtapeSuivante(projet({ etape: 'decouverte' }), 'pige')).toEqual({
+      suivante: 'estimation',
+      critere: 'Projet, délai, motif',
+      manquantes: ['le motif de la vente', 'le délai souhaité'],
+    })
+  })
+
+  it('ne cite qu’une fois l’estimation, même si ses deux bornes manquent', () => {
+    const aide = aideEtapeSuivante(
+      projet({ etape: 'estimation', motif_vente: 'Mutation', echeance_souhaitee: '2027-03-01' }),
+      'pige',
+    )
+    expect(aide?.manquantes).toEqual(['l’estimation', 'la remise de l’avis de valeur'])
+  })
+
+  it('ne dit rien de manquant quand tout est connu, et rien après le mandat', () => {
+    expect(aideEtapeSuivante(projet(), 'pige')?.manquantes).toEqual([])
+    expect(aideEtapeSuivante(projet(), null)?.manquantes).toEqual(['la source du contact'])
+    expect(aideEtapeSuivante(projet({ etape: 'mandat_signe' }), 'pige')).toBeNull()
   })
 })

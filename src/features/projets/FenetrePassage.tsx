@@ -7,6 +7,7 @@ import Message from '../../components/Message'
 import Pastille from '../../components/Pastille'
 import { useNotifications } from '../../components/notifications-contexte'
 import { dateDuJour } from '../../lib/dates'
+import { listeEnFrancais } from '../../lib/etapes'
 import { exigerSupabase } from '../../lib/supabase'
 import { SOURCES } from '../contacts/contacts'
 import {
@@ -18,31 +19,13 @@ import {
   MOTIFS_VENTE_COURANTS,
   preparerPassage,
   rangEtape,
+  SUJETS_PASSAGE,
   TYPES_MANDAT,
   type BrouillonPassage,
   type EtapeVendeur,
   type ErreursPassage,
-  type InfoPassage,
 } from './pipeline-vendeur'
 import { changerEtapeProjet, type ProjetVendeurAffiche } from './projets-vendeurs'
-
-/** « a », « a et b », « a, b et c ». */
-function listeEnFrancais(elements: readonly string[]): string {
-  if (elements.length <= 1) return elements.join('')
-  return `${elements.slice(0, -1).join(', ')} et ${elements.at(-1) ?? ''}`
-}
-
-/** Ce que demande chaque information, pour le titre de la fenêtre. */
-const QUESTIONS: Record<InfoPassage, string> = {
-  source: 'la source du contact',
-  motif_vente: 'le motif de la vente',
-  echeance_souhaitee: 'le délai souhaité',
-  estimation_basse: 'l’estimation',
-  estimation_haute: 'l’estimation',
-  avis_remis_le: 'la remise de l’avis de valeur',
-  mandat_type: 'le type de mandat',
-  mandat_le: 'la date de signature',
-}
 
 /**
  * Fenêtre du passage d'étape : elle demande les informations qui manquent (critères de
@@ -102,7 +85,7 @@ export default function FenetrePassage({
 
   // Les étapes franchies, pour rappeler d'où viennent les questions.
   const franchies = ETAPES_VENDEUR.slice(rangEtape(affiche.projet.etape), rangEtape(cible))
-  const sujets = [...new Set([...manquantes].map((info) => QUESTIONS[info]))]
+  const sujets = [...new Set([...manquantes].map((info) => SUJETS_PASSAGE[info]))]
   const aideSource = SOURCES.find((option) => option.valeur === saisie.source)?.aideDetail
 
   return (

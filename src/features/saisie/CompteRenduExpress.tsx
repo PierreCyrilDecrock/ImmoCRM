@@ -42,6 +42,8 @@ import GroupePastilles from './GroupePastilles'
 import { useFichesRecentes } from './recents'
 
 type Props = {
+  /** Le contact déjà choisi (« Consigner » d'une fiche Contact) ; on peut encore en changer. */
+  contact?: Contact
   onFermer: () => void
   /** Appelé après l'enregistrement : la page affichée se relit. */
   onEnregistre: () => void
@@ -64,14 +66,16 @@ function Titre({ id, children }: { id: string; children: string }) {
  * l'instant sont proposées d'emblée), ce qui s'est passé, le compte rendu, la prochaine
  * action.
  */
-export default function CompteRenduExpress({ onFermer, onEnregistre }: Props) {
+export default function CompteRenduExpress({ contact: depart, onFermer, onEnregistre }: Props) {
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
   const delais = useDelaisRelance()
   const recents = useFichesRecentes()
     .filter((fiche) => fiche.genre === 'contact')
     .slice(0, RECENTS_PROPOSES)
-  const [brouillon, setBrouillon] = useState<BrouillonCompteRendu>(() => brouillonCompteRendu())
+  const [brouillon, setBrouillon] = useState<BrouillonCompteRendu>(() =>
+    brouillonCompteRendu(depart ?? null),
+  )
   const [erreurs, setErreurs] = useState<ErreursCompteRendu>({})
   const [echec, setEchec] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)

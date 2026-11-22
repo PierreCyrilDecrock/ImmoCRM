@@ -429,6 +429,25 @@ export async function lirePageActivites(
 }
 
 /**
+ * Le dernier échange avec un contact (sa dernière activité au journal, notes écartées), pour
+ * l'en-tête de sa fiche ; `null` s'il n'y en a pas. Une seule ligne lue.
+ */
+export async function lireDernierEchange(
+  client: SupabaseClient,
+  contactId: string,
+): Promise<Resultat<Activite | null>> {
+  const echanges = TYPES_ACTIVITE.map((option) => option.valeur).filter(compteCommeContact)
+  const page = await listerPage(client, 'activites', {
+    filtres: [filtreLien({ contactId }), { colonne: 'type', genre: 'parmi', valeur: echanges }],
+    tri: TRI_JOURNAL,
+    debut: 0,
+    taille: 1,
+  })
+  if (!page.ok) return page
+  return { ok: true, donnees: page.donnees.lignes[0] ?? null }
+}
+
+/**
  * Tout le journal d'un contact, y compris les activités retirées (export : la base les
  * conserve, la personne doit pouvoir les connaître). Lu par pages de 500.
  */

@@ -211,6 +211,16 @@ const CRITERES: Record<EtapeAcquereur, readonly InfoPassageAcquereur[]> = {
   visites: [],
 }
 
+/** Ce que désigne chaque information, dans une phrase (« il manque le budget »). */
+export const SUJETS_PASSAGE_ACQUEREUR: Record<InfoPassageAcquereur, string> = {
+  origine: 'l’origine de la demande',
+  budget_max: 'le budget',
+  types_biens: 'les critères',
+  secteurs: 'les critères',
+  financement: 'le financement',
+  biens_proposes: 'un bien proposé',
+}
+
 /** Ce que demande l'arrivée à une étape : les critères de toutes les étapes d'avant. */
 export function exigencesEtapeAcquereur(cible: EtapeAcquereur): InfoPassageAcquereur[] {
   return ETAPES_ACQUEREUR.slice(0, rangEtapeAcquereur(cible)).flatMap(
@@ -645,4 +655,31 @@ export function grouperParEtapeAcquereur<
           a.projet.created_at.localeCompare(b.projet.created_at),
       ),
   }))
+}
+
+/** Ce qu'il faut pour passer à l'étape suivante d'un projet en cours, pour la fiche Contact. */
+export type AideEtapeAcquereur = {
+  suivante: EtapeAcquereur
+  /** Le critère de sortie de l'étape en cours (« Budget, critères »). */
+  critere: string
+  /** Ce qui manque encore, en mots (« le budget »), sans doublon. */
+  manquantes: string[]
+}
+
+/**
+ * L'étape suivante d'un projet, son critère et ce qui manque pour y passer. `null` à la
+ * dernière étape (« Visites ») : la suite est l'offre acceptée, notée depuis la fiche du
+ * projet. `nbProposes` : le nombre de biens proposés au projet.
+ */
+export function aideEtapeSuivanteAcquereur(
+  projet: Connu,
+  nbProposes: number,
+): AideEtapeAcquereur | null {
+  const suivante = etapeSuivanteAcquereur(projet.etape)
+  if (suivante === null) return null
+  const critere = ETAPES_ACQUEREUR[rangEtapeAcquereur(projet.etape)]?.critere ?? ''
+  const manquantes = informationsManquantesAcquereur(projet, nbProposes, suivante).map(
+    (info) => SUJETS_PASSAGE_ACQUEREUR[info],
+  )
+  return { suivante, critere, manquantes: [...new Set(manquantes)] }
 }

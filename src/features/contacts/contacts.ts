@@ -513,6 +513,15 @@ export function modifierContact(
   return modifier(client, 'contacts', id, valeurs)
 }
 
+/** Change la seule température de la fiche (commande segmentée de la fiche Contact). */
+export function changerTemperature(
+  client: SupabaseClient,
+  id: string,
+  temperature: Temperature | null,
+): Promise<Resultat<Contact>> {
+  return modifier(client, 'contacts', id, { temperature })
+}
+
 /** Archive la fiche : elle quitte la liste, reste consultable et peut être restaurée. */
 export function archiverContact(client: SupabaseClient, id: string): Promise<Resultat<Contact>> {
   return archiver(client, 'contacts', id)

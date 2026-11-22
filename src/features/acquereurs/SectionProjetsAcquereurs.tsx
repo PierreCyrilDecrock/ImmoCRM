@@ -2,13 +2,21 @@ import { useEffect, useState } from 'react'
 import Bouton from '../../components/Bouton'
 import Carte from '../../components/Carte'
 import Etiquette from '../../components/Etiquette'
+import BarreEtapes from '../../components/BarreEtapes'
 import LigneListe from '../../components/LigneListe'
 import Message from '../../components/Message'
+import { dateDuJour } from '../../lib/dates'
+import { etatsEtapes, phraseManque, phrasePassage } from '../../lib/etapes'
 import { exigerSupabase } from '../../lib/supabase'
+import { ancienneteEtape, etapeQuiTraine } from '../projets/pipeline-vendeur'
+import { useChangementEtapeAcquereur } from './changement-etape-acquereur'
 import { nomComplet, type Contact } from '../contacts/contacts'
 import DemandeEntrante from './DemandeEntrante'
 import {
+  aideEtapeSuivanteAcquereur,
+  ETAPES_ACQUEREUR,
   genreEtatAcquereur,
+  libelleEtapeAcquereur,
   libelleEtatAcquereur,
   resumeEtatAcquereur,
   resumeOrigine,
@@ -20,6 +28,8 @@ type Props = {
   contact: Contact
   /** Fiche archivée : on n'y ouvre pas de nouveau projet. */
   lectureSeule?: boolean
+  /** Sous chaque projet du pipeline, ses étapes en barre et « Étape suivante » (fiche Contact). */
+  avecEtapes?: boolean
 }
 
 type Etat =
@@ -32,9 +42,17 @@ type Etat =
  * principal ou comme co-acquéreur, et l'ouverture d'une nouvelle demande. Avec la rubrique
  * « Projets de vente », elle montre tous les projets d'une même personne.
  */
-export default function SectionProjetsAcquereurs({ contact, lectureSeule = false }: Props) {
+export default function SectionProjetsAcquereurs({
+  contact,
+  lectureSeule = false,
+  avecEtapes = false,
+}: Props) {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [creation, setCreation] = useState(false)
+  // Change après un changement d'étape : la liste se relit.
+  const [version, setVersion] = useState(0)
+  const changement = useChangementEtapeAcquereur(() => setVersion((v) => v + 1))
+  const aujourdhui = dateDuJour()
 
   useEffect(() => {
     let actif = true
@@ -49,7 +67,7 @@ export default function SectionProjetsAcquereurs({ contact, lectureSeule = false
     return () => {
       actif = false
     }
-  }, [contact.id])
+  }, [contact.id, version])
 
   return (
     <Carte titre="Projets d'achat">
@@ -64,26 +82,72 @@ export default function SectionProjetsAcquereurs({ contact, lectureSeule = false
       )}
       {etat.phase === 'pret' && etat.projets.length > 0 && (
         <ul className="-mx-4 divide-y divide-bord">
-          {etat.projets.map(({ id, projet, contact: principal }) => {
+          {etat.projets.map((affiche) => {
+            const { id, projet, contact: principal } = affiche
             const recherche = resumeRecherche(projet)
             const role =
               projet.contact_id === contact.id
                 ? ''
                 : `Co-acquéreur avec ${principal === null ? 'un autre contact' : nomComplet(principal)}`
+            const dansLePipeline =
+              avecEtapes &&
+              projet.archived_at === null &&
+              (projet.etat === 'actif' || projet.etat === 'gagne')
+            const aide =
+              projet.etat === 'actif'
+                ? aideEtapeSuivanteAcquereur(projet, affiche.nbProposes)
+                : null
             return (
-              <LigneListe
-                key={id}
-                titre={
-                  recherche === '' ? `Demande ${resumeOrigine(projet).toLowerCase()}` : recherche
-                }
-                detail={[role, resumeEtatAcquereur(projet)].filter(Boolean).join(' · ')}
-                fin={
-                  <Etiquette genre={genreEtatAcquereur(projet.etat)}>
-                    {libelleEtatAcquereur(projet.etat)}
-                  </Etiquette>
-                }
-                vers={`/pipelines/acquereurs/${id}`}
-              />
+              <li key={id}>
+                <ul>
+                  <LigneListe
+                    titre={
+                      recherche === ''
+                        ? `Demande ${resumeOrigine(projet).toLowerCase()}`
+                        : recherche
+                    }
+                    detail={[role, resumeEtatAcquereur(projet)].filter(Boolean).join(' · ')}
+                    fin={
+                      <Etiquette genre={genreEtatAcquereur(projet.etat)}>
+                        {libelleEtatAcquereur(projet.etat)}
+                      </Etiquette>
+                    }
+                    vers={`/pipelines/acquereurs/${id}`}
+                  />
+                </ul>
+                {dansLePipeline && (
+                  <div className="px-4 pb-4">
+                    <BarreEtapes
+                      etapes={etatsEtapes(ETAPES_ACQUEREUR, projet.etape, projet.etat === 'gagne')}
+                      anciennete={
+                        projet.etat === 'actif'
+                          ? {
+                              texte: ancienneteEtape(projet.etape_le, aujourdhui),
+                              alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
+                            }
+                          : undefined
+                      }
+                      critere={
+                        projet.etat !== 'actif'
+                          ? undefined
+                          : aide === null
+                            ? 'Dernière étape : l’offre acceptée se note depuis la fiche du projet.'
+                            : phrasePassage(libelleEtapeAcquereur(aide.suivante), aide.critere)
+                      }
+                      manque={aide === null ? undefined : phraseManque(aide.manquantes)}
+                      suivante={
+                        aide === null || lectureSeule
+                          ? undefined
+                          : {
+                              libelle: libelleEtapeAcquereur(aide.suivante),
+                              onPasser: () => changement.demander(affiche, aide.suivante),
+                              desactive: changement.enCours !== null,
+                            }
+                      }
+                    />
+                  </div>
+                )}
+              </li>
             )
           })}
         </ul>
@@ -96,6 +160,7 @@ export default function SectionProjetsAcquereurs({ contact, lectureSeule = false
         </div>
       )}
       {creation && <DemandeEntrante contact={contact} onFermer={() => setCreation(false)} />}
+      {changement.fenetre}
     </Carte>
   )
 }

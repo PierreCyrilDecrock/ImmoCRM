@@ -25,6 +25,8 @@ export type ListePaginee<L> = {
   chargement: boolean
   /** Les lignes affichées datent de la recherche précédente : la nouvelle arrive. */
   rafraichissement: boolean
+  /** La recherche à laquelle répondent les lignes affichées (`null` avant la première lecture). */
+  cle: string | null
   lignes: L[]
   total: number | null
   erreur: string | null
@@ -98,6 +100,7 @@ export function useListePaginee<L extends { id: string }>(
   return {
     chargement: etat === null,
     rafraichissement: etat !== null && !aJour,
+    cle: etat?.cle ?? null,
     lignes: etat?.lignes ?? [],
     total: etat?.total ?? null,
     erreur: etat?.erreur ?? null,

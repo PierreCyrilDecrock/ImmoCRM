@@ -213,3 +213,22 @@ export function minutesDuJour(heure: string): number | null {
   if (heures > 23 || minutes > 59) return null
   return heures * 60 + minutes
 }
+
+/** « aujourd'hui », « hier », « il y a 8 jours », « il y a 2 mois », « il y a plus d'un an ». */
+export function depuisQuand(jours: number): string {
+  if (jours <= 0) return "aujourd'hui"
+  if (jours === 1) return 'hier'
+  if (jours < 60) return `il y a ${jours} jours`
+  if (jours < 365) return `il y a ${Math.floor(jours / 30)} mois`
+  return "il y a plus d'un an"
+}
+
+/**
+ * Depuis quand date un moment de la base (`2026-11-16T09:00:00Z`), compté en jours du
+ * calendrier de Paris : « il y a 3 jours ». Chaîne vide si le moment est illisible.
+ */
+export function depuisLeMoment(moment: string, aujourdhui: string = dateDuJour()): string {
+  const instant = new Date(moment)
+  if (Number.isNaN(instant.getTime())) return ''
+  return depuisQuand(ecartJours(dateDuJour(instant), aujourdhui))
+}

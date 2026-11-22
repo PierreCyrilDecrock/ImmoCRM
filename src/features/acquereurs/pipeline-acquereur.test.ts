@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  aideEtapeSuivanteAcquereur,
   ajouterSecteur,
   brouillonPassageAcquereur,
   brouillonRechercheDepuis,
@@ -333,5 +334,33 @@ describe('résumés', () => {
       'visites',
     ])
     expect(groupes[2]?.projets).toEqual([b, a])
+  })
+})
+
+describe('aideEtapeSuivanteAcquereur', () => {
+  it('donne le critère de l’étape en cours et ce qui manque pour avancer', () => {
+    expect(aideEtapeSuivanteAcquereur(projetAcquereurEssai(), 0)).toEqual({
+      suivante: 'qualification',
+      critere: 'Appel ou portail',
+      manquantes: ['l’origine de la demande', 'le budget'],
+    })
+    expect(aideEtapeSuivanteAcquereur(qualifie, 0)?.manquantes).toEqual([
+      'les critères',
+      'le financement',
+    ])
+  })
+
+  it('compte les biens proposés pour quitter la sélection, et s’arrête aux visites', () => {
+    const enSelection = projetAcquereurEssai({
+      etape: 'selection',
+      origine: 'appel',
+      budget_max: 300000,
+      types_biens: ['maison'],
+      secteurs: ['Centre'],
+      financement: 'pret',
+    })
+    expect(aideEtapeSuivanteAcquereur(enSelection, 0)?.manquantes).toEqual(['un bien proposé'])
+    expect(aideEtapeSuivanteAcquereur(enSelection, 2)?.manquantes).toEqual([])
+    expect(aideEtapeSuivanteAcquereur({ ...enSelection, etape: 'visites' }, 2)).toBeNull()
   })
 })

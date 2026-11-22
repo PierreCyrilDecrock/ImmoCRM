@@ -19,6 +19,7 @@ Une seule question chaque matin : **qui dois-je contacter aujourd'hui, et pourqu
 C'est le seul effort de saisie demandé.
 
 - **Un appel prévu** : dans À rappeler, « Appeler » compose le numéro puis ouvre l'écran de compte rendu. « Consigner » (ou « Fait ») l'ouvre sans appeler.
+- **Depuis la fiche du contact, sur téléphone** : **« Consigner »**, dans la barre du bas, ouvre le compte rendu, le contact déjà choisi.
 - **Un échange imprévu** : bouton **« + »** (en bas à droite, partout ; sur ordinateur, **« Créer »** en bas de la colonne de gauche) → Nouvelle activité. La fiche consultée à l'instant est proposée d'emblée.
 - **Une nouvelle personne** : « + » → Nouveau contact : prénom, nom, téléphone, source, température, une note.
 
@@ -40,6 +41,12 @@ Les objectifs et le tableau de bord de la revue arriveront avec la version 3.
 
 ## Bon à savoir
 
+- **La fiche d'un contact** : ce qu'il faut pour l'appeler reste sous les yeux.
+  - Sur ordinateur, à gauche : le nom et les rôles, la température (**Froid, Tiède, Chaud**, d'un clic, avec « Annuler »), **Appeler**, SMS, Courriel, **Itinéraire**, la prochaine action (« C'est fait », reports), les coordonnées avec « Copier », l'origine et l'accord pour être appelé (une ligne verte, ou l'avertissement). Le détail du consentement se déplie sous cette ligne. En bas, **Modifier** et le menu **« … »** : fusionner, exporter ses données, archiver, supprimer définitivement. À droite, les onglets **Activité** (notes et étiquettes, les trois prochaines tâches, le journal), **Projets** (vente et achat), **Tâches**, **Biens** ; les touches **1 à 4** passent de l'un à l'autre.
+  - Sur tablette et téléphone : l'en-tête (nom, rôles, dernier échange, température), la prochaine action, puis les onglets Activité, Projets (avec les biens), Tâches et **Infos** (coordonnées, origine, notes, consentement). Sur téléphone, **Appeler, SMS et Consigner** sont en bas de l'écran ; on revient par « ‹ Contacts » en haut.
+  - L'onglet ouvert fait partie de l'adresse : le retour du navigateur ramène à l'onglet d'avant, et un lien gardé rouvre le même onglet.
+  - **Projets** : chaque projet en cours montre ses étapes en barre, depuis quand il est dans son étape, ce qu'il faut pour passer à la suivante et ce qui manque encore ; **« Étape suivante »** l'y fait passer (en demandant ce qui manque).
+  - **Contact suivant** : ouvert depuis la liste des contacts, sur ordinateur, la fiche affiche « 12 sur 48 » et deux flèches (touches **J** suivant, **K** précédent) qui suivent la liste telle qu'on l'a laissée, recherche et filtres compris.
 - **Retrouver quelqu'un** : le champ de recherche (en haut de chaque page ; sur ordinateur, en haut de la colonne de gauche) cherche par nom, téléphone (sous toutes ses formes), courriel ou adresse. Au clavier, « / » ou ⌘K (Ctrl K sur PC) y mène directement, et « N » ouvre le menu de création.
 - **La colonne de gauche, sur ordinateur** : sous les entrées, **« Consultés récemment »** rouvre d'un clic les trois dernières fiches vues. En bas, « Créer », puis l'état : « Tout est enregistré », « Enregistrement… » pendant un envoi, « Connexion perdue » sans réseau (attendre « Tout est enregistré » avant de fermer).
 - **Tâches en retard** : leur nombre s'affiche en rouge sur l'entrée Tâches (« 9+ » au-delà de neuf ; un point rouge sur téléphone). Il se met à jour dès qu'une tâche est faite ou reportée.
@@ -47,7 +54,7 @@ Les objectifs et le tableau de bord de la revue arriveront avec la version 3.
 - **Sur téléphone, page Tâches et écran Aujourd'hui** (relances et tâches) : glisser une ligne vers la gauche découvre « Reporter » et « Fait ». Sur une relance, « Fait » ouvre l'écran de compte rendu. Les boutons de la ligne font la même chose.
 - **Sur ordinateur, écran Aujourd'hui** : en passant la souris sur une relance (ou en y arrivant au clavier), « Demain », « Dans 3 jours », « Lundi », le calendrier et « Fait » apparaissent à côté d'« Appeler ». Une relance reportée quitte la liste ; « Annuler » dans le message la fait revenir.
 - **Bloc Tâches d'Aujourd'hui** : « En retard » d'abord, puis « Aujourd'hui », avec l'échéance à droite (« Hier », « 17 h 30 »).
-- **Copier** un numéro, un courriel ou une adresse : le petit bouton « Copier » à côté (sur ordinateur, il apparaît au survol de la ligne).
+- **Copier** un numéro, un courriel ou une adresse : le petit bouton « Copier » à côté (sur ordinateur, il apparaît au survol de la ligne ; sur téléphone, les coordonnées d'un contact sont dans l'onglet Infos).
 - **Les biens** se cherchent depuis la page Biens (par morceau d'adresse).
 - **Le journal complet** est dans Plus → Journal, filtrable par période et par type.
 - **Hors réseau**, l'application ne s'ouvre pas : il faut une connexion.

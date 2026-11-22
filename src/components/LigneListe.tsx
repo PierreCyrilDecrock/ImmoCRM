@@ -17,6 +17,11 @@ type Props = {
   fin?: ReactNode
   /** Adresse de la page à ouvrir, par exemple « /contacts ». */
   vers?: string
+  /**
+   * Gardé dans l'historique du navigateur avec la page ouverte (`vers`) : la liste des
+   * contacts y range sa recherche, pour que la fiche propose le contact suivant.
+   */
+  etat?: unknown
   /** Action au toucher, quand la ligne n'ouvre pas une page. */
   onAction?: () => void
 }
@@ -26,7 +31,16 @@ const CLASSES_ACTIVE =
   'hover:bg-creux focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent'
 
 /** Ligne d'une `Liste`. Toute la ligne est touchable si elle a `vers` ou `onAction`. */
-export default function LigneListe({ titre, detail, icone, vignette, fin, vers, onAction }: Props) {
+export default function LigneListe({
+  titre,
+  detail,
+  icone,
+  vignette,
+  fin,
+  vers,
+  etat,
+  onAction,
+}: Props) {
   const contenu = (
     <>
       {vignette !== undefined ? (
@@ -55,7 +69,7 @@ export default function LigneListe({ titre, detail, icone, vignette, fin, vers, 
   return (
     <li>
       {vers !== undefined ? (
-        <Link to={vers} className={`${CLASSES_LIGNE} ${CLASSES_ACTIVE}`}>
+        <Link to={vers} state={etat} className={`${CLASSES_LIGNE} ${CLASSES_ACTIVE}`}>
           {contenu}
         </Link>
       ) : onAction !== undefined ? (

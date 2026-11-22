@@ -1,62 +1,75 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import Bouton from '../components/Bouton'
-import BoutonCopier from '../components/BoutonCopier'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import BarreActionsFiche from '../components/BarreActionsFiche'
 import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
-import Etiquette, { type GenreEtiquette } from '../components/Etiquette'
-import FenetreModale from '../components/FenetreModale'
-import Information from '../components/Information'
+import Icone from '../components/Icone'
 import LienAction from '../components/LienAction'
-import LigneListe from '../components/LigneListe'
 import Message from '../components/Message'
+import NavigationFiche from '../components/NavigationFiche'
 import { useNotifications } from '../components/notifications-contexte'
+import OngletsFiche from '../components/OngletsFiche'
 import Page from '../components/Page'
-import { genreStatut, libelleStatut, resumeBien } from '../features/biens/biens'
-import {
-  formaterQuotePart,
-  listerBiensDuContact,
-  type BienDuContact,
-} from '../features/biens/proprietaires'
-import {
-  adresseComplete,
-  archiverContact,
-  interlocuteur,
-  libelleRole,
-  libelleSource,
-  libelleTemperature,
-  lireContact,
-  nomAvecCivilite,
-  nomComplet,
-  restaurerContact,
-  type Contact,
-} from '../features/contacts/contacts'
+import ProfilFiche from '../components/ProfilFiche'
+import SectionProjetsAcquereurs from '../features/acquereurs/SectionProjetsAcquereurs'
+import SectionJournal from '../features/activites/SectionJournal'
+import { cartesDeLAppareil } from '../features/aujourdhui/journee'
+import { dernierEchange } from '../features/aujourdhui/ordre-journee'
+import { listerBiensDuContact, type BienDuContact } from '../features/biens/proprietaires'
+import ActionsContact from '../features/contacts/ActionsContact'
 import AvertissementAppel from '../features/contacts/AvertissementAppel'
+import BiensContact from '../features/contacts/BiensContact'
+import { lireCompteursContact, type CompteursContact } from '../features/contacts/compteurs-fiche'
+import ConsentementContact from '../features/contacts/ConsentementContact'
 import {
   droitAppel,
-  libelleMotifAppel,
   listerAppelsSansAccord,
   resumeAccord,
   type AppelSansAccord,
 } from '../features/contacts/consentement'
 import {
-  nomFichierExport,
-  rassemblerDonneesContact,
-  texteExportContact,
-} from '../features/contacts/export-contact'
-import SelecteurContact from '../features/contacts/SelecteurContact'
-import SuppressionContact from '../features/contacts/SuppressionContact'
-import { estPortable, formaterTelephone, lienAppel, lienSms } from '../features/contacts/telephone'
-import SectionJournal from '../features/activites/SectionJournal'
+  lireContact,
+  nomAvecCivilite,
+  nomComplet,
+  type Contact,
+} from '../features/contacts/contacts'
+import { sansCoordonnees } from '../features/contacts/coordonnees'
+import {
+  LIBELLES_ONGLETS,
+  ligneAccord,
+  ligneDatesFiche,
+  ongletAffiche,
+  ongletsContact,
+  raccourciFiche,
+  type OngletContact,
+} from '../features/contacts/fiche-contact'
+import IdentiteContact from '../features/contacts/IdentiteContact'
+import LignesCoordonnees from '../features/contacts/LignesCoordonnees'
+import LignesOrigine from '../features/contacts/LignesOrigine'
+import { lirePageContacts } from '../features/contacts/liste-contacts'
+import MenuContact from '../features/contacts/MenuContact'
+import NotesContact from '../features/contacts/NotesContact'
+import {
+  cleDeLEtat,
+  libellePosition,
+  noterIds,
+  parcoursMemorise,
+  rangDans,
+  rangVoisin,
+  remplacerParcours,
+} from '../features/contacts/parcours'
+import TemperatureContact from '../features/contacts/TemperatureContact'
+import { estPortable, lienAppel, lienSms } from '../features/contacts/telephone'
 import SectionProjetsVendeurs from '../features/projets/SectionProjetsVendeurs'
-import SectionProjetsAcquereurs from '../features/acquereurs/SectionProjetsAcquereurs'
 import ProchaineAction from '../features/relances/ProchaineAction'
-import SectionTaches from '../features/taches/SectionTaches'
-import { formaterDate } from '../lib/dates'
-import { exigerSupabase } from '../lib/supabase'
-import { telechargerTexte } from '../lib/telechargement'
+import CompteRenduExpress from '../features/saisie/CompteRenduExpress'
 import { ficheDeContact } from '../features/saisie/fiches-consultees'
 import { useConsultation } from '../features/saisie/recents'
+import SectionTaches from '../features/taches/SectionTaches'
+import { estUnChamp } from '../lib/clavier'
+import { dateDuJour, formaterDate } from '../lib/dates'
+import { useTailleEcran } from '../lib/ecran'
+import { exigerSupabase } from '../lib/supabase'
 
 type Etat =
   | { phase: 'chargement' }
@@ -74,32 +87,49 @@ type Etat =
 
 const RETOUR = { vers: '/contacts', libelle: 'Contacts' }
 
-const GENRE_TEMPERATURE: Record<string, GenreEtiquette> = {
-  chaud: 'danger',
-  tiede: 'alerte',
-  froid: 'info',
-  veille: 'neutre',
-}
+/** Nombre de tâches à venir montrées dans l'onglet Activité (les autres sont dans Tâches). */
+const TACHES_DANS_ACTIVITE = 3
 
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
+const CLASSES_MODIFIER =
+  'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-surface px-3 text-base font-semibold text-encre shadow-xs ring-1 ring-bord-fort/40 ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
-/** Fiche d'un contact : coordonnées et actions en tête, puis les rubriques liées. */
+/**
+ * Fiche d'un contact (étape D.5). Ce qu'on cherche à chaque appel reste sous les yeux ; le
+ * reste est rangé en onglets, gardés dans l'adresse (`?onglet=projets`).
+ * - Ordinateur : à gauche le profil (identité, température, Appeler, SMS, Courriel,
+ *   Itinéraire, prochaine action, coordonnées, accord pour être appelé), qui ne bouge pas ; à
+ *   droite les onglets Activité, Projets, Tâches, Biens (touches 1 à 4). Depuis la liste des
+ *   contacts, « 12 sur 48 » et deux flèches (touches K et J) passent au contact voisin.
+ * - Tablette et téléphone : un en-tête compact, la prochaine action, puis les onglets Activité,
+ *   Projets, Tâches, Infos. Sur téléphone, Appeler, SMS et Consigner sont en bas de l'écran.
+ */
 export default function FicheContact() {
   const { id = '' } = useParams()
+  const location = useLocation()
+  const naviguer = useNavigate()
+  const [parametres, setParametres] = useSearchParams()
+  const taille = useTailleEcran()
+  const ordinateur = taille === 'ordinateur'
   const { notifier } = useNotifications()
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
-  const [confirmation, setConfirmation] = useState(false)
-  const [envoi, setEnvoi] = useState(false)
-  const [choixFusion, setChoixFusion] = useState(false)
-  const [suppression, setSuppression] = useState(false)
-  const [exportEnCours, setExportEnCours] = useState(false)
   // Numéro pour lequel un motif vient d'être enregistré : l'appel est rétabli pour cette visite.
   const [appelLibere, setAppelLibere] = useState<string | null>(null)
   // Change après chaque geste sur les tâches ou le journal : toutes les rubriques se relisent.
   const [version, setVersion] = useState(0)
-  const naviguer = useNavigate()
+  const [compteurs, setCompteurs] = useState<CompteursContact | null>(null)
+  const [consigner, setConsigner] = useState(false)
+  const [voisinEnCours, setVoisinEnCours] = useState(false)
+  const [cartes] = useState(() => cartesDeLAppareil(navigator.userAgent))
   useConsultation(etat.phase === 'pret' ? ficheDeContact(etat.contact) : null)
+
+  const onglets = ongletsContact(taille)
+  const onglet = ongletAffiche(parametres.get('onglet'), taille)
+
+  // Le parcours de la liste : seulement pour une fiche ouverte depuis la liste des contacts.
+  const cleParcours = cleDeLEtat(location.state)
+  const parcours = cleParcours === null ? null : parcoursMemorise(cleParcours)
+  const rang = parcours === null ? null : rangDans(parcours, id)
+  const avecParcours = ordinateur && parcours !== null && rang !== null
 
   useEffect(() => {
     let actif = true
@@ -108,25 +138,22 @@ export default function FicheContact() {
       const resultat = await lireContact(client, id)
       if (!resultat.ok) return { phase: 'erreur', message: resultat.erreur.message } as const
       const contact = resultat.donnees
-      // Le nom de la personne qui a recommandé : son absence n'empêche pas d'afficher la fiche.
-      const origine =
-        contact.recommande_par_id === null
-          ? null
-          : await lireContact(client, contact.recommande_par_id)
-      const recommandePar = origine !== null && origine.ok ? origine.donnees : null
-      // Fiche fusionnée dans une autre : on affichera le lien vers celle qui a tout repris.
-      const reprise =
-        contact.fusionne_dans_id === null
-          ? null
-          : await lireContact(client, contact.fusionne_dans_id)
-      const fusionneDans = reprise !== null && reprise.ok ? reprise.donnees : null
-      // L'historique des appels sans accord : son absence n'empêche pas d'afficher la fiche.
-      const historique = await listerAppelsSansAccord(client, contact.id)
-      const appels = historique.ok ? historique.donnees : []
-      // Ses biens : leur absence n'empêche pas non plus d'afficher la fiche.
-      const possedes = await listerBiensDuContact(client, contact.id)
-      const biens = possedes.ok ? possedes.donnees : []
-      return { phase: 'pret', contact, recommandePar, fusionneDans, appels, biens } as const
+      // Ce qui suit est lu ensemble ; un échec n'empêche pas d'afficher la fiche.
+      const [origine, reprise, historique, possedes] = await Promise.all([
+        contact.recommande_par_id === null ? null : lireContact(client, contact.recommande_par_id),
+        // Fiche fusionnée dans une autre : on affichera le lien vers celle qui a tout repris.
+        contact.fusionne_dans_id === null ? null : lireContact(client, contact.fusionne_dans_id),
+        listerAppelsSansAccord(client, contact.id),
+        listerBiensDuContact(client, contact.id),
+      ])
+      return {
+        phase: 'pret',
+        contact,
+        recommandePar: origine !== null && origine.ok ? origine.donnees : null,
+        fusionneDans: reprise !== null && reprise.ok ? reprise.donnees : null,
+        appels: historique.ok ? historique.donnees : [],
+        biens: possedes.ok ? possedes.donnees : [],
+      } as const
     }
     void charger().then((suivant) => {
       if (actif) setEtat(suivant)
@@ -137,6 +164,87 @@ export default function FicheContact() {
       setAppelLibere(null)
     }
   }, [id])
+
+  // Les compteurs des onglets et le dernier échange, relus après chaque geste.
+  useEffect(() => {
+    let actif = true
+    void lireCompteursContact(exigerSupabase(), id).then((lus) => {
+      if (actif) setCompteurs(lus)
+    })
+    return () => {
+      actif = false
+    }
+  }, [id, version])
+
+  /** Change d'onglet : une entrée de plus dans l'historique (le retour ramène au précédent). */
+  function choisirOnglet(suivant: OngletContact) {
+    if (suivant === onglet) return
+    setParametres(
+      (actuels) => {
+        const nouveaux = new URLSearchParams(actuels)
+        nouveaux.set('onglet', suivant)
+        return nouveaux
+      },
+      // Le parcours de la liste suit la fiche d'un onglet à l'autre.
+      { state: location.state },
+    )
+  }
+
+  /** Passe au contact précédent ou suivant de la liste, en lisant la suite si besoin. */
+  async function allerAuVoisin(sens: 1 | -1) {
+    if (parcours === null || rang === null || voisinEnCours) return
+    const cible = rangVoisin(parcours, rang, sens)
+    if (cible === null) return
+    let voisin = parcours.ids[cible] ?? null
+    if (voisin === null) {
+      setVoisinEnCours(true)
+      const page = await lirePageContacts(parcours.cle, cible, false)
+      setVoisinEnCours(false)
+      if (!page.ok) {
+        notifier('erreur', `Le contact suivant n'a pas pu être lu. ${page.erreur.message}`)
+        return
+      }
+      const complete = noterIds(
+        parcours,
+        cible,
+        page.donnees.lignes.map((contact) => contact.id),
+      )
+      remplacerParcours(complete)
+      voisin = complete.ids[cible] ?? null
+      if (voisin === null) return
+    }
+    void naviguer(
+      { pathname: `/contacts/${voisin}`, search: location.search },
+      { state: location.state },
+    )
+  }
+
+  // Raccourcis de la fiche, hors des champs et des fenêtres : 1 à 4, J et K.
+  useEffect(() => {
+    function surTouche(evenement: KeyboardEvent) {
+      if (evenement.repeat || evenement.defaultPrevented) return
+      if (document.querySelector('dialog[open], [role="menu"]') !== null) return
+      const raccourci = raccourciFiche({
+        key: evenement.key,
+        ctrlKey: evenement.ctrlKey,
+        metaKey: evenement.metaKey,
+        altKey: evenement.altKey,
+        dansUnChamp: estUnChamp(document.activeElement),
+      })
+      if (raccourci === null) return
+      if (raccourci.genre === 'onglet') {
+        const choisi = onglets[raccourci.rang]
+        if (choisi === undefined) return
+        evenement.preventDefault()
+        choisirOnglet(choisi)
+      } else if (avecParcours) {
+        evenement.preventDefault()
+        void allerAuVoisin(raccourci.genre === 'suivant' ? 1 : -1)
+      }
+    }
+    window.addEventListener('keydown', surTouche)
+    return () => window.removeEventListener('keydown', surTouche)
+  })
 
   if (etat.phase === 'chargement') {
     return (
@@ -154,65 +262,32 @@ export default function FicheContact() {
   }
 
   const { contact, recommandePar, fusionneDans, appels, biens } = etat
+  const aujourdhui = dateDuJour()
   const droit = droitAppel(contact)
   const appelPermis = droit.autorise || appelLibere !== null
   const archive = contact.archived_at !== null
   const fusionnee = contact.fusionne_dans_id !== null
+  const lectureSeule = archive || fusionnee
   const telephone = contact.telephones[0]
   const portable = contact.telephones.find(estPortable) ?? telephone
-  const courriel = contact.courriels[0]
-  const adresse = adresseComplete(contact)
-  const joindre = interlocuteur(contact)
-  const source = libelleSource(contact.source)
-  const temperature = libelleTemperature(contact.temperature)
-  const avecPastilles =
-    archive || temperature !== null || contact.roles.length > 0 || contact.etiquettes.length > 0
+  const lienAppelFiche =
+    telephone === undefined || !appelPermis
+      ? undefined
+      : lienAppel(appelLibere !== null && appelLibere !== '' ? appelLibere : telephone)
+  const annonceAppel =
+    telephone === undefined
+      ? 'Appeler : aucun numéro'
+      : appelPermis
+        ? undefined
+        : 'Appel bloqué : aucun accord pour être appelé'
+  const ligneDernier =
+    compteurs === null || compteurs.dernier === undefined
+      ? undefined
+      : dernierEchange(compteurs.dernier, aujourdhui)
 
-  async function changerArchivage() {
-    setEnvoi(true)
-    const client = exigerSupabase()
-    const resultat = archive
-      ? await restaurerContact(client, contact.id)
-      : await archiverContact(client, contact.id)
-    setEnvoi(false)
-    setConfirmation(false)
-    if (!resultat.ok) {
-      notifier('erreur', `L'action a échoué. ${resultat.erreur.message}`)
-      return
-    }
-    setEtat({
-      phase: 'pret',
-      contact: resultat.donnees,
-      recommandePar,
-      fusionneDans,
-      appels,
-      biens,
-    })
-    notifier('succes', archive ? 'Contact restauré' : 'Contact archivé')
-  }
-
-  /** Un motif vient d'être enregistré : l'appel est rétabli et la fiche relue (dernier contact). */
-  async function noterAppel(appel: AppelSansAccord) {
-    setAppelLibere(appel.telephone)
-    const relue = await lireContact(exigerSupabase(), contact.id)
-    setEtat({
-      phase: 'pret',
-      contact: relue.ok ? relue.donnees : contact,
-      recommandePar,
-      fusionneDans,
-      appels: [appel, ...appels],
-      biens,
-    })
-  }
-
-  /**
-   * Une tâche ou une activité a changé (boucle de relance comprise) : la prochaine action,
-   * les tâches et le journal se relisent, et la fiche aussi (dernier contact, température,
-   * prochaine action).
-   */
-  function toutRelire() {
-    setVersion((v) => v + 1)
-    void relireContact()
+  /** La fiche relue ou renvoyée par un enregistrement (température, archivage). */
+  function remplacerContact(suivant: Contact) {
+    setEtat((actuel) => (actuel.phase === 'pret' ? { ...actuel, contact: suivant } : actuel))
   }
 
   async function relireContact() {
@@ -225,32 +300,27 @@ export default function FicheContact() {
     )
   }
 
-  /** Droit d'accès : fabrique le fichier qui contient tout ce que la base sait de la personne. */
-  async function exporter() {
-    setExportEnCours(true)
-    const resultat = await rassemblerDonneesContact(exigerSupabase(), contact.id)
-    setExportEnCours(false)
-    if (!resultat.ok) {
-      notifier('erreur', `L'export a échoué. ${resultat.erreur.message}`)
-      return
-    }
-    telechargerTexte(nomFichierExport(contact), texteExportContact(resultat.donnees))
-    notifier('succes', 'Fichier enregistré dans vos téléchargements')
+  /**
+   * Une tâche ou une activité a changé (boucle de relance comprise) : la prochaine action,
+   * les tâches, le journal et les compteurs se relisent, et la fiche aussi (dernier contact,
+   * température, prochaine action).
+   */
+  function toutRelire() {
+    setVersion((v) => v + 1)
+    void relireContact()
   }
 
-  return (
-    <Page
-      titre={nomAvecCivilite(contact)}
-      retour={RETOUR}
-      actions={
-        <Link
-          to={`/contacts/${contact.id}/modifier`}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-surface px-4 text-base font-semibold text-encre ring-1 ring-bord-fort ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          Modifier
-        </Link>
-      }
-    >
+  /** Un motif vient d'être enregistré : l'appel est rétabli et la fiche relue (dernier contact). */
+  function noterAppel(appel: AppelSansAccord) {
+    setAppelLibere(appel.telephone)
+    setEtat((actuel) =>
+      actuel.phase === 'pret' ? { ...actuel, appels: [appel, ...actuel.appels] } : actuel,
+    )
+    void relireContact()
+  }
+
+  const messages = (
+    <>
       {fusionnee && (
         <Message genre="info">
           Cette fiche a été fusionnée
@@ -270,329 +340,266 @@ export default function FicheContact() {
       {archive && !fusionnee && (
         <Message genre="info">
           Cette fiche est archivée depuis le {formaterDate(contact.archived_at)} : elle n'apparaît
-          plus dans la liste des contacts.
+          plus dans la liste des contacts. « Restaurer la fiche » est dans le menu « … ».
         </Message>
       )}
+    </>
+  )
 
-      {avecPastilles && (
-        <div className="flex flex-wrap gap-2">
-          {archive && <Etiquette genre="alerte">Archivé</Etiquette>}
-          {temperature !== null && (
-            <Etiquette genre={GENRE_TEMPERATURE[contact.temperature ?? ''] ?? 'neutre'}>
-              {temperature}
-            </Etiquette>
-          )}
-          {contact.roles.map((role) => (
-            <Etiquette key={role} genre="info">
-              {libelleRole(role)}
-            </Etiquette>
-          ))}
-          {contact.etiquettes.map((etiquette) => (
-            <Etiquette key={etiquette}>{etiquette}</Etiquette>
-          ))}
-        </div>
-      )}
+  const modifier = (
+    <Link to={`/contacts/${contact.id}/modifier`} className={CLASSES_MODIFIER}>
+      <Icone nom="modifier" className="size-5 md:hidden" />
+      <span className="max-md:sr-only">Modifier</span>
+    </Link>
+  )
+  const menu = <MenuContact contact={contact} onChange={remplacerContact} />
+  const temperature = (
+    <TemperatureContact contact={contact} desactive={lectureSeule} onChange={remplacerContact} />
+  )
+  const prochaineAction = lectureSeule ? null : (
+    <ProchaineAction
+      contact={contact}
+      version={version}
+      onChangement={toutRelire}
+      compacte={ordinateur}
+    />
+  )
+  const avertissement =
+    telephone !== undefined && !droit.autorise ? (
+      <AvertissementAppel contact={contact} raison={droit.raison} onEnregistre={noterAppel} />
+    ) : null
+  const coordonnees = (empilee: boolean) => (
+    <dl className="divide-y divide-bord">
+      <LignesCoordonnees contact={contact} appelPermis={appelPermis} empilee={empilee} />
+      <LignesOrigine contact={contact} recommandePar={recommandePar} empilee={empilee} />
+    </dl>
+  )
+  const sansCoordonneesTexte = sansCoordonnees(contact) && (
+    <p className="text-sm text-encre-douce">
+      Aucune coordonnée pour l'instant. Touchez « Modifier » pour en ajouter.
+    </p>
+  )
+  const consentement = (empilee: boolean) => (
+    <>
+      <dl className="divide-y divide-bord">
+        <ConsentementContact contact={contact} appels={appels} empilee={empilee} />
+      </dl>
+      <p className="mt-2 text-sm text-encre-douce">
+        Dans le menu « … » : « Exporter ses données » produit un fichier texte avec tout ce qui est
+        enregistré sur cette personne, à lui remettre si elle le demande ; « Supprimer
+        définitivement » répond à une demande d'effacement.
+      </p>
+    </>
+  )
 
-      {!archive && !fusionnee && (
-        <ProchaineAction contact={contact} version={version} onChangement={toutRelire} />
-      )}
-
-      {telephone !== undefined && !droit.autorise && (
-        <AvertissementAppel
-          contact={contact}
-          raison={droit.raison}
-          onEnregistre={(appel) => void noterAppel(appel)}
-        />
-      )}
-
-      <div className="flex gap-2 md:max-w-md">
-        <LienAction
-          libelle="Appeler"
-          icone="telephone"
-          href={
-            telephone === undefined || !appelPermis
-              ? undefined
-              : lienAppel(appelLibere !== null && appelLibere !== '' ? appelLibere : telephone)
-          }
-        />
-        <LienAction
-          libelle="SMS"
-          icone="sms"
-          variante="secondaire"
-          href={portable === undefined ? undefined : lienSms(portable)}
-        />
-        <LienAction
-          libelle="Courriel"
-          icone="courriel"
-          variante="secondaire"
-          href={courriel === undefined ? undefined : `mailto:${courriel}`}
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Carte titre="Coordonnées">
-          {contact.telephones.length + contact.courriels.length === 0 &&
-          adresse === '' &&
-          joindre === '' ? (
-            <p className="text-sm text-encre-douce">
-              Aucune coordonnée pour l'instant. Touchez « Modifier » pour en ajouter.
-            </p>
-          ) : (
-            <dl className="divide-y divide-bord">
-              {joindre !== '' && <Information nom="Personne à joindre">{joindre}</Information>}
-              {contact.telephones.map((numero, rang) => (
-                <Information
-                  key={numero}
-                  nom={rang === 0 ? 'Téléphone' : `Téléphone ${rang + 1}`}
-                  fin={<BoutonCopier valeur={formaterTelephone(numero)} quoi="le numéro" />}
-                >
-                  {appelPermis ? (
-                    <a href={lienAppel(numero)} className={CLASSES_LIEN}>
-                      {formaterTelephone(numero)}
-                    </a>
-                  ) : (
-                    formaterTelephone(numero)
-                  )}
-                </Information>
-              ))}
-              {contact.courriels.map((adresseCourriel, rang) => (
-                <Information
-                  key={adresseCourriel}
-                  nom={rang === 0 ? 'Courriel' : `Courriel ${rang + 1}`}
-                  fin={<BoutonCopier valeur={adresseCourriel} quoi="le courriel" />}
-                >
-                  <a href={`mailto:${adresseCourriel}`} className={CLASSES_LIEN}>
-                    {adresseCourriel}
-                  </a>
-                </Information>
-              ))}
-              {adresse !== '' && (
-                <Information nom="Adresse" fin={<BoutonCopier valeur={adresse} quoi="l'adresse" />}>
-                  {adresse}
-                </Information>
-              )}
-            </dl>
-          )}
-        </Carte>
-
-        <Carte titre="Origine du contact">
-          {source === null ? (
-            <p className="text-sm text-encre-douce">Source non précisée.</p>
-          ) : (
-            <dl className="divide-y divide-bord">
-              <Information nom="Source">{source}</Information>
-              {contact.source_detail !== '' && (
-                <Information nom="Détail">{contact.source_detail}</Information>
-              )}
-              {recommandePar !== null && (
-                <Information nom="Recommandé par">
-                  <Link to={`/contacts/${recommandePar.id}`} className={CLASSES_LIEN}>
-                    {nomComplet(recommandePar)}
-                  </Link>
-                </Information>
-              )}
-            </dl>
-          )}
-        </Carte>
-
-        <div className="lg:col-span-2">
-          <Carte titre="Consentement et données personnelles">
-            <dl className="divide-y divide-bord">
-              <Information nom="Accord pour être appelé">
-                {resumeAccord(contact)}
-                {contact.accord_appel_preuve !== '' && (
-                  <span className="block text-sm text-encre-douce">
-                    {contact.accord_appel_preuve}
-                  </span>
-                )}
-              </Information>
-              {contact.client_existant && <Information nom="Client existant">Oui</Information>}
-              {contact.opposition_demarchage && (
-                <Information nom="Démarchage">
-                  S'y oppose
-                  {contact.opposition_demarchage_date !== null &&
-                    ` depuis le ${formaterDate(contact.opposition_demarchage_date)}`}
-                </Information>
-              )}
-              <Information nom="Données collectées">
-                Le {formaterDate(contact.collecte_date)}
-                {contact.collecte_origine !== '' && (
-                  <span className="block text-sm text-encre-douce">{contact.collecte_origine}</span>
-                )}
-              </Information>
-              <Information nom="Dernier contact">
-                Le {formaterDate(contact.dernier_contact_le)}
-              </Information>
-              {appels.length > 0 && (
-                <Information nom="Appels sans accord">
-                  <ul className="flex flex-col gap-1">
-                    {appels.map((appel) => (
-                      <li key={appel.id}>
-                        {formaterDate(appel.created_at)} — {libelleMotifAppel(appel.motif)}
-                        {appel.detail !== '' && (
-                          <span className="block text-sm text-encre-douce">{appel.detail}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </Information>
-              )}
-            </dl>
-            <div className="mt-4 flex flex-col gap-2 md:flex-row">
-              <Bouton
-                variante="secondaire"
-                disabled={exportEnCours}
-                onClick={() => void exporter()}
-              >
-                {exportEnCours ? 'Préparation du fichier…' : 'Exporter ses données'}
-              </Bouton>
-              {!fusionnee && (
-                <Bouton variante="danger" onClick={() => setSuppression(true)}>
-                  Supprimer définitivement…
-                </Bouton>
-              )}
-            </div>
-            <p className="mt-2 text-sm text-encre-douce">
-              L'export produit un fichier texte avec tout ce qui est enregistré sur cette personne,
-              à lui remettre si elle demande ses données. La suppression définitive répond à une
-              demande d'effacement.
-            </p>
-          </Carte>
-        </div>
-
-        {contact.notes !== '' && (
-          <div className="lg:col-span-2">
-            <Carte titre="Notes">
-              <p className="text-base break-words whitespace-pre-wrap text-encre">
-                {contact.notes}
-              </p>
-            </Carte>
-          </div>
-        )}
-
-        {/* `min-w-0` : une adresse longue est coupée au lieu d'élargir la page. */}
-        <div className="min-w-0">
-          <SectionProjetsVendeurs contact={contact} lectureSeule={archive || fusionnee} />
-        </div>
-        <div className="min-w-0">
-          <SectionProjetsAcquereurs contact={contact} lectureSeule={archive || fusionnee} />
-        </div>
-        {/* `min-w-0` : une adresse longue est coupée au lieu d'élargir la page. */}
-        <div className="min-w-0">
-          <Carte titre="Biens">
-            {biens.length === 0 ? (
-              <p className="text-sm text-encre-douce">
-                Les biens dont ce contact est propriétaire s'afficheront ici. Le lien se fait depuis
-                la fiche du bien, rubrique « Propriétaires ».
-              </p>
-            ) : (
-              <ul className="-mx-4 -mb-2 divide-y divide-bord">
-                {biens.map(({ lien, bien }) => (
-                  <LigneListe
-                    key={lien.id}
-                    titre={bien.adresse}
-                    detail={[
-                      resumeBien(bien),
-                      lien.quote_part === null ? null : formaterQuotePart(lien.quote_part),
-                      bien.archived_at !== null ? 'archivé' : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                    fin={
-                      <Etiquette genre={genreStatut(bien.statut)}>
-                        {libelleStatut(bien.statut)}
-                      </Etiquette>
-                    }
-                    vers={`/biens/${bien.id}`}
-                  />
-                ))}
-              </ul>
-            )}
-          </Carte>
-        </div>
-        {/* `min-w-0` : un titre ou une adresse longue est coupé au lieu d'élargir la page. */}
-        <div className="min-w-0">
-          <SectionTaches contact={contact} version={version} onChangement={toutRelire} />
-        </div>
-        <div className="min-w-0 lg:col-span-2">
-          <SectionJournal contact={contact} version={version} onChangement={toutRelire} />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <p className="text-sm text-encre-douce">
-          Fiche créée le {formaterDate(contact.created_at)}, modifiée le{' '}
-          {formaterDate(contact.updated_at)}.
-        </p>
-        {fusionnee ? null : archive ? (
-          <Bouton variante="secondaire" disabled={envoi} onClick={() => void changerArchivage()}>
-            {envoi ? 'Restauration…' : 'Restaurer la fiche'}
-          </Bouton>
-        ) : (
-          <div className="flex flex-col gap-2 md:flex-row">
-            <Bouton variante="secondaire" icone="fusionner" onClick={() => setChoixFusion(true)}>
-              Fusionner avec une autre fiche
-            </Bouton>
-            <Bouton variante="secondaire" icone="archiver" onClick={() => setConfirmation(true)}>
-              Archiver
-            </Bouton>
-          </div>
-        )}
-      </div>
-
-      {/* La fenêtre n'existe que le temps du choix : la recherche repart vide à chaque fois. */}
-      {choixFusion && (
-        <FenetreModale
-          ouverte
-          titre="Fusionner avec quelle fiche ?"
-          onFermer={() => setChoixFusion(false)}
-        >
-          <div className="flex flex-col gap-3">
-            <p className="text-base text-encre">
-              Cherchez l'autre fiche de {nomComplet(contact)}. L'écran suivant compare les deux
-              fiches avant de les réunir : rien n'est fait tant que vous n'avez pas confirmé.
-            </p>
-            <SelecteurContact
-              libelle="Chercher la fiche en double"
-              sauf={contact.id}
-              autoFocus
-              onChoisir={(autre) => void naviguer(`/contacts/${contact.id}/fusionner/${autre.id}`)}
-            />
-          </div>
-        </FenetreModale>
-      )}
-
-      {suppression && (
-        <SuppressionContact
-          contact={contact}
-          onFermer={() => setSuppression(false)}
-          onSupprime={() => {
-            notifier('succes', 'Contact supprimé définitivement')
-            void naviguer('/contacts', { replace: true })
-          }}
-        />
-      )}
-
-      <FenetreModale
-        ouverte={confirmation}
-        titre="Archiver ce contact ?"
-        onFermer={() => setConfirmation(false)}
-        pied={
+  function contenuOnglet(choisi: OngletContact): ReactNode {
+    switch (choisi) {
+      case 'activite':
+        return (
           <>
-            <Bouton pleineLargeur disabled={envoi} onClick={() => void changerArchivage()}>
-              {envoi ? 'Archivage…' : 'Archiver'}
-            </Bouton>
-            <Bouton variante="secondaire" pleineLargeur onClick={() => setConfirmation(false)}>
-              Annuler
-            </Bouton>
+            {ordinateur && <NotesContact contact={contact} />}
+            <SectionTaches
+              contact={contact}
+              version={version}
+              onChangement={toutRelire}
+              titre="À venir"
+              limite={TACHES_DANS_ACTIVITE}
+              onVoirTout={() => choisirOnglet('taches')}
+            />
+            <SectionJournal contact={contact} version={version} onChangement={toutRelire} />
           </>
+        )
+      case 'projets':
+        return (
+          <>
+            <SectionProjetsVendeurs contact={contact} lectureSeule={lectureSeule} avecEtapes />
+            <SectionProjetsAcquereurs contact={contact} lectureSeule={lectureSeule} avecEtapes />
+            {!ordinateur && <BiensContact biens={biens} />}
+          </>
+        )
+      case 'taches':
+        return <SectionTaches contact={contact} version={version} onChangement={toutRelire} />
+      case 'biens':
+        return <BiensContact biens={biens} />
+      case 'infos':
+        return (
+          <>
+            <Carte titre="Coordonnées">
+              {sansCoordonneesTexte}
+              {coordonnees(false)}
+            </Carte>
+            <NotesContact contact={contact} />
+            <Carte titre="Consentement et données personnelles">{consentement(false)}</Carte>
+            <p className="text-sm text-encre-douce">{ligneDatesFiche(contact, aujourdhui)}</p>
+          </>
+        )
+    }
+  }
+
+  const compteurDe: Record<OngletContact, number | null | undefined> = {
+    activite: compteurs?.activites,
+    projets: compteurs?.projets,
+    taches: compteurs?.taches,
+    biens: biens.length,
+    infos: undefined,
+  }
+  const ongletsFiche = (
+    <OngletsFiche
+      id="onglets-fiche-contact"
+      libelle="Rubriques de la fiche"
+      options={onglets.map((valeur) => ({
+        valeur,
+        libelle: LIBELLES_ONGLETS[valeur],
+        compteur: compteurDe[valeur],
+      }))}
+      valeur={onglet}
+      onChange={choisirOnglet}
+    >
+      {contenuOnglet(onglet)}
+    </OngletsFiche>
+  )
+
+  const compteRendu = consigner && (
+    <CompteRenduExpress
+      contact={contact}
+      onFermer={() => setConsigner(false)}
+      onEnregistre={toutRelire}
+    />
+  )
+
+  if (ordinateur) {
+    return (
+      <Page
+        titre={nomAvecCivilite(contact)}
+        retour={RETOUR}
+        enTete={null}
+        finRetour={
+          avecParcours &&
+          parcours !== null &&
+          rang !== null && (
+            <NavigationFiche
+              position={libellePosition(rang, parcours.total)}
+              quoi="la liste des contacts"
+              enCours={voisinEnCours}
+              onPrecedent={
+                rangVoisin(parcours, rang, -1) === null ? undefined : () => void allerAuVoisin(-1)
+              }
+              onSuivant={
+                rangVoisin(parcours, rang, 1) === null ? undefined : () => void allerAuVoisin(1)
+              }
+            />
+          )
         }
       >
-        <p className="text-base text-encre">
-          {nomComplet(contact)} quittera la liste des contacts. Rien n'est supprimé : la fiche reste
-          dans « Contacts archivés » et peut être restaurée à tout moment.
-        </p>
-      </FenetreModale>
+        {messages}
+        <div className="grid items-start gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
+          <ProfilFiche libelle={`Profil de ${nomComplet(contact)}`}>
+            <IdentiteContact contact={contact} taille="grande" sousTitre={ligneDernier} />
+            {temperature}
+            <ActionsContact
+              contact={contact}
+              lienAppel={lienAppelFiche}
+              annonceAppel={annonceAppel}
+              cartes={cartes}
+            />
+            {prochaineAction}
+            <Carte>
+              {sansCoordonneesTexte}
+              {coordonnees(true)}
+            </Carte>
+            {droit.autorise ? (
+              <p className="flex items-start gap-2 text-sm font-medium text-succes">
+                <Icone nom="succes" className="mt-0.5 size-4 shrink-0" />
+                {ligneAccord(contact)}
+              </p>
+            ) : (
+              (avertissement ?? (
+                <p className="text-sm text-encre-douce">
+                  Accord pour être appelé : {resumeAccord(contact).toLowerCase()}
+                </p>
+              ))
+            )}
+            <details className="group rounded-2xl bg-surface ring-1 ring-bord">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-4 text-sm font-semibold text-encre focus-visible:outline-2 focus-visible:outline-accent">
+                Consentement et données personnelles
+                <Icone
+                  nom="chevron"
+                  className="size-4 text-encre-douce transition-transform group-open:rotate-90"
+                />
+              </summary>
+              <div className="px-4 pb-4">{consentement(true)}</div>
+            </details>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-encre-douce">{ligneDatesFiche(contact, aujourdhui)}</p>
+              <div className="flex gap-2">
+                {modifier}
+                {menu}
+              </div>
+            </div>
+          </ProfilFiche>
+          {ongletsFiche}
+        </div>
+        {compteRendu}
+      </Page>
+    )
+  }
+
+  return (
+    <Page
+      titre={nomAvecCivilite(contact)}
+      retour={RETOUR}
+      enTete={
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <IdentiteContact contact={contact} taille="compacte" sousTitre={ligneDernier} />
+            </div>
+            <div className="flex shrink-0 gap-2">
+              {modifier}
+              {menu}
+            </div>
+          </div>
+          {temperature}
+        </div>
+      }
+    >
+      {messages}
+      {prochaineAction}
+      {avertissement}
+      {taille === 'tablette' && (
+        <ActionsContact
+          contact={contact}
+          lienAppel={lienAppelFiche}
+          annonceAppel={annonceAppel}
+          cartes={cartes}
+        />
+      )}
+      {ongletsFiche}
+      {taille === 'telephone' && (
+        <BarreActionsFiche libelle={`Actions sur ${nomComplet(contact)}`}>
+          <div className="flex flex-[2]">
+            <LienAction
+              libelle="Appeler"
+              icone="telephone"
+              href={lienAppelFiche}
+              annonce={annonceAppel}
+            />
+          </div>
+          <LienAction
+            libelle="SMS"
+            icone="sms"
+            variante="secondaire"
+            href={portable === undefined ? undefined : lienSms(portable)}
+          />
+          <LienAction
+            libelle="Consigner"
+            icone="journal"
+            variante="secondaire"
+            onClick={lectureSeule ? undefined : () => setConsigner(true)}
+          />
+        </BarreActionsFiche>
+      )}
+      {compteRendu}
     </Page>
   )
 }

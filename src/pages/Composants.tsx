@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import BarreEtapes from '../components/BarreEtapes'
 import Bouton from '../components/Bouton'
 import BoutonCopier from '../components/BoutonCopier'
 import Carte from '../components/Carte'
@@ -7,6 +8,7 @@ import ChampEtiquettes from '../components/ChampEtiquettes'
 import ChampSaisie from '../components/ChampSaisie'
 import ChampTexteLong from '../components/ChampTexteLong'
 import ChoixMultiple from '../components/ChoixMultiple'
+import ChoixSegmente from '../components/ChoixSegmente'
 import EtatChargement from '../components/EtatChargement'
 import EtatVide from '../components/EtatVide'
 import Etiquette from '../components/Etiquette'
@@ -17,7 +19,9 @@ import LienBouton from '../components/LienBouton'
 import LigneGlissable from '../components/LigneGlissable'
 import LigneListe from '../components/LigneListe'
 import Liste from '../components/Liste'
+import MenuActions from '../components/MenuActions'
 import Message from '../components/Message'
+import NavigationFiche from '../components/NavigationFiche'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
 import Onglets from '../components/Onglets'
@@ -27,6 +31,7 @@ import TraitMaintenant from '../features/aujourdhui/TraitMaintenant'
 import { libelleJour } from '../features/taches/echeances'
 import ReportsRapides from '../features/taches/ReportsRapides'
 import { dateDuJour } from '../lib/dates'
+import { etatsEtapes } from '../lib/etapes'
 
 /**
  * Vitrine du système de design : tous les composants réutilisables, avec des données
@@ -38,6 +43,7 @@ export default function Composants() {
   const [roles, setRoles] = useState<string[]>(['vendeur'])
   const [etiquettes, setEtiquettes] = useState(['investisseur'])
   const [onglet, setOnglet] = useState('aujourdhui')
+  const [temperature, setTemperature] = useState<'froid' | 'tiede' | 'chaud'>('tiede')
   const aujourdhui = dateDuJour()
   const [echeance, setEcheance] = useState(aujourdhui)
 
@@ -302,6 +308,66 @@ export default function Composants() {
             <TraitMaintenant heure="11:10" />
             <li className="py-2 text-base text-encre">14 h – 15 h 30 · Signature du mandat</li>
           </ul>
+        </div>
+      </Carte>
+
+      <Carte titre="Fiches">
+        <div className="flex flex-col gap-4">
+          <ChoixSegmente
+            libelle="Température (exemple)"
+            options={[
+              { valeur: 'froid', libelle: 'Froid' },
+              { valeur: 'tiede', libelle: 'Tiède' },
+              { valeur: 'chaud', libelle: 'Chaud' },
+            ]}
+            valeur={temperature}
+            onChange={setTemperature}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <NavigationFiche
+              position="12 sur 48"
+              quoi="l'exemple"
+              onPrecedent={() => notifier('succes', 'Contact précédent (exemple).')}
+              onSuivant={() => notifier('succes', 'Contact suivant (exemple).')}
+            />
+            <MenuActions
+              libelle="Autres actions (exemple)"
+              elements={[
+                {
+                  libelle: 'Fusionner avec une autre fiche',
+                  icone: 'fusionner',
+                  onChoisir: () => undefined,
+                },
+                { libelle: 'Exporter ses données', icone: 'document', onChoisir: () => undefined },
+                { libelle: 'Archiver', icone: 'archiver', onChoisir: () => undefined },
+                {
+                  libelle: 'Supprimer définitivement…',
+                  icone: 'supprimer',
+                  onChoisir: () => undefined,
+                  danger: true,
+                },
+              ]}
+            />
+          </div>
+          <BarreEtapes
+            etapes={etatsEtapes(
+              [
+                { valeur: 'premier_contact', libelle: 'Premier contact' },
+                { valeur: 'decouverte', libelle: 'Découverte' },
+                { valeur: 'estimation', libelle: 'Estimation' },
+                { valeur: 'suivi', libelle: 'Suivi' },
+                { valeur: 'mandat_signe', libelle: 'Mandat signé' },
+              ],
+              'decouverte',
+            )}
+            anciennete={{ texte: 'Depuis 12 jours', alerte: false }}
+            critere="Pour passer à l’étape suivante (Estimation) : projet, délai, motif."
+            manque="Il manque le motif de la vente."
+            suivante={{
+              libelle: 'Estimation',
+              onPasser: () => notifier('succes', 'Étape suivante (exemple).'),
+            }}
+          />
         </div>
       </Carte>
 
