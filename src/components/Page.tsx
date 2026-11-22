@@ -14,6 +14,13 @@ type Props = {
   surtitre?: ReactNode
   /** Titre de l'onglet du navigateur, s'il diffère du titre affiché. */
   titreOnglet?: string
+  /** Placé à droite du lien de retour (« 12 sur 48 » et les flèches de la fiche Contact). */
+  finRetour?: ReactNode
+  /**
+   * Remplace la ligne du titre : la page y place son propre en-tête, qui porte alors le titre
+   * de niveau 1 (`h1`). `null` : pas de ligne de titre, le `h1` est ailleurs dans la page.
+   */
+  enTete?: ReactNode
   children: ReactNode
 }
 
@@ -25,6 +32,8 @@ export default function Page({
   large = false,
   surtitre,
   titreOnglet,
+  finRetour,
+  enTete,
   children,
 }: Props) {
   const onglet = titreOnglet ?? titre
@@ -41,22 +50,33 @@ export default function Page({
       className={`mx-auto flex w-full ${large ? 'max-w-[100rem]' : 'max-w-5xl'} flex-col gap-5 px-4 pt-4 pb-8 md:px-8 md:pt-8`}
     >
       <header>
-        {retour !== undefined && (
-          <Link
-            to={retour.vers}
-            className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-encre-douce hover:bg-creux hover:text-encre focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            <Icone nom="retour" className="size-5" />
-            {retour.libelle}
-          </Link>
+        {(retour !== undefined || finRetour !== undefined) && (
+          <div className="flex min-h-11 items-center justify-between gap-2">
+            {retour !== undefined ? (
+              <Link
+                to={retour.vers}
+                className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-encre-douce hover:bg-creux hover:text-encre focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <Icone nom="retour" className="size-5" />
+                {retour.libelle}
+              </Link>
+            ) : (
+              <span />
+            )}
+            {finRetour}
+          </div>
         )}
         {surtitre}
-        <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-encre md:text-4xl">
-            {titre}
-          </h1>
-          {actions}
-        </div>
+        {enTete !== undefined ? (
+          enTete
+        ) : (
+          <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-encre md:text-4xl">
+              {titre}
+            </h1>
+            {actions}
+          </div>
+        )}
       </header>
       {children}
     </div>

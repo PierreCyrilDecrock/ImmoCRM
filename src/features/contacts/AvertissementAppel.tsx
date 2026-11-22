@@ -94,7 +94,8 @@ export default function AvertissementAppel({ contact, raison, onEnregistre }: Pr
               )}
             </div>
           </div>
-          <div className="flex flex-col gap-2 md:flex-row">
+          {/* Les boutons passent à la ligne dans une colonne étroite (profil de la fiche). */}
+          <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
             {raison === 'inconnu' && (
               <Link
                 to={`/contacts/${contact.id}/modifier`}

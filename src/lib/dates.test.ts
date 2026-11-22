@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   ajouterJours,
+  depuisLeMoment,
+  depuisQuand,
   ajouterMois,
   dateDuJour,
   estHeureValide,
@@ -223,5 +225,27 @@ describe('minutesDuJour', () => {
   it('refuse une heure illisible', () => {
     expect(minutesDuJour('24:00')).toBeNull()
     expect(minutesDuJour('midi')).toBeNull()
+  })
+})
+
+describe('depuisQuand', () => {
+  it('dit depuis combien de temps, en mots simples', () => {
+    expect(depuisQuand(0)).toBe("aujourd'hui")
+    expect(depuisQuand(1)).toBe('hier')
+    expect(depuisQuand(8)).toBe('il y a 8 jours')
+    expect(depuisQuand(75)).toBe('il y a 2 mois')
+    expect(depuisQuand(400)).toBe("il y a plus d'un an")
+  })
+})
+
+describe('depuisLeMoment', () => {
+  it('compte les jours du calendrier de Paris', () => {
+    expect(depuisLeMoment('2026-11-19T10:00:00Z', '2026-11-22')).toBe('il y a 3 jours')
+    // 23 h 30 en temps universel le 21 : déjà le 22 à Paris.
+    expect(depuisLeMoment('2026-11-21T23:30:00Z', '2026-11-22')).toBe("aujourd'hui")
+  })
+
+  it('ne dit rien d’un moment illisible', () => {
+    expect(depuisLeMoment('jamais', '2026-11-22')).toBe('')
   })
 })

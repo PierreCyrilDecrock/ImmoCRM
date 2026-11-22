@@ -12,6 +12,7 @@ import {
   libelleEtapeAcquereur,
   preparerPassageAcquereur,
   rangEtapeAcquereur,
+  SUJETS_PASSAGE_ACQUEREUR,
   type BrouillonPassageAcquereur,
   type EtapeAcquereur,
   type ErreursPassageAcquereur,
@@ -26,15 +27,6 @@ const RUBRIQUES: Record<Exclude<InfoPassageAcquereur, 'biens_proposes'>, Rubriqu
   types_biens: 'criteres',
   secteurs: 'criteres',
   financement: 'financement',
-}
-
-const SUJETS: Record<InfoPassageAcquereur, string> = {
-  origine: 'l’origine de la demande',
-  budget_max: 'le budget',
-  types_biens: 'les critères',
-  secteurs: 'les critères',
-  financement: 'le financement',
-  biens_proposes: 'un bien proposé',
 }
 
 /**
@@ -82,7 +74,7 @@ export default function FenetrePassageAcquereur({
     rangEtapeAcquereur(affiche.projet.etape),
     rangEtapeAcquereur(cible),
   )
-  const sujets = [...new Set(manquantes.map((info) => SUJETS[info]))]
+  const sujets = [...new Set(manquantes.map((info) => SUJETS_PASSAGE_ACQUEREUR[info]))]
   const rubriques = [
     ...new Set(manquantes.flatMap((info) => (info === 'biens_proposes' ? [] : [RUBRIQUES[info]]))),
   ]

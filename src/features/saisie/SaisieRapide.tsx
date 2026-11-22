@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useBarreBasOccupee } from '../../components/barre-bas'
 import Icone from '../../components/Icone'
 import { dateDuJour } from '../../lib/dates'
 import DemandeEntrante from '../acquereurs/DemandeEntrante'
@@ -42,6 +43,8 @@ function allerALaRecherche() {
  */
 export default function SaisieRapide({ rafraichir }: Props) {
   const { pathname } = useLocation()
+  // Sur téléphone, une fiche peut poser sa barre d'actions en bas : le « + » s'efface.
+  const barreBas = useBarreBasOccupee()
   const [ouvert, setOuvertBrut] = useState<Ouvert | null>(null)
   // Ce qui avait le clavier avant l'ouverture (« Créer », « + ») : il le retrouve à la fermeture.
   const retourFocus = useRef<HTMLElement | null>(null)
@@ -112,7 +115,7 @@ export default function SaisieRapide({ rafraichir }: Props) {
         aria-haspopup="dialog"
         aria-keyshortcuts="N"
         title="Saisie rapide (N)"
-        className="absolute right-[max(1rem,env(safe-area-inset-right))] bottom-4 z-10 flex size-14 items-center justify-center rounded-2xl bg-accent text-sur-plein shadow-lg shadow-accent/30 ring-4 ring-fond hover:bg-accent-fort focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:right-8 md:bottom-8 lg:hidden"
+        className={`absolute right-[max(1rem,env(safe-area-inset-right))] bottom-4 z-10 flex size-14 items-center justify-center rounded-2xl bg-accent text-sur-plein shadow-lg shadow-accent/30 ring-4 ring-fond hover:bg-accent-fort focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:right-8 md:bottom-8 lg:hidden ${barreBas ? 'max-md:hidden' : ''}`}
       >
         <Icone nom="ajouter" className="size-7" />
       </button>

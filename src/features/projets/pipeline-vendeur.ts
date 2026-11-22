@@ -167,6 +167,18 @@ const CRITERES: Record<EtapeVendeur, readonly InfoPassage[]> = {
   mandat_signe: [],
 }
 
+/** Ce que désigne chaque information, dans une phrase (« il manque le motif de la vente »). */
+export const SUJETS_PASSAGE: Record<InfoPassage, string> = {
+  source: 'la source du contact',
+  motif_vente: 'le motif de la vente',
+  echeance_souhaitee: 'le délai souhaité',
+  estimation_basse: 'l’estimation',
+  estimation_haute: 'l’estimation',
+  avis_remis_le: 'la remise de l’avis de valeur',
+  mandat_type: 'le type de mandat',
+  mandat_le: 'la date de signature',
+}
+
 /** Ce que demande l'arrivée à une étape : les critères de toutes les étapes d'avant. */
 export function exigencesEtape(cible: EtapeVendeur): InfoPassage[] {
   const avant = ETAPES_VENDEUR.slice(0, rangEtape(cible)).flatMap(({ valeur }) => CRITERES[valeur])
@@ -475,4 +487,30 @@ export function grouperParEtape<
 /** Premier jour depuis lequel un mandat signé reste dans la colonne « Mandat signé ». */
 export function debutGagnesVisibles(aujourdhui: string): string {
   return ajouterJours(aujourdhui, -JOURS_GAGNES_VISIBLES)
+}
+
+/** Ce qu'il faut pour passer à l'étape suivante d'un projet en cours, pour la fiche Contact. */
+export type AideEtape = {
+  suivante: EtapeVendeur
+  /** Le critère de sortie de l'étape en cours (« Avis de valeur remis »). */
+  critere: string
+  /** Ce qui manque encore, en mots (« l’estimation »), sans doublon. */
+  manquantes: string[]
+}
+
+/**
+ * L'étape suivante d'un projet, son critère et ce qui manque pour y passer ; `null` après
+ * « Mandat signé ». `source` : la source du contact principal (critère du premier contact).
+ */
+export function aideEtapeSuivante(
+  projet: Connu & Pick<ProjetVendeur, 'etape'>,
+  source: string | null,
+): AideEtape | null {
+  const suivante = etapeSuivante(projet.etape)
+  if (suivante === null) return null
+  const critere = ETAPES_VENDEUR[rangEtape(projet.etape)]?.critere ?? ''
+  const manquantes = informationsManquantes(projet, source, suivante).map(
+    (info) => SUJETS_PASSAGE[info],
+  )
+  return { suivante, critere, manquantes: [...new Set(manquantes)] }
 }

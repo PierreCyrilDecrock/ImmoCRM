@@ -1,4 +1,4 @@
-import { ecartJours, formaterHeure } from '../../lib/dates'
+import { depuisQuand, ecartJours, formaterHeure } from '../../lib/dates'
 import { libelleTypeActivite, libelleResultatAppel, type Activite } from '../activites/activites'
 import { libelleRole, type Contact } from '../contacts/contacts'
 import { libelleJour } from '../taches/echeances'
@@ -163,15 +163,6 @@ export function pastilleRetard(
     texte: `En retard · ${jours} j`,
     annonce: jours === 1 ? "En retard d'un jour" : `En retard de ${jours} jours`,
   }
-}
-
-/** « il y a 8 jours », « il y a 2 mois », « il y a plus d'un an ». */
-function depuisQuand(jours: number): string {
-  if (jours <= 0) return "aujourd'hui"
-  if (jours === 1) return 'hier'
-  if (jours < 60) return `il y a ${jours} jours`
-  if (jours < 365) return `il y a ${Math.floor(jours / 30)} mois`
-  return "il y a plus d'un an"
 }
 
 /** « rendez-vous », « SMS », « appel, messagerie » : le type en minuscules, sigles gardés. */

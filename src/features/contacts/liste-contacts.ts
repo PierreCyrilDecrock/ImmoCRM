@@ -6,7 +6,11 @@ import { conditionsContacts, type FiltresContacts } from './filtres'
 
 export type ListeContacts = Omit<ListePaginee<Contact>, 'lignes'> & { contacts: Contact[] }
 
-const lirePage: LecteurPage<Contact> = (cle, debut, compter) => {
+/**
+ * Lit une page de 50 contacts à partir du rang `debut`, pour la recherche décrite par `cle`
+ * (celle de `useListeContacts`). Sert aussi à la fiche pour trouver le contact suivant.
+ */
+export const lirePageContacts: LecteurPage<Contact> = (cle, debut, compter) => {
   const [conditions, archives] = JSON.parse(cle) as [Filtre<'contacts'>[], boolean]
   return chercherContacts(exigerSupabase(), { conditions, archives, debut, compter })
 }
@@ -18,7 +22,7 @@ const lirePage: LecteurPage<Contact> = (cle, debut, compter) => {
 export function useListeContacts(filtres: FiltresContacts, archives: boolean): ListeContacts {
   const { lignes, ...liste } = useListePaginee(
     JSON.stringify([conditionsContacts(filtres), archives]),
-    lirePage,
+    lirePageContacts,
     TAILLE_PAGE_CONTACTS,
   )
   return { ...liste, contacts: lignes }

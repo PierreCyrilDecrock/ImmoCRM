@@ -2,18 +2,36 @@ import { useEffect, useState } from 'react'
 import Bouton from '../../components/Bouton'
 import Carte from '../../components/Carte'
 import Etiquette from '../../components/Etiquette'
+import BarreEtapes from '../../components/BarreEtapes'
 import LigneListe from '../../components/LigneListe'
 import Message from '../../components/Message'
+import { dateDuJour } from '../../lib/dates'
+import { etatsEtapes, phraseManque, phrasePassage } from '../../lib/etapes'
 import { exigerSupabase } from '../../lib/supabase'
 import { adresseBien, type Bien } from '../biens/biens'
 import { nomComplet, type Contact } from '../contacts/contacts'
+import { useChangementEtape } from './changement-etape'
 import NouveauProjetVendeur from './NouveauProjetVendeur'
-import { genreEtatProjet, libelleEtatProjet, resumeEtat } from './pipeline-vendeur'
+import {
+  aideEtapeSuivante,
+  ancienneteEtape,
+  ETAPES_VENDEUR,
+  etapeQuiTraine,
+  genreEtatProjet,
+  libelleEtape,
+  libelleEtatProjet,
+  resumeEtat,
+} from './pipeline-vendeur'
 import { listerProjetsVendeursLies, type ProjetVendeurAffiche } from './projets-vendeurs'
 
 type Props = ({ contact: Contact; bien?: undefined } | { bien: Bien; contact?: undefined }) & {
   /** Fiche archivée : on n'y ouvre pas de nouveau projet. */
   lectureSeule?: boolean
+  /**
+   * Sous chaque projet du pipeline, ses étapes en barre, l'ancienneté dans l'étape, ce qu'il
+   * faut pour passer à la suivante et le bouton « Étape suivante » (fiche Contact).
+   */
+  avecEtapes?: boolean
 }
 
 type Etat =
@@ -28,8 +46,13 @@ type Etat =
 export default function SectionProjetsVendeurs(props: Props) {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [creation, setCreation] = useState(false)
+  // Change après un changement d'étape : la liste se relit.
+  const [version, setVersion] = useState(0)
+  const changement = useChangementEtape(() => setVersion((v) => v + 1))
   const depuisContact = props.contact !== undefined
   const idFiche = props.contact?.id ?? props.bien?.id ?? ''
+  const avecEtapes = props.avecEtapes === true
+  const aujourdhui = dateDuJour()
 
   useEffect(() => {
     let actif = true
@@ -45,7 +68,7 @@ export default function SectionProjetsVendeurs(props: Props) {
     return () => {
       actif = false
     }
-  }, [depuisContact, idFiche])
+  }, [depuisContact, idFiche, version])
 
   return (
     <Carte titre="Projets de vente">
@@ -62,27 +85,69 @@ export default function SectionProjetsVendeurs(props: Props) {
       )}
       {etat.phase === 'pret' && etat.projets.length > 0 && (
         <ul className="-mx-4 divide-y divide-bord">
-          {etat.projets.map(({ id, projet, contact, bien }) => (
-            <LigneListe
-              key={id}
-              titre={
-                depuisContact
-                  ? bien === null
-                    ? 'Bien introuvable'
-                    : adresseBien(bien)
-                  : contact === null
-                    ? 'Contact introuvable'
-                    : nomComplet(contact)
-              }
-              detail={resumeEtat(projet)}
-              fin={
-                <Etiquette genre={genreEtatProjet(projet.etat)}>
-                  {libelleEtatProjet(projet.etat)}
-                </Etiquette>
-              }
-              vers={`/pipelines/vendeurs/${id}`}
-            />
-          ))}
+          {etat.projets.map((affiche) => {
+            const { id, projet, contact, bien } = affiche
+            const dansLePipeline =
+              avecEtapes &&
+              projet.archived_at === null &&
+              (projet.etat === 'actif' || projet.etat === 'gagne')
+            const aide =
+              projet.etat === 'actif' ? aideEtapeSuivante(projet, contact?.source ?? null) : null
+            return (
+              <li key={id}>
+                <ul>
+                  <LigneListe
+                    titre={
+                      depuisContact
+                        ? bien === null
+                          ? 'Bien introuvable'
+                          : adresseBien(bien)
+                        : contact === null
+                          ? 'Contact introuvable'
+                          : nomComplet(contact)
+                    }
+                    detail={resumeEtat(projet)}
+                    fin={
+                      <Etiquette genre={genreEtatProjet(projet.etat)}>
+                        {libelleEtatProjet(projet.etat)}
+                      </Etiquette>
+                    }
+                    vers={`/pipelines/vendeurs/${id}`}
+                  />
+                </ul>
+                {dansLePipeline && (
+                  <div className="px-4 pb-4">
+                    <BarreEtapes
+                      etapes={etatsEtapes(ETAPES_VENDEUR, projet.etape, projet.etat === 'gagne')}
+                      anciennete={
+                        projet.etat === 'actif'
+                          ? {
+                              texte: ancienneteEtape(projet.etape_le, aujourdhui),
+                              alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
+                            }
+                          : undefined
+                      }
+                      critere={
+                        aide === null
+                          ? undefined
+                          : phrasePassage(libelleEtape(aide.suivante), aide.critere)
+                      }
+                      manque={aide === null ? undefined : phraseManque(aide.manquantes)}
+                      suivante={
+                        aide === null || props.lectureSeule === true
+                          ? undefined
+                          : {
+                              libelle: libelleEtape(aide.suivante),
+                              onPasser: () => changement.demander(affiche, aide.suivante),
+                              desactive: changement.enCours !== null,
+                            }
+                      }
+                    />
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
       {props.lectureSeule !== true && (
@@ -100,6 +165,7 @@ export default function SectionProjetsVendeurs(props: Props) {
           onFermer={() => setCreation(false)}
         />
       )}
+      {changement.fenetre}
     </Carte>
   )
 }

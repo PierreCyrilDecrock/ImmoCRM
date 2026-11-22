@@ -22,6 +22,8 @@ type Props = {
   version: number
   /** Appelé après un geste fait ici (boucle, nouvelle relance) : la fiche se relit. */
   onChangement: () => void
+  /** Dans une colonne étroite (profil de la fiche sur ordinateur) : les gestes sous le texte. */
+  compacte?: boolean
 }
 
 type Etat =
@@ -35,7 +37,12 @@ type Etat =
  * une autre date), avec « Annuler » dans la confirmation ; ou, s'il n'y en a pas, un avertissement et de quoi
  * planifier une relance à la date que donne la température.
  */
-export default function ProchaineAction({ contact, version, onChangement }: Props) {
+export default function ProchaineAction({
+  contact,
+  version,
+  onChangement,
+  compacte = false,
+}: Props) {
   const { notifier } = useNotifications()
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [boucle, setBoucle] = useState(false)
@@ -86,6 +93,18 @@ export default function ProchaineAction({ contact, version, onChangement }: Prop
   const tache = etat.tache
   const enRetard = tache !== null && tache.echeance < aujourdhui
   const horaire = tache === null ? '' : horaireTache(tache)
+  const boutonFait =
+    tache === null ? null : (
+      <Bouton
+        variante="secondaire"
+        icone="succes"
+        pleineLargeur={compacte}
+        disabled={actions.occupee === tache.id}
+        onClick={() => setBoucle(true)}
+      >
+        C’est fait
+      </Bouton>
+    )
 
   return (
     <>
@@ -104,20 +123,14 @@ export default function ProchaineAction({ contact, version, onChangement }: Prop
                 {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
               </p>
             </div>
-            <Bouton
-              variante="secondaire"
-              icone="succes"
-              disabled={actions.occupee === tache.id}
-              onClick={() => setBoucle(true)}
-            >
-              Fait
-            </Bouton>
+            {!compacte && boutonFait}
           </div>
-          <div className="md:pl-9">
+          {compacte && boutonFait}
+          <div className={compacte ? undefined : 'md:pl-9'}>
             <ReportsRapides
               aujourdhui={aujourdhui}
               titre={tache.titre}
-              avecLibelle
+              avecLibelle={!compacte}
               desactive={actions.occupee === tache.id}
               onReporter={(date) => void actions.reporter(tache, date, aujourdhui)}
               onAutreDate={() => setAutreDate(true)}

@@ -24,6 +24,14 @@ type Props = FicheOrigine & {
    * (en changeant `version`) ; absent, la rubrique se relit seule.
    */
   onChangement?: () => void
+  /** Titre de la rubrique (« À venir » dans l'onglet Activité). Par défaut : « Tâches ». */
+  titre?: string
+  /**
+   * N'affiche que les premières tâches (les plus proches) ; les autres sont annoncées avec un
+   * bouton `onVoirTout` (l'onglet Tâches de la fiche).
+   */
+  limite?: number
+  onVoirTout?: () => void
 }
 
 type Etat =
@@ -61,9 +69,14 @@ export default function SectionTaches(props: Props) {
 
   const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
   const masquer = masqueDeFiche(props)
+  const { titre = 'Tâches', limite, onVoirTout } = props
+  const montrees =
+    etat.phase === 'pret' && limite !== undefined ? etat.taches.slice(0, limite) : null
+  const cachees =
+    etat.phase === 'pret' && montrees !== null ? etat.taches.length - montrees.length : 0
 
   return (
-    <Carte titre="Tâches">
+    <Carte titre={titre}>
       {etat.phase === 'chargement' && <p className="text-sm text-encre-douce">Chargement…</p>}
       {etat.phase === 'erreur' && (
         <Message genre="erreur">Les tâches n'ont pas pu être lues. {etat.message}</Message>
@@ -76,7 +89,7 @@ export default function SectionTaches(props: Props) {
       {etat.phase === 'pret' && etat.taches.length > 0 && (
         <div className="-mx-4">
           <ListeTaches
-            taches={etat.taches}
+            taches={montrees ?? etat.taches}
             aujourdhui={aujourdhui}
             masquer={masquer}
             onChangement={relire}
@@ -87,12 +100,18 @@ export default function SectionTaches(props: Props) {
         <Bouton variante="secondaire" icone="ajouter" onClick={() => setCreation(true)}>
           Ajouter une tâche
         </Bouton>
-        <Link
-          to="/taches"
-          className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-accent underline-offset-2 hover:underline"
-        >
-          Toutes les tâches
-        </Link>
+        {cachees > 0 && onVoirTout !== undefined ? (
+          <Bouton variante="discret" onClick={onVoirTout}>
+            {cachees === 1 ? 'Voir l’autre tâche' : `Voir les ${cachees} autres`}
+          </Bouton>
+        ) : (
+          <Link
+            to="/taches"
+            className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-accent underline-offset-2 hover:underline"
+          >
+            Toutes les tâches
+          </Link>
+        )}
       </div>
 
       {creation && (
