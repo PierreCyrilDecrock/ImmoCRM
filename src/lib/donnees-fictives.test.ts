@@ -5,6 +5,11 @@ import {
 } from '../features/acquereurs/pipeline-acquereur'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  activitesAujourdhuiCharge,
+  contactsAujourdhuiCharge,
+  JEU_AUJOURDHUI_CHARGE,
+  NOMBRE_LIGNES_AUJOURDHUI_CHARGE,
+  tachesAujourdhuiCharge,
   activiteFictive,
   bienFictif,
   contactFictif,
@@ -36,7 +41,8 @@ import {
   preparerBien,
   TYPES_BIEN,
 } from '../features/biens/biens'
-import { brouillonTacheVide, preparerTache } from '../features/taches/taches'
+import { blocDeTache } from '../features/aujourdhui/journee'
+import { CATEGORIES_TACHE, brouillonTacheVide, preparerTache } from '../features/taches/taches'
 import { vueDe } from '../features/taches/echeances'
 import { fauxClient } from './faux-client'
 
@@ -336,5 +342,112 @@ describe('projets acquéreurs fictifs', () => {
       expect(projet.etape_le !== undefined && projet.etape_le <= aujourdhui).toBe(true)
     }
     expect(projets[0]?.recue_le).not.toBeNull()
+  })
+})
+
+describe("cas d'essai « Aujourd'hui chargé »", () => {
+  const aujourdhui = '2026-11-17'
+  const contacts = contactsAujourdhuiCharge()
+  const ids = contacts.map((_, rang) => `c${rang}`)
+  const taches = tachesAujourdhuiCharge(aujourdhui, ids)
+  const activites = activitesAujourdhuiCharge(aujourdhui, ids)
+
+  /** Combien de tâches vont dans chaque bloc de l'écran, en retard et du jour. */
+  function repartition(moment: 'en_retard' | 'du_jour') {
+    const choisies = taches.filter((tache) =>
+      moment === 'en_retard' ? tache.echeance < aujourdhui : tache.echeance === aujourdhui,
+    )
+    const compte = { agenda: 0, relances: 0, taches: 0 }
+    for (const tache of choisies) {
+      const bloc = blocDeTache(
+        {
+          echeance: tache.echeance,
+          heure: tache.heure ?? null,
+          categorie: tache.categorie ?? 'autre',
+          etat: 'a_faire',
+        },
+        aujourdhui,
+      )
+      if (bloc !== null) compte[bloc] += 1
+    }
+    return { total: choisies.length, ...compte }
+  }
+
+  it('répartit 17 tâches en retard : 8 dans « À rappeler », 9 dans le bloc Tâches', () => {
+    expect(repartition('en_retard')).toEqual({ total: 17, agenda: 0, relances: 8, taches: 9 })
+  })
+
+  it('répartit 5 tâches du jour : 1 dans l’agenda, 2 relances, 2 tâches', () => {
+    expect(repartition('du_jour')).toEqual({ total: 5, agenda: 1, relances: 2, taches: 2 })
+  })
+
+  it('a des contacts fictifs aux rôles variés, tous d’accord pour être appelés', () => {
+    expect(contacts.map((contact) => contact.roles)).toEqual([
+      ['vendeur'],
+      ['vendeur'],
+      ['acquereur'],
+      ['acquereur'],
+      ['vendeur', 'acquereur'],
+      [],
+    ])
+    for (const contact of contacts) {
+      expect(contact.ville).toBe('Villefictive')
+      expect(contact.courriels?.[0]).toMatch(/@exemple\.invalid$/)
+      expect(contact.telephones?.[0]).toMatch(/^\+33639/)
+      expect(contact.etiquettes).toContain('fictif')
+      expect(contact.accord_appel).toBe('oui')
+      expect(contact.accord_appel_preuve).not.toBe('')
+    }
+  })
+
+  it('a des tâches acceptées par les règles de saisie, clairement fictives et liées', () => {
+    const categories = CATEGORIES_TACHE.map((option) => option.valeur as string)
+    for (const tache of taches) {
+      const resultat = preparerTache({
+        ...brouillonTacheVide(tache.echeance),
+        titre: tache.titre,
+        heure: tache.heure ?? '',
+        duree: tache.duree === null || tache.duree === undefined ? '' : String(tache.duree),
+      })
+      expect(resultat.ok).toBe(true)
+      expect(tache.titre).toContain('(fictif)')
+      expect(categories).toContain(tache.categorie)
+    }
+    const relances = taches.filter((tache) => tache.categorie === 'relance')
+    expect(relances.every((tache) => tache.contact_id !== null)).toBe(true)
+  })
+
+  it('donne un dernier échange à cinq contacts sur six, jamais daté après aujourd’hui', () => {
+    expect(activites.map((activite) => activite.contact_id)).toEqual(['c0', 'c1', 'c2', 'c3', 'c4'])
+    for (const activite of activites) {
+      const type = estTypeActivite(activite.type) ? activite.type : 'autre'
+      const resultat = preparerActivite(
+        {
+          ...brouillonActiviteVide(type, {
+            date: activite.date_activite ?? '',
+            heure: activite.heure ?? '',
+          }),
+          compteRendu: activite.compte_rendu ?? '',
+        },
+        aujourdhui,
+      )
+      expect(resultat.ok).toBe(true)
+      expect((activite.date_activite ?? '') <= aujourdhui).toBe(true)
+      if (activite.type !== 'appel') expect(activite.resultat ?? null).toBeNull()
+    }
+  })
+
+  it('n’est inséré que par son bouton, et seulement sur le projet de test', async () => {
+    const { client, appels } = fauxClient({ data: { id: 'x' }, error: null })
+    const bilan = await insererDonneesFictives(client, 'test', [JEU_AUJOURDHUI_CHARGE])
+    expect(bilan).toEqual({ ok: true, lignes: NOMBRE_LIGNES_AUJOURDHUI_CHARGE })
+    expect(appels.filter((appel) => appel[0] === 'insert')).toHaveLength(
+      NOMBRE_LIGNES_AUJOURDHUI_CHARGE,
+    )
+    const reel = fauxClient({ data: { id: 'x' }, error: null })
+    expect((await insererDonneesFictives(reel.client, 'reel', [JEU_AUJOURDHUI_CHARGE])).ok).toBe(
+      false,
+    )
+    expect(reel.appels).toEqual([])
   })
 })
