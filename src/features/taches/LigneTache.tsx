@@ -33,6 +33,16 @@ type Props = {
    * et « Fait ». Reçoit la date choisie dans la rangée.
    */
   onReporterA?: (echeance: string) => void
+  /**
+   * La ligne se glisse au doigt (« Reporter », « Fait ») même sans la rangée de reports
+   * (bloc Tâches de l'écran Aujourd'hui). Par défaut : avec `onReporterA`.
+   */
+  glissable?: boolean
+  /**
+   * L'échéance à afficher à droite (« Hier », « 17 h 30 »), en chiffres alignés, à la place
+   * du jour dans le détail. Vide : rien à droite (le titre du groupe dit déjà le jour).
+   */
+  echeanceADroite?: string
 }
 
 /**
@@ -51,6 +61,8 @@ export default function LigneTache({
   onOuvrir,
   onRouvrir,
   onReporterA,
+  glissable,
+  echeanceADroite,
 }: Props) {
   const { tache, contact, bien } = affichee
   const aFaire = tache.etat === 'a_faire'
@@ -62,6 +74,8 @@ export default function LigneTache({
     masquer === 'bien' || bien === null ? null : adresseBien(bien),
   ].filter((lien) => lien !== null)
   const gestesRapides = aFaire && onReporterA !== undefined
+  const seGlisse = aFaire && (glissable ?? onReporterA !== undefined)
+  const jourADroite = echeanceADroite !== undefined
 
   const contenu = (
     <div className="flex items-start gap-1 py-1 pr-2 pl-1">
@@ -97,11 +111,15 @@ export default function LigneTache({
             {tache.titre}
           </span>
           <span className="block text-sm text-encre-douce">
-            <span className={enRetard ? 'font-semibold text-danger' : undefined}>
-              {libelleJour(tache.echeance, aujourdhui)}
-            </span>
-            {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
-            {' · '}
+            {!jourADroite && (
+              <>
+                <span className={enRetard ? 'font-semibold text-danger' : undefined}>
+                  {libelleJour(tache.echeance, aujourdhui)}
+                </span>
+                {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
+                {' · '}
+              </>
+            )}
             {libelleCategorie(tache.categorie)}
           </span>
           {tache.lieu !== '' && (
@@ -139,6 +157,14 @@ export default function LigneTache({
         )}
       </div>
 
+      {jourADroite && echeanceADroite !== '' && (
+        <span
+          className={`flex min-h-11 shrink-0 items-center text-sm tabular-nums ${enRetard ? 'font-semibold text-danger' : 'font-medium text-encre'}`}
+        >
+          {echeanceADroite}
+        </span>
+      )}
+
       {!gestesRapides && (
         <div className="shrink-0 pt-0">
           {aFaire ? (
@@ -161,7 +187,7 @@ export default function LigneTache({
     </div>
   )
 
-  if (!gestesRapides) return <li>{contenu}</li>
+  if (!seGlisse) return <li>{contenu}</li>
   return (
     <LigneGlissable
       className="group/ligne"
