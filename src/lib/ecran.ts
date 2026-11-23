@@ -46,3 +46,30 @@ export function useTailleEcran(): TailleEcran {
 
   return taille
 }
+
+/** Un appareil à souris (ordinateur) : le survol existe. Même mesure que `[@media(hover:hover)]`. */
+const REQUETE_SURVOL = '(hover: hover)'
+
+function survolActuel(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+  return window.matchMedia(REQUETE_SURVOL).matches
+}
+
+/**
+ * Vrai sur un appareil à souris, faux sur écran tactile, suivi si l'appareil change (tablette
+ * à laquelle on branche une souris). Pour un écran qui propose un geste différent selon le
+ * cas (une relance se déplie au toucher ; à la souris, ses reports apparaissent au survol).
+ */
+export function useSurvolPossible(): boolean {
+  const [survol, setSurvol] = useState(survolActuel)
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const requete = window.matchMedia(REQUETE_SURVOL)
+    const suivre = () => setSurvol(requete.matches)
+    requete.addEventListener('change', suivre)
+    return () => requete.removeEventListener('change', suivre)
+  }, [])
+
+  return survol
+}

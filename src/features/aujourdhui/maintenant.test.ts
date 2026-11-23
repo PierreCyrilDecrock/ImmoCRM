@@ -5,12 +5,15 @@ import {
   aPreparer,
   bornesRendezVous,
   choisirMaintenant,
+  detailRendezVous,
   DUREE_SANS_FIN,
   etatRendezVous,
+  ficheDuRendezVous,
   finDuDernierRendezVous,
   LIMITE_A_PREPARER,
   placeDuTrait,
   progression,
+  rendezVousCiDessus,
   resumeJournee,
   salutation,
   tempsRestant,
@@ -284,5 +287,30 @@ describe('progression', () => {
     expect(progression(0, 0)).toBeNull()
     expect(progression(null, 2)).toBeNull()
     expect(progression(3, null)).toBeNull()
+  })
+})
+
+describe('agenda en frise', () => {
+  it('marque « Ci-dessus » le rendez-vous de la carte « Maintenant », et lui seul', () => {
+    const choix = choisirMaintenant(AGENDA, [], h(10, 20))
+    expect(rendezVousCiDessus(choix)).toBe('rdv-11')
+    // Après le dernier rendez-vous, la carte montre une relance : aucune marque.
+    expect(rendezVousCiDessus(choisirMaintenant(AGENDA, ['relance'], h(20)))).toBeNull()
+    expect(rendezVousCiDessus(null)).toBeNull()
+  })
+
+  it('ouvre la fiche du bien, sinon celle du contact, sinon rien', () => {
+    expect(ficheDuRendezVous({ contact: { id: 'c1' }, bien: { id: 'b1' } })).toBe('/biens/b1')
+    expect(ficheDuRendezVous({ contact: { id: 'c1' }, bien: null })).toBe('/contacts/c1')
+    expect(ficheDuRendezVous({ contact: null, bien: null })).toBeNull()
+  })
+
+  it('dit la durée puis le lieu, ou à défaut le contact', () => {
+    expect(detailRendezVous(90, '12 rue des Essais, Lyon', 'Camille Fictif')).toBe(
+      '1 h 30 · 12 rue des Essais, Lyon',
+    )
+    expect(detailRendezVous(45, null, 'Camille Fictif')).toBe('45 min · Camille Fictif')
+    expect(detailRendezVous(null, '12 rue des Essais, Lyon', null)).toBe('12 rue des Essais, Lyon')
+    expect(detailRendezVous(null, null, null)).toBe('')
   })
 })

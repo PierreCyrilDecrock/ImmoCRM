@@ -33,8 +33,11 @@ import {
  * Un bloc qui n'a pas pu être lu affiche son erreur sans empêcher les autres.
  */
 
-/** Une relance : la tâche, ses fiches et la dernière activité du contact. */
-export type Relance = TacheAffichee & { derniere: Activite | null }
+/**
+ * Une relance : la tâche, ses fiches et la dernière activité du contact (`null` : aucune
+ * activité au journal ; `undefined` : la lecture a échoué, on n'en dit rien).
+ */
+export type Relance = TacheAffichee & { derniere: Activite | null | undefined }
 
 /** Un projet en cours sans activité récente (vendeur ou acquéreur). */
 export type ProjetCalme = {
@@ -247,7 +250,10 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
     agenda: avecFiches(blocAgenda, (tache) => afficher(tache, lues)),
     relances: avecFiches(blocRelances, (tache) => ({
       ...afficher(tache, lues),
-      derniere: tache.contact_id === null ? null : (derniereDe.get(tache.contact_id) ?? null),
+      derniere:
+        tache.contact_id === null || !dernieres.ok
+          ? undefined
+          : (derniereDe.get(tache.contact_id) ?? null),
     })),
     taches: avecFiches(blocTaches, (tache) => afficher(tache, lues)),
     alertes: construireAlertes(

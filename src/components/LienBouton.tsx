@@ -17,6 +17,11 @@ type Props = {
    * « Maintenant ».
    */
   variante?: 'secondaire' | 'discret' | 'principal' | 'inverse'
+  /**
+   * Le dessin seul, dans un rond de 44 px (Appeler, Itinéraire d'une ligne de liste) : le
+   * texte reste lu par les lecteurs d'écran et s'affiche en bulle au survol.
+   */
+  dessinSeul?: boolean
   onClick?: MouseEventHandler<HTMLAnchorElement>
   'aria-label'?: string
 }
@@ -41,18 +46,21 @@ export default function LienBouton({
   nouvelOnglet = false,
   variante = 'secondaire',
   onClick,
+  dessinSeul = false,
   'aria-label': libelle,
 }: Props) {
-  const classes = `inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${COULEURS[variante]}`
+  const forme = dessinSeul ? 'size-11 shrink-0 rounded-full' : 'min-h-11 gap-1.5 rounded-lg px-3'
+  const classes = `inline-flex items-center justify-center text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${forme} ${COULEURS[variante]}`
+  const bulle = dessinSeul && typeof children === 'string' ? children : undefined
   const contenu = (
     <>
       <Icone nom={icone} className="size-5" />
-      {children}
+      {dessinSeul ? <span className="sr-only">{children}</span> : children}
     </>
   )
   if (vers !== undefined) {
     return (
-      <Link to={vers} className={classes} aria-label={libelle}>
+      <Link to={vers} className={classes} aria-label={libelle} title={bulle}>
         {contenu}
       </Link>
     )
@@ -63,6 +71,7 @@ export default function LienBouton({
       className={classes}
       onClick={onClick}
       aria-label={libelle}
+      title={bulle}
       {...(nouvelOnglet ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     >
       {contenu}

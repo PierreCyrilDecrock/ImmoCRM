@@ -26,8 +26,8 @@ import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
 import Onglets from '../components/Onglets'
 import AnneauProgression from '../features/aujourdhui/AnneauProgression'
+import ExemplesJournee from '../features/aujourdhui/ExemplesJournee'
 import { progression } from '../features/aujourdhui/maintenant'
-import TraitMaintenant from '../features/aujourdhui/TraitMaintenant'
 import { libelleJour } from '../features/taches/echeances'
 import ReportsRapides from '../features/taches/ReportsRapides'
 import { dateDuJour } from '../lib/dates'
@@ -303,11 +303,7 @@ export default function Composants() {
               Consigner
             </Bouton>
           </div>
-          <ul className="divide-y divide-bord">
-            <li className="py-2 text-base text-encre-douce">9 h – 10 h · Estimation (passée)</li>
-            <TraitMaintenant heure="11:10" />
-            <li className="py-2 text-base text-encre">14 h – 15 h 30 · Signature du mandat</li>
-          </ul>
+          <ExemplesJournee aujourdhui={aujourdhui} />
         </div>
       </Carte>
 
