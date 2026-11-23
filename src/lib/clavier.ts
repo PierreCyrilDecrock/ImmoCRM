@@ -47,3 +47,16 @@ function systemeDeLAppareil(): string {
 export function rappelRecherche(systeme: string = systemeDeLAppareil()): string {
   return estAppareilApple(systeme) ? '⌘K' : 'Ctrl K'
 }
+
+/** Ce qu'on lit d'un appui de touche pour « Enregistrer » (un `KeyboardEvent` convient). */
+export type AppuiEnregistrer = Pick<AppuiAnnuler, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>
+
+/** Vrai pour ⌘ Entrée ou Ctrl Entrée : enregistrer le formulaire, même depuis un champ. */
+export function estEnregistrement(appui: AppuiEnregistrer): boolean {
+  return appui.key === 'Enter' && !appui.altKey && (appui.ctrlKey || appui.metaKey)
+}
+
+/** Le rappel du raccourci « Enregistrer » : « ⌘ Entrée » sur Apple, « Ctrl Entrée » ailleurs. */
+export function rappelEnregistrer(systeme: string = systemeDeLAppareil()): string {
+  return estAppareilApple(systeme) ? '⌘ Entrée' : 'Ctrl Entrée'
+}

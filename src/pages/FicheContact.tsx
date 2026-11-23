@@ -62,7 +62,8 @@ import TemperatureContact from '../features/contacts/TemperatureContact'
 import { estPortable, lienAppel, lienSms } from '../features/contacts/telephone'
 import SectionProjetsVendeurs from '../features/projets/SectionProjetsVendeurs'
 import ProchaineAction from '../features/relances/ProchaineAction'
-import CompteRenduExpress from '../features/saisie/CompteRenduExpress'
+import ConsignerEchange from '../features/saisie/ConsignerEchange'
+import { champConsigner, placerCurseur } from '../features/saisie/curseur-consigner'
 import { ficheDeContact } from '../features/saisie/fiches-consultees'
 import { useConsultation } from '../features/saisie/recents'
 import SectionTaches from '../features/taches/SectionTaches'
@@ -117,7 +118,8 @@ export default function FicheContact() {
   // Change après chaque geste sur les tâches ou le journal : toutes les rubriques se relisent.
   const [version, setVersion] = useState(0)
   const [compteurs, setCompteurs] = useState<CompteursContact | null>(null)
-  const [consigner, setConsigner] = useState(false)
+  // « Consigner » de la barre du bas : le curseur ira dans le texte du compte rendu.
+  const [focusConsigner, setFocusConsigner] = useState(false)
   const [voisinEnCours, setVoisinEnCours] = useState(false)
   const [cartes] = useState(() => cartesDeLAppareil(navigator.userAgent))
   useConsultation(etat.phase === 'pret' ? ficheDeContact(etat.contact) : null)
@@ -397,6 +399,17 @@ export default function FicheContact() {
       case 'activite':
         return (
           <>
+            {!lectureSeule && (
+              <ConsignerEchange
+                // Une autre fiche (contact suivant) repart d'un bloc vide, ou de son brouillon.
+                key={contact.id}
+                contact={contact}
+                version={version}
+                onEnregistre={toutRelire}
+                demandeFocus={focusConsigner}
+                onFocusDonne={() => setFocusConsigner(false)}
+              />
+            )}
             <SectionTaches
               contact={contact}
               version={version}
@@ -405,7 +418,12 @@ export default function FicheContact() {
               limite={TACHES_DANS_ACTIVITE}
               onVoirTout={() => choisirOnglet('taches')}
             />
-            <SectionJournal contact={contact} version={version} onChangement={toutRelire} />
+            <SectionJournal
+              contact={contact}
+              version={version}
+              onChangement={toutRelire}
+              historique
+            />
           </>
         )
       case 'projets':
@@ -455,14 +473,6 @@ export default function FicheContact() {
     >
       {contenuOnglet(onglet)}
     </OngletsFiche>
-  )
-
-  const compteRendu = consigner && (
-    <CompteRenduExpress
-      contact={contact}
-      onFermer={() => setConsigner(false)}
-      onEnregistre={toutRelire}
-    />
   )
 
   if (ordinateur) {
@@ -538,7 +548,6 @@ export default function FicheContact() {
           </ProfilFiche>
           {ongletsFiche}
         </div>
-        {compteRendu}
       </Page>
     )
   }
@@ -594,11 +603,22 @@ export default function FicheContact() {
             libelle="Consigner"
             icone="journal"
             variante="secondaire"
-            onClick={lectureSeule ? undefined : () => setConsigner(true)}
+            onClick={
+              lectureSeule
+                ? undefined
+                : () => {
+                    // Déjà affiché : le curseur y va dans le geste même (clavier de l'iPhone).
+                    const champ = champConsigner()
+                    if (champ !== null) placerCurseur(champ)
+                    else {
+                      choisirOnglet('activite')
+                      setFocusConsigner(true)
+                    }
+                  }
+            }
           />
         </BarreActionsFiche>
       )}
-      {compteRendu}
     </Page>
   )
 }
