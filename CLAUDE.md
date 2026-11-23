@@ -9,9 +9,10 @@ ImmoCRM est le CRM personnel d'un mandataire immobilier : un seul utilisateur, s
 Documents de référence :
 
 - [docs/cadrage.md](docs/cadrage.md) — ce que l'outil doit faire (référence fonctionnelle).
-- [docs/plan-developpement.md](docs/plan-developpement.md) — les 53 étapes de construction et leurs prompts (dont la phase D, l'interface version 3, à faire avant la version 2).
+- [docs/plan-developpement.md](docs/plan-developpement.md) — les 60 étapes de construction et leurs prompts (dont la phase D, l'interface version 3, et la phase E, les corrections de design, à faire avant la version 2).
 - [docs/avancement.md](docs/avancement.md) — où en est le projet, étape par étape.
 - [docs/design.md](docs/design.md) — les composants d'interface disponibles, à réutiliser dans chaque écran.
+- [docs/revue-design.md](docs/revue-design.md) — la revue de design du 23/11/2026 : ses 19 corrections (phase E) et les règles d'interface qui en découlent.
 - [docs/donnees.md](docs/donnees.md) — les conventions des tables, la couche d'accès aux données, les données fictives et le test de sécurité.
 - [docs/sauvegarde.md](docs/sauvegarde.md) — l'export, la sauvegarde automatique chiffrée et la restauration, pas à pas.
 - [docs/guide-utilisateur.md](docs/guide-utilisateur.md) — les trois rituels (matin, après chaque échange, vendredi), en une page.
