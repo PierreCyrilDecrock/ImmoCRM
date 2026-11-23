@@ -26,6 +26,7 @@ import {
   placeDuTrait,
   progression,
   rendezVousCiDessus,
+  rendezVousRestants,
   resumeJournee,
   salutation,
 } from '../features/aujourdhui/maintenant'
@@ -42,6 +43,7 @@ import {
   premieresRelances,
   relanceDeplieeAffichee,
   RELANCES_D_EMBLEE,
+  videAutresTaches,
   videRappels,
   type FiltreRappels,
 } from '../features/aujourdhui/ordre-journee'
@@ -101,11 +103,12 @@ function VoirTout({
 
 /**
  * Écran « Aujourd'hui », page d'accueil : qui contacter aujourd'hui, et pourquoi. En tête, la
- * date, la salutation, la journée résumée en une phrase et l'anneau de progression ; puis la
- * carte « Maintenant » (le rendez-vous en cours ou le prochain) à côté des trois actions qui
- * comptent ; enfin cinq blocs dans l'ordre où la journée se vit : agenda, relances, tâches,
- * alertes, nouveautés. Chaque bloc a son compteur et se replie. L'écran suit l'heure à la
- * minute (temps restant, trait « maintenant ») sans relire la base.
+ * date, la salutation (l'anneau de progression à sa droite, dès le premier geste) et la
+ * journée résumée en une phrase, qui finit par ce qui reste à faire ; puis la carte
+ * « Maintenant » (le rendez-vous en cours ou le prochain) à côté des trois actions qui
+ * comptent ; enfin cinq blocs dans l'ordre où la journée se vit : agenda, relances, autres
+ * tâches, alertes, nouveautés. Chaque bloc a son compteur et se replie. L'écran suit l'heure
+ * à la minute (temps restant, trait « maintenant ») sans relire la base.
  */
 export default function Aujourdhui() {
   const maintenant = useMaintenant()
@@ -223,21 +226,41 @@ export default function Aujourdhui() {
   const relanceDepliee = relanceDeplieeAffichee(relanceTouchee, relancesMontrees)
   const ciDessus = rendezVousCiDessus(choix)
   const groupesTaches = grouperTaches(lignesTaches, aujourdhui)
+  // Vide, « Autres tâches » situe ce qui reste ailleurs ; le vert attend une journée finie.
+  const videTaches = videAutresTaches({
+    relances: relances?.ok ? relances.donnees.total : 0,
+    rendezVous: rendezVousRestants(lignesAgenda, minutes),
+  })
+  const titre = salutation(journee?.nomAffiche ?? '')
 
   return (
     <Page
-      titre={salutation(journee?.nomAffiche ?? '')}
+      titre={titre}
       titreOnglet="Aujourd'hui"
       surtitre={
         <p className="text-base font-medium text-encre-douce">
           {formaterJourEtSemaine(aujourdhui)}
         </p>
       }
+      enTete={
+        <div className="flex min-h-11 items-center justify-between gap-3">
+          <h1 className="min-w-0 text-[1.75rem] leading-tight font-bold tracking-tight break-words text-encre md:text-4xl">
+            {titre}
+          </h1>
+          {avancement?.anneau === true && <AnneauProgression progression={avancement} />}
+        </div>
+      }
     >
-      {(resume !== null || avancement !== null) && (
-        <div className="-mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
-          {resume !== null && <p className="text-base text-encre">{resume}</p>}
-          {avancement !== null && <AnneauProgression progression={avancement} />}
+      {resume !== null && (
+        <div className="-mt-3">
+          <p className="text-base text-encre">
+            {resume}
+            {avancement !== null && <span aria-hidden="true"> {avancement.phrase}</span>}
+          </p>
+          {/* Lu à la place de la fin de phrase, et annoncé quand elle change. */}
+          <p className="sr-only" aria-live="polite">
+            {avancement?.annonce ?? ''}
+          </p>
         </div>
       )}
 
@@ -371,7 +394,7 @@ export default function Aujourdhui() {
 
           <BlocJournee
             {...proprietesBloc('taches')}
-            titre="Tâches"
+            titre="Autres tâches"
             icone="taches"
             compteur={compteur(taches)}
             compteurAlerte={
@@ -379,10 +402,7 @@ export default function Aujourdhui() {
               taches.donnees.lignes.some((affichee) => affichee.tache.echeance < aujourdhui)
             }
             erreur={erreurDe(taches)}
-            vide={{
-              titre: 'Aucune tâche en attente.',
-              texte: 'Rien d’autre à faire aujourd’hui : place au terrain.',
-            }}
+            vide={videTaches}
             pied={
               taches?.ok && (
                 <VoirTout

@@ -26,8 +26,10 @@ import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
 import Onglets from '../components/Onglets'
 import AnneauProgression from '../features/aujourdhui/AnneauProgression'
+import BlocJournee from '../features/aujourdhui/BlocJournee'
 import ExemplesJournee from '../features/aujourdhui/ExemplesJournee'
 import { progression } from '../features/aujourdhui/maintenant'
+import { videAutresTaches } from '../features/aujourdhui/ordre-journee'
 import { libelleJour } from '../features/taches/echeances'
 import ReportsRapides from '../features/taches/ReportsRapides'
 import { dateDuJour } from '../lib/dates'
@@ -281,27 +283,52 @@ export default function Composants() {
 
       <Carte titre="Écran Aujourd'hui">
         <div className="flex flex-col gap-6">
-          <div className="flex flex-wrap gap-6">
+          <div className="flex flex-col gap-4">
             {[
-              [4, 3],
+              [11, 0],
+              [8, 3],
               [0, 7],
             ].map(([aFaire = 0, faites = 0]) => {
               const exemple = progression(aFaire, faites)
               return exemple === null ? null : (
-                <AnneauProgression key={faites} progression={exemple} />
+                <div key={faites} className="max-w-sm">
+                  <div className="flex min-h-11 items-center justify-between gap-3">
+                    <p className="text-[1.75rem] leading-tight font-bold tracking-tight text-encre">
+                      Bonjour Alex
+                    </p>
+                    {exemple.anneau && <AnneauProgression progression={exemple} />}
+                  </div>
+                  <p className="text-base text-encre">
+                    2 rendez-vous et 6 personnes à rappeler. {exemple.phrase}
+                  </p>
+                </div>
               )
             })}
           </div>
-          <div className="zone-inverse flex flex-wrap gap-2 rounded-2xl bg-inverse p-4 ring-1 ring-bord-inverse">
-            <LienBouton icone="itineraire" variante="inverse" href="#/plus/composants">
-              Itinéraire
-            </LienBouton>
+          <div className="zone-inverse flex max-w-sm gap-2 rounded-2xl bg-inverse p-4 ring-1 ring-bord-inverse *:min-w-0 *:flex-1">
             <LienBouton icone="telephone" variante="principal" href="#/plus/composants">
               Appeler
             </LienBouton>
-            <Bouton variante="inverse" icone="journal">
-              Consigner
-            </Bouton>
+            <LienBouton icone="itineraire" variante="inverse" href="#/plus/composants">
+              Itinéraire
+            </LienBouton>
+          </div>
+          <div className="flex flex-col gap-3">
+            {[
+              videAutresTaches({ relances: 8, rendezVous: 3 }),
+              videAutresTaches({ relances: 0, rendezVous: 0 }),
+            ].map((vide) => (
+              <BlocJournee
+                key={vide.ton}
+                cle={`exemple-${vide.ton}`}
+                titre="Autres tâches"
+                icone="taches"
+                compteur={0}
+                replie={false}
+                onBasculer={() => notifier('succes', 'Le bloc se replie (exemple).')}
+                vide={vide}
+              />
+            ))}
           </div>
           <ExemplesJournee aujourdhui={aujourdhui} />
         </div>

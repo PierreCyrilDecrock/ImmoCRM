@@ -20,6 +20,7 @@ import {
   relanceDeplieeAffichee,
   rolesDuContact,
   teinteRole,
+  videAutresTaches,
   videRappels,
 } from './ordre-journee'
 
@@ -223,5 +224,52 @@ describe('bloc Tâches', () => {
     )
     expect(echeanceADroite({ echeance: AUJOURDHUI, heure: '17:30:00' }, AUJOURDHUI)).toBe('17 h 30')
     expect(echeanceADroite({ echeance: AUJOURDHUI, heure: null }, AUJOURDHUI)).toBe('')
+  })
+})
+
+describe('videAutresTaches', () => {
+  it('situe les relances et les rendez-vous qui restent, en gris', () => {
+    expect(videAutresTaches({ relances: 8, rendezVous: 3 })).toEqual({
+      titre: 'Rien d’autre que vos 8 relances et 3 rendez-vous.',
+      texte: 'Ils sont plus haut, dans l’agenda et « À rappeler ».',
+      ton: 'neutre',
+    })
+  })
+
+  it('a sa tournure pour zéro et un', () => {
+    expect(videAutresTaches({ relances: 8, rendezVous: 0 })).toMatchObject({
+      titre: 'Rien d’autre que vos 8 relances.',
+      texte: 'Elles sont plus haut, dans « À rappeler ».',
+      ton: 'neutre',
+    })
+    expect(videAutresTaches({ relances: 1, rendezVous: 0 })).toMatchObject({
+      titre: 'Rien d’autre que votre relance.',
+      texte: 'Elle est plus haut, dans « À rappeler ».',
+    })
+    expect(videAutresTaches({ relances: 0, rendezVous: 3 })).toMatchObject({
+      titre: 'Rien d’autre que vos 3 rendez-vous.',
+      texte: 'Ils sont plus haut, dans l’agenda.',
+    })
+    expect(videAutresTaches({ relances: 0, rendezVous: 1 })).toMatchObject({
+      titre: 'Rien d’autre que votre rendez-vous.',
+      texte: 'Il est plus haut, dans l’agenda.',
+    })
+    expect(videAutresTaches({ relances: 1, rendezVous: 3 }).titre).toBe(
+      'Rien d’autre que votre relance et vos 3 rendez-vous.',
+    )
+    expect(videAutresTaches({ relances: 8, rendezVous: 1 }).titre).toBe(
+      'Rien d’autre que vos 8 relances et votre rendez-vous.',
+    )
+    expect(videAutresTaches({ relances: 1, rendezVous: 1 }).titre).toBe(
+      'Rien d’autre que votre relance et votre rendez-vous.',
+    )
+  })
+
+  it('réserve le vert et « place au terrain » à une journée vraiment finie', () => {
+    expect(videAutresTaches({ relances: 0, rendezVous: 0 })).toEqual({
+      titre: 'Aucune tâche en attente.',
+      texte: 'Rien d’autre à faire aujourd’hui : place au terrain.',
+      ton: 'succes',
+    })
   })
 })

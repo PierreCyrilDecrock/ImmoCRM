@@ -12,6 +12,7 @@ import {
   finDuDernierRendezVous,
   LIMITE_A_PREPARER,
   placeDuTrait,
+  rendezVousRestants,
   progression,
   rendezVousCiDessus,
   resumeJournee,
@@ -258,28 +259,55 @@ describe('résumé de la journée', () => {
   })
 })
 
+describe('rendezVousRestants', () => {
+  it('compte les rendez-vous en cours et à venir, pas ceux déjà passés', () => {
+    expect(rendezVousRestants(AGENDA, h(8))).toBe(4)
+    // 11 h 10 : celui de 9 h est fini, celui de 11 h est en cours.
+    expect(rendezVousRestants(AGENDA, h(11, 10))).toBe(3)
+    expect(rendezVousRestants(AGENDA, h(20))).toBe(0)
+    expect(rendezVousRestants([], h(8))).toBe(0)
+  })
+})
+
 describe('progression', () => {
-  it('compte les faites sur le total prévu', () => {
-    expect(progression(4, 3)).toEqual({
+  it('termine le résumé par « 11 à faire aujourd’hui » tant que rien n’est fait, sans anneau', () => {
+    expect(progression(11, 0)).toEqual({
+      faites: 0,
+      total: 11,
+      part: 0,
+      anneau: false,
+      phrase: '11 à faire aujourd’hui.',
+      annonce: '11 tâches à faire aujourd’hui.',
+    })
+    expect(progression(1, 0)).toMatchObject({
+      phrase: '1 à faire aujourd’hui.',
+      annonce: '1 tâche à faire aujourd’hui.',
+    })
+  })
+
+  it('montre l’anneau dès le premier geste et compte les faites sur le total prévu', () => {
+    expect(progression(8, 3)).toEqual({
       faites: 3,
-      total: 7,
-      part: 3 / 7,
-      texte: '3 sur 7',
-      suite: 'faits',
-      annonce: 'Progression de la journée : 3 tâches faites sur 7 prévues.',
+      total: 11,
+      part: 3 / 11,
+      anneau: true,
+      phrase: '3 sur 11 faits.',
+      annonce: 'Progression de la journée : 3 tâches faites sur 11 prévues.',
     })
   })
 
   it('accorde au singulier', () => {
-    expect(progression(0, 1)).toMatchObject({
-      texte: '1 sur 1',
-      suite: 'fait',
-      part: 1,
-      annonce: 'Progression de la journée : 1 tâche faite sur 1 prévue.',
+    expect(progression(4, 1)).toMatchObject({
+      phrase: '1 sur 5 fait.',
+      annonce: 'Progression de la journée : 1 tâche faite sur 5 prévues.',
     })
-    expect(progression(5, 0)).toMatchObject({
-      suite: 'fait',
-      annonce: 'Progression de la journée : aucune tâche faite sur 5 prévues.',
+  })
+
+  it('dit quand tout est fait', () => {
+    expect(progression(0, 7)).toMatchObject({ part: 1, phrase: 'Tout est fait : 7 sur 7.' })
+    expect(progression(0, 1)).toMatchObject({
+      phrase: 'Tout est fait : 1 sur 1.',
+      annonce: 'Progression de la journée : 1 tâche faite sur 1 prévue.',
     })
   })
 

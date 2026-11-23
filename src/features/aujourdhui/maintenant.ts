@@ -107,6 +107,17 @@ export function placeDuTrait(
   return place === -1 ? agenda.length : place
 }
 
+/**
+ * Les rendez-vous qui restent à vivre : en cours ou à venir (un rendez-vous sans heure
+ * compte). Ceux déjà passés n'en font plus partie, même s'ils ne sont pas encore cochés.
+ */
+export function rendezVousRestants(
+  agenda: readonly { tache: Pick<Tache, 'heure' | 'duree'> }[],
+  minutes: number,
+): number {
+  return agenda.filter(({ tache }) => etatRendezVous(tache, minutes) !== 'passe').length
+}
+
 // ---------------------------------------------------------------------------
 // Agenda du jour, en frise
 // ---------------------------------------------------------------------------
@@ -243,37 +254,50 @@ export function resumeJournee(journee: {
   return `${premiere} ${sujet} ${quand}.`
 }
 
-/** L'anneau « 3 sur 7 faits ». */
+/** L'avancement de la journée : la fin de la phrase de résumé, et l'anneau. */
 export type Progression = {
   faites: number
   total: number
   /** De 0 à 1. */
   part: number
-  /** « 3 sur 7 ». */
-  texte: string
-  /** « faits » ou « fait ». */
-  suite: string
-  /** Lu par les lecteurs d'écran : « Progression de la journée : 3 tâches faites sur 7 prévues. » */
+  /**
+   * La fin de la phrase de résumé : « 11 à faire aujourd'hui. » tant que rien n'est fait,
+   * puis « 3 sur 11 faits. », et « Tout est fait : 11 sur 11. » à la fin.
+   */
+  phrase: string
+  /** L'anneau ne s'affiche qu'au premier geste : vide, il ressemblerait à un chargement. */
+  anneau: boolean
+  /**
+   * Lu par les lecteurs d'écran à la place de `phrase` : « 11 tâches à faire aujourd'hui. »,
+   * puis « Progression de la journée : 3 tâches faites sur 11 prévues. »
+   */
   annonce: string
 }
 
 /**
  * La progression du jour : les tâches et relances prévues aujourd'hui ou en retard (encore à
- * faire) plus celles faites aujourd'hui. `null` (l'anneau disparaît) s'il n'y a rien de
+ * faire) plus celles faites aujourd'hui. `null` (ni phrase ni anneau) s'il n'y a rien de
  * prévu ou si un des nombres n'a pas pu être lu.
  */
 export function progression(aFaire: number | null, faites: number | null): Progression | null {
   if (aFaire === null || faites === null) return null
   const total = aFaire + faites
   if (total <= 0) return null
-  const faitesTexte =
-    faites === 0 ? 'aucune tâche faite' : faites === 1 ? '1 tâche faite' : `${faites} tâches faites`
+  const base = { faites, total, part: faites / total, anneau: faites > 0 }
+  if (faites === 0) {
+    return {
+      ...base,
+      phrase: `${total} à faire aujourd’hui.`,
+      annonce: `${total} ${total > 1 ? 'tâches' : 'tâche'} à faire aujourd’hui.`,
+    }
+  }
+  const faitesTexte = faites === 1 ? '1 tâche faite' : `${faites} tâches faites`
   return {
-    faites,
-    total,
-    part: faites / total,
-    texte: `${faites} sur ${total}`,
-    suite: faites > 1 ? 'faits' : 'fait',
+    ...base,
+    phrase:
+      faites >= total
+        ? `Tout est fait : ${faites} sur ${total}.`
+        : `${faites} sur ${total} ${faites > 1 ? 'faits' : 'fait'}.`,
     annonce: `Progression de la journée : ${faitesTexte} sur ${total} ${total > 1 ? 'prévues' : 'prévue'}.`,
   }
 }
