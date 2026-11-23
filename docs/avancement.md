@@ -1,6 +1,6 @@
 # ImmoCRM — Avancement
 
-Ce tableau suit les 53 étapes du [plan de développement](plan-developpement.md) : les 45 d'origine et les 8 de l'interface version 3 (phase D). Il est mis à jour à la fin de chaque étape.
+Ce tableau suit les 60 étapes du [plan de développement](plan-developpement.md) : les 45 d'origine, les 8 de l'interface version 3 (phase D) et les 7 corrections de design (phase E, d'après la [revue de design](revue-design.md)). Il est mis à jour à la fin de chaque étape.
 
 États possibles : **à faire**, **en cours**, **terminée**. Une étape est « terminée » quand sa pull request est ouverte ; elle n'est réellement acquise qu'une fois vos vérifications faites et la pull request fusionnée dans `main`.
 
@@ -10,7 +10,8 @@ Ce tableau suit les 53 étapes du [plan de développement](plan-developpement.md
 | --- | --- | --- |
 | Phase 0 — Fondations | 5 sur 5 | terminée |
 | Version 1 — Le quotidien | 14 sur 14 | livrée (version 1.0.0, 20/11/2026) |
-| Interface — version 3 | 8 sur 9 (D.0 à D.7 faites) | en cours |
+| Interface — version 3 | 8 sur 9 (D.0 à D.7 faites) | en cours (recette D.8 après la phase E) |
+| Interface — corrections de design | 0 sur 7 | à faire |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
 | Version 4 — Le confort | 0 sur 7 | à faire |
@@ -56,7 +57,21 @@ Ce tableau suit les 53 étapes du [plan de développement](plan-developpement.md
 | D.5 | Fiche Contact : profil toujours visible et onglets | terminée | 22/11/2026 | Sur ordinateur, deux colonnes : le profil, collé en haut et immobile au changement d'onglet (initiales, nom, rôles, dernier échange, température Froid/Tiède/Chaud enregistrée d'un clic avec « Annuler », Appeler/SMS/Courriel/Itinéraire, prochaine action avec « C'est fait » et reports, coordonnées avec Copier, origine, accord en ligne verte ou avertissement, consentement détaillé replié, dates, Modifier, menu « … » fusionner/exporter/archiver/supprimer), et les onglets Activité, Projets, Tâches, Biens avec compteurs (touches 1 à 4). Tablette et téléphone : en-tête compact, prochaine action, mêmes onglets plus Infos (corrigé le 22/11/2026 après essai : les biens avaient leur onglet sur ordinateur mais étaient rangés dans Projets ailleurs ; « À savoir » est passé de l'onglet Activité au profil) ; sur téléphone, Appeler, SMS et Consigner en bas à la place de la navigation. Onglet dans l'adresse (`?onglet=`). Projets : étapes en barre, ancienneté, critère et ce qui manque, « Étape suivante ». « 12 sur 48 » et flèches (J, K) depuis la liste, avec ses filtres. Fonctions pures testées (`fiche-contact.ts`, `parcours.ts`, `etapes.ts`, `placement.ts`, `aideEtapeSuivante`). Vérifié au navigateur (faux serveur, données fictives) sur ordinateur, tablette et téléphone, clair et sombre. Aucune migration. |
 | D.6 | Fiche Contact : compte rendu dans la fiche et historique par jour | terminée | 23/11/2026 | En tête de l'onglet Activité, « Consigner un échange », sans fenêtre : type en pastilles (Appel par défaut, Rendez-vous, Visite, Message, Note, « Autre » pour le reste), « Qu'avez-vous échangé avec Camille ? » en 16 px, résultat d'un appel, champs du compte rendu de visite, « Ensuite » (relance au rythme de la température ou rappel le lendemain d'une visite, raccourcis de date, « Modifier », « Ne rien prévoir », « Déjà prévu » s'il reste une tâche), « Enregistrer » ou ⌘ Entrée, Ctrl Entrée. L'échange clôt par défaut la relance du jour ou en retard qui va avec son type (case décochable) en passant par la boucle de relance (`boucler_tache`) ; sinon activité puis tâche comme le compte rendu express. Logique commune testée (`consigner-echange.ts`), rien de recopié. Texte non enregistré gardé sur l'appareil 14 jours et repris au retour. « À venir » conservé ; « Historique » par jour (« Vendredi 13 novembre · il y a 10 jours »), en cartes avec heure et résultat en pastille, lecture par pages conservée (`HistoriqueParJour`, `historique.ts`). Sur téléphone, « Consigner » de la barre du bas mène au champ au lieu d'ouvrir une fenêtre. Vérifié au navigateur (faux serveur, données fictives) sur ordinateur et téléphone, clair et sombre. Aucune migration. |
 | D.7 | Fiches Bien et Projet : même organisation | terminée | 23/11/2026 | Les fiches Bien, projet de vente et projet d'achat reprennent l'organisation de la fiche Contact : profil à gauche et onglets à droite sur ordinateur ; en-tête, onglets et barre du bas sur téléphone ; onglet dans l'adresse, touches 1 à 4, J et K. Bien : photo principale et galerie au toucher, type, adresse avec Copier et Itinéraire, prix et surface, propriétaires à appeler d'un toucher, prochaine tâche ; onglets Activité, Projets et acquéreurs, Tâches, Détails ; barre Itinéraire, Appeler (le propriétaire), Consigner. Projets : étapes en barre à toucher, « Pour passer à l'étape suivante : … », « Étape suivante » (fenêtre habituelle si un critère manque), contact et bien liés, prochaine action ; onglets Activité, (Biens proposés), Tâches, Détails ; barre Appeler, SMS, Consigner. « Consigner un échange » sur les trois fiches, lié au bien ou au projet (« Avec » pour choisir la personne ; « Sans contact » sur un bien). Précédent et suivant : biens depuis leur liste, projets dans l'ordre de leur colonne. Corrigé le 23/11/2026 après essai : les fiches Projet n'ont plus de colonne à gauche, elles occupent toute la page, la frise d'avancement en premier, puis le contact et le bien liés avec la prochaine action, puis les onglets. Commun aux quatre fiches dans `src/lib/fiche.ts` et `src/lib/parcours.ts` ; logique testée (`consigner-echange.ts`, `fiche-bien.ts`, `fiche-projet.ts`, `appel-fiche.ts`, `compteurs-fiche.ts`, `parcours.ts`, `fiche.ts`, `rangSuivant`). Vérifié au navigateur (faux serveur, données fictives) sur ordinateur, tablette et téléphone, clair et sombre. Aucune migration. |
-| D.8 | Recette de l'interface version 3 | à faire | | |
+| D.8 | Recette de l'interface version 3 | à faire | | À faire après la phase E : la recette vérifie aussi les 19 corrections de la revue de design. |
+
+## Interface — corrections de design
+
+Revue de design du 23/11/2026 : 19 corrections décrites dans [revue-design.md](revue-design.md), réparties en sept étapes. Aucune migration attendue.
+
+| Étape | Intitulé | État | Date | Notes |
+| --- | --- | --- | --- | --- |
+| E.1 | Aujourd'hui : relances en une ligne et agenda en frise | à faire | | Corrections 1 et 3. |
+| E.2 | Aujourd'hui : en-tête, carte « Maintenant » et blocs cohérents | à faire | | Corrections 4, 14, 15 et 16. |
+| E.3 | Tâches et prochaine action : faire avant reporter | à faire | | Corrections 2 et 5. |
+| E.4 | Un seul bouton bleu, une seule façon de créer | à faire | | Corrections 6, 17 et 19. |
+| E.5 | Listes et pipelines : se repérer d'un coup d'œil | à faire | | Corrections 8, 9 et 13. |
+| E.6 | Fiche Contact et saisie d'un échange : l'historique remonte | à faire | | Corrections 10, 12 et 18. |
+| E.7 | Fiche Projet et onglets : l'étape une fois, l'action devant | à faire | | Corrections 7 et 11. |
 
 ## Version 2 — Les dossiers
 

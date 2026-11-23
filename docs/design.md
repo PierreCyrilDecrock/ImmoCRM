@@ -274,6 +274,21 @@ Un message d'erreur dit ce qui s'est passé et quoi faire, en français courant 
 
 `<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`, `copier`, `calendrier`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
 
+## Corrections prévues (phase E)
+
+La [revue de design](revue-design.md) du 23 novembre 2026 a relevé 19 corrections, faites par les étapes E.1 à E.7 du plan. Elles modifient des composants décrits plus haut (`LigneRelance`, `LigneRendezVous`, `BlocJournee`, `AnneauProgression`, `CarteMaintenant`, `TroisActions`, `ReportsRapides`, `ListeTaches`, `CarteProchaineTache`, `SaisieRapide`, `RechercheGlobale`, `CartePipeline`, `TableauPipeline`, `Onglets`, `OngletsFiche`, `BarreEtapes`, `ProfilFiche`, `ConsignerEchange`, `Page`) ; chaque étape met à jour leur description ici.
+
+Règles qui s'ajoutent aux principes, dès maintenant, pour tout nouvel écran :
+
+1. **Une ligne de liste montre un seul geste**, le plus fréquent ; les autres sont au glissement et toujours dans un équivalent visible (ligne qui se déplie, menu).
+2. **Un seul bouton bleu au repos par écran** ; un bouton d'enregistrement ne passe au bleu que quand il y a quelque chose à enregistrer.
+3. **Une seule façon de créer par écran** : le « + » sur téléphone et tablette, le bouton d'en-tête ou « Créer » sur ordinateur.
+4. **Une information n'est écrite qu'une fois** par écran.
+5. **Une tâche à faire est une case ronde vide**, partout.
+6. **Un message vide ne contredit pas le reste de l'écran.**
+7. **Chaque groupe de pastilles porte son nom.**
+8. **Un contenu coupé se signale par un fondu.**
+
 ## Composants prévus (phase D)
 
 Les composants montrés par les maquettes de la version 3 (canevas « ImmoCRM — nouveau style ») sont tous construits : ceux de D.1 sont décrits dans « Gestes rapides », ceux de D.2 dans « Structure » et « Saisie rapide », ceux de D.3 et D.4 dans « Écran Aujourd'hui », ceux de D.5, D.6 et D.7 dans « Fiches ». L'étape D.7 a repris ces composants pour les fiches Bien et Projet ; elle n'ajoute que ce que ces fiches demandaient en plus : `PhotoPrincipale` (photo et galerie), `ProchaineTacheFiche` et `CarteProchaineTache` (la carte commune avec `ProchaineAction`), `LiensProjet`, les étapes à toucher de `BarreEtapes` (`choix`), et les crochets communs de `src/lib/fiche.ts`.
