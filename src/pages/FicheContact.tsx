@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import BarreActionsFiche from '../components/BarreActionsFiche'
 import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
@@ -7,7 +7,6 @@ import Icone from '../components/Icone'
 import LienAction from '../components/LienAction'
 import Message from '../components/Message'
 import NavigationFiche from '../components/NavigationFiche'
-import { useNotifications } from '../components/notifications-contexte'
 import OngletsFiche from '../components/OngletsFiche'
 import Page from '../components/Page'
 import ProfilFiche from '../components/ProfilFiche'
@@ -37,10 +36,7 @@ import { sansCoordonnees } from '../features/contacts/coordonnees'
 import {
   LIBELLES_ONGLETS,
   ligneAccord,
-  ligneDatesFiche,
-  ongletAffiche,
   ongletsContact,
-  raccourciFiche,
   type OngletContact,
 } from '../features/contacts/fiche-contact'
 import IdentiteContact from '../features/contacts/IdentiteContact'
@@ -49,15 +45,6 @@ import LignesOrigine from '../features/contacts/LignesOrigine'
 import { lirePageContacts } from '../features/contacts/liste-contacts'
 import MenuContact from '../features/contacts/MenuContact'
 import NotesContact from '../features/contacts/NotesContact'
-import {
-  cleDeLEtat,
-  libellePosition,
-  noterIds,
-  parcoursMemorise,
-  rangDans,
-  rangVoisin,
-  remplacerParcours,
-} from '../features/contacts/parcours'
 import TemperatureContact from '../features/contacts/TemperatureContact'
 import { estPortable, lienAppel, lienSms } from '../features/contacts/telephone'
 import SectionProjetsVendeurs from '../features/projets/SectionProjetsVendeurs'
@@ -67,9 +54,9 @@ import { champConsigner, placerCurseur } from '../features/saisie/curseur-consig
 import { ficheDeContact } from '../features/saisie/fiches-consultees'
 import { useConsultation } from '../features/saisie/recents'
 import SectionTaches from '../features/taches/SectionTaches'
-import { estUnChamp } from '../lib/clavier'
 import { dateDuJour, formaterDate } from '../lib/dates'
 import { useTailleEcran } from '../lib/ecran'
+import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
 import { exigerSupabase } from '../lib/supabase'
 
 type Etat =
@@ -106,12 +93,8 @@ const CLASSES_MODIFIER =
  */
 export default function FicheContact() {
   const { id = '' } = useParams()
-  const location = useLocation()
-  const naviguer = useNavigate()
-  const [parametres, setParametres] = useSearchParams()
   const taille = useTailleEcran()
   const ordinateur = taille === 'ordinateur'
-  const { notifier } = useNotifications()
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   // Numéro pour lequel un motif vient d'être enregistré : l'appel est rétabli pour cette visite.
   const [appelLibere, setAppelLibere] = useState<string | null>(null)
@@ -120,18 +103,21 @@ export default function FicheContact() {
   const [compteurs, setCompteurs] = useState<CompteursContact | null>(null)
   // « Consigner » de la barre du bas : le curseur ira dans le texte du compte rendu.
   const [focusConsigner, setFocusConsigner] = useState(false)
-  const [voisinEnCours, setVoisinEnCours] = useState(false)
   const [cartes] = useState(() => cartesDeLAppareil(navigator.userAgent))
   useConsultation(etat.phase === 'pret' ? ficheDeContact(etat.contact) : null)
 
   const onglets = ongletsContact(taille)
-  const onglet = ongletAffiche(parametres.get('onglet'), taille)
-
+  const [onglet, choisirOnglet] = useOngletFiche(onglets)
   // Le parcours de la liste : seulement pour une fiche ouverte depuis la liste des contacts.
-  const cleParcours = cleDeLEtat(location.state)
-  const parcours = cleParcours === null ? null : parcoursMemorise(cleParcours)
-  const rang = parcours === null ? null : rangDans(parcours, id)
-  const avecParcours = ordinateur && parcours !== null && rang !== null
+  const parcours = useParcoursFiche({
+    domaine: 'contacts',
+    id,
+    actif: ordinateur,
+    chemin: (voisin) => `/contacts/${voisin}`,
+    lirePage: lirePageContacts,
+    echec: "Le contact suivant n'a pas pu être lu.",
+  })
+  useRaccourcisFiche({ onglets, choisir: choisirOnglet, parcours })
 
   useEffect(() => {
     let actif = true
@@ -177,76 +163,6 @@ export default function FicheContact() {
       actif = false
     }
   }, [id, version])
-
-  /** Change d'onglet : une entrée de plus dans l'historique (le retour ramène au précédent). */
-  function choisirOnglet(suivant: OngletContact) {
-    if (suivant === onglet) return
-    setParametres(
-      (actuels) => {
-        const nouveaux = new URLSearchParams(actuels)
-        nouveaux.set('onglet', suivant)
-        return nouveaux
-      },
-      // Le parcours de la liste suit la fiche d'un onglet à l'autre.
-      { state: location.state },
-    )
-  }
-
-  /** Passe au contact précédent ou suivant de la liste, en lisant la suite si besoin. */
-  async function allerAuVoisin(sens: 1 | -1) {
-    if (parcours === null || rang === null || voisinEnCours) return
-    const cible = rangVoisin(parcours, rang, sens)
-    if (cible === null) return
-    let voisin = parcours.ids[cible] ?? null
-    if (voisin === null) {
-      setVoisinEnCours(true)
-      const page = await lirePageContacts(parcours.cle, cible, false)
-      setVoisinEnCours(false)
-      if (!page.ok) {
-        notifier('erreur', `Le contact suivant n'a pas pu être lu. ${page.erreur.message}`)
-        return
-      }
-      const complete = noterIds(
-        parcours,
-        cible,
-        page.donnees.lignes.map((contact) => contact.id),
-      )
-      remplacerParcours(complete)
-      voisin = complete.ids[cible] ?? null
-      if (voisin === null) return
-    }
-    void naviguer(
-      { pathname: `/contacts/${voisin}`, search: location.search },
-      { state: location.state },
-    )
-  }
-
-  // Raccourcis de la fiche, hors des champs et des fenêtres : 1 à 4, J et K.
-  useEffect(() => {
-    function surTouche(evenement: KeyboardEvent) {
-      if (evenement.repeat || evenement.defaultPrevented) return
-      if (document.querySelector('dialog[open], [role="menu"]') !== null) return
-      const raccourci = raccourciFiche({
-        key: evenement.key,
-        ctrlKey: evenement.ctrlKey,
-        metaKey: evenement.metaKey,
-        altKey: evenement.altKey,
-        dansUnChamp: estUnChamp(document.activeElement),
-      })
-      if (raccourci === null) return
-      if (raccourci.genre === 'onglet') {
-        const choisi = onglets[raccourci.rang]
-        if (choisi === undefined) return
-        evenement.preventDefault()
-        choisirOnglet(choisi)
-      } else if (avecParcours) {
-        evenement.preventDefault()
-        void allerAuVoisin(raccourci.genre === 'suivant' ? 1 : -1)
-      }
-    }
-    window.addEventListener('keydown', surTouche)
-    return () => window.removeEventListener('keydown', surTouche)
-  })
 
   if (etat.phase === 'chargement') {
     return (
@@ -403,7 +319,7 @@ export default function FicheContact() {
               <ConsignerEchange
                 // Une autre fiche (contact suivant) repart d'un bloc vide, ou de son brouillon.
                 key={contact.id}
-                contact={contact}
+                fiche={{ contact }}
                 version={version}
                 onEnregistre={toutRelire}
                 demandeFocus={focusConsigner}
@@ -482,19 +398,13 @@ export default function FicheContact() {
         retour={RETOUR}
         enTete={null}
         finRetour={
-          avecParcours &&
-          parcours !== null &&
-          rang !== null && (
+          parcours !== null && (
             <NavigationFiche
-              position={libellePosition(rang, parcours.total)}
+              position={parcours.position}
               quoi="la liste des contacts"
-              enCours={voisinEnCours}
-              onPrecedent={
-                rangVoisin(parcours, rang, -1) === null ? undefined : () => void allerAuVoisin(-1)
-              }
-              onSuivant={
-                rangVoisin(parcours, rang, 1) === null ? undefined : () => void allerAuVoisin(1)
-              }
+              enCours={parcours.enCours}
+              onPrecedent={parcours.onPrecedent}
+              onSuivant={parcours.onSuivant}
             />
           )
         }

@@ -1,14 +1,19 @@
 /**
- * Parcours de la liste des contacts depuis une fiche : « 12 sur 48 », contact précédent ou
- * suivant, dans l'ordre et avec la recherche et les filtres où la liste a été laissée.
+ * Parcours d'une liste depuis une fiche : « 12 sur 48 », fiche précédente ou suivante, dans
+ * l'ordre et avec la recherche et les filtres où la liste a été laissée. Commun aux contacts
+ * (étape D.5), aux biens et aux colonnes des pipelines (étape D.7).
  *
  * La liste garde, pour l'onglet du navigateur, la recherche en cours (`cle`, celle de
- * `useListeContacts`), son nombre de fiches et les identifiants déjà lus, rang par rang. Un
- * lien de la liste vers une fiche porte cette `cle` dans l'historique du navigateur (`state`) :
- * une fiche ouverte d'ailleurs (recherche, Aujourd'hui, lien gardé) n'en a pas, et n'affiche
- * donc pas les flèches. La liste lue n'est jamais complète au-delà des pages chargées : la
- * fiche lit la suite quand elle en a besoin.
+ * `useListeContacts` ou `useListeBiens` ; l'étape pour une colonne de pipeline), son nombre
+ * de fiches et les identifiants déjà lus, rang par rang. Un lien de la liste vers une fiche
+ * porte cette `cle` dans l'historique du navigateur (`state`) : une fiche ouverte d'ailleurs
+ * (recherche, Aujourd'hui, lien gardé) n'en a pas, et n'affiche donc pas les flèches. Une
+ * liste lue page par page n'est jamais complète au-delà des pages chargées : la fiche lit la
+ * suite quand elle en a besoin.
  */
+
+/** Les listes qu'on parcourt ; chacune a sa mémoire. */
+export type DomaineParcours = 'contacts' | 'biens' | 'projets-vendeurs' | 'projets-acquereurs'
 
 export type Parcours = {
   /** La recherche et les filtres de la liste (`JSON` des conditions et des archives). */
@@ -91,33 +96,73 @@ export function lireParcours(brut: string | null): Parcours | null {
   return { cle, total, ids: ids as (string | null)[] }
 }
 
-const CLE_MEMOIRE = 'immocrm.parcours-contacts'
+/** Nombre de parcours gardés par liste (les colonnes d'un pipeline en font plusieurs). */
+export const PARCOURS_GARDES = 10
+
+/** Relit les parcours gardés pour une liste. Ce qui est illisible est écarté. */
+export function lireListeParcours(brut: string | null): Parcours[] {
+  if (brut === null) return []
+  let lu: unknown
+  try {
+    lu = JSON.parse(brut)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(lu)) return []
+  return lu.flatMap((element) => {
+    const parcours = lireParcours(JSON.stringify(element))
+    return parcours === null ? [] : [parcours]
+  })
+}
+
+/**
+ * Range un parcours en tête des parcours gardés : il remplace celui de la même recherche
+ * (fusionné avec lui si `fusionner`), et les plus anciens au-delà de `PARCOURS_GARDES`
+ * sont oubliés.
+ */
+export function rangerParcours(
+  liste: readonly Parcours[],
+  parcours: Parcours,
+  fusionner: boolean,
+): Parcours[] {
+  const ancien = liste.find((garde) => garde.cle === parcours.cle) ?? null
+  const range = fusionner ? fusionnerParcours(ancien, parcours) : parcours
+  return [range, ...liste.filter((garde) => garde.cle !== parcours.cle)].slice(0, PARCOURS_GARDES)
+}
+
+const cleMemoire = (domaine: DomaineParcours) => `immocrm.parcours.${domaine}`
+
+function lireMemoire(domaine: DomaineParcours): Parcours[] {
+  return lireListeParcours(window.sessionStorage.getItem(cleMemoire(domaine)))
+}
+
+function ecrireMemoire(domaine: DomaineParcours, liste: Parcours[]): void {
+  window.sessionStorage.setItem(cleMemoire(domaine), JSON.stringify(liste))
+}
 
 /** Le parcours gardé pour cette recherche, ou `null` (autre recherche, rien de gardé). */
-export function parcoursMemorise(cle: string): Parcours | null {
+export function parcoursMemorise(domaine: DomaineParcours, cle: string): Parcours | null {
   try {
-    const parcours = lireParcours(window.sessionStorage.getItem(CLE_MEMOIRE))
-    return parcours !== null && parcours.cle === cle ? parcours : null
+    return lireMemoire(domaine).find((parcours) => parcours.cle === cle) ?? null
   } catch {
     // Mémoire du navigateur indisponible : pas de flèches, la fiche reste utilisable.
     return null
   }
 }
 
-/** Garde le parcours jusqu'à la fermeture de l'onglet. */
-export function memoriserParcours(parcours: Parcours): void {
+/** Garde le parcours jusqu'à la fermeture de l'onglet (la liste vient d'être lue). */
+export function memoriserParcours(domaine: DomaineParcours, parcours: Parcours): void {
   try {
-    const ancien = lireParcours(window.sessionStorage.getItem(CLE_MEMOIRE))
-    window.sessionStorage.setItem(CLE_MEMOIRE, JSON.stringify(fusionnerParcours(ancien, parcours)))
+    ecrireMemoire(domaine, rangerParcours(lireMemoire(domaine), parcours, true))
   } catch {
     // Sans mémoire, les flèches n'apparaissent simplement pas.
   }
 }
 
 /** Remplace le parcours gardé (après une lecture faite depuis la fiche). */
-export function remplacerParcours(parcours: Parcours): void {
+export function remplacerParcours(domaine: DomaineParcours, parcours: Parcours): void {
   try {
-    window.sessionStorage.setItem(CLE_MEMOIRE, JSON.stringify(parcours))
+    ecrireMemoire(domaine, rangerParcours(lireMemoire(domaine), parcours, false))
   } catch {
     // Sans mémoire, la fiche suivante n'aura pas de flèches.
   }

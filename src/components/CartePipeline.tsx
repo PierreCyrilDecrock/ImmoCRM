@@ -18,6 +18,11 @@ type Props = {
   onSaisir?: (evenement: PointerEvent<HTMLButtonElement>) => void
   /** La carte est en train d'être glissée, ou enregistrée. */
   estompee?: boolean
+  /**
+   * Gardé dans l'historique avec la fiche ouverte : la colonne d'où l'on vient, pour passer
+   * au projet précédent ou suivant depuis la fiche (`{ parcours: étape }`).
+   */
+  etat?: unknown
 }
 
 /**
@@ -33,6 +38,7 @@ export default function CartePipeline({
   action,
   onSaisir,
   estompee = false,
+  etat,
 }: Props) {
   return (
     <div
@@ -40,6 +46,7 @@ export default function CartePipeline({
     >
       <Link
         to={vers}
+        state={etat}
         className="flex min-w-0 flex-col gap-0.5 rounded-xl p-3 break-words hover:bg-creux focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
       >
         <span className={`font-semibold text-encre ${onSaisir === undefined ? '' : 'pr-8'}`}>

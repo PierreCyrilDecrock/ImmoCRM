@@ -23,6 +23,7 @@ import {
 import type { DelaisRelance } from '../relances/delais'
 import { libelleJour } from '../taches/echeances'
 import type { CategorieTache, Tache } from '../taches/taches'
+import type { LienFiche } from '../liens/fiches-liees'
 import {
   enregistrerCompteRendu,
   preparerCompteRendu,
@@ -30,12 +31,14 @@ import {
   type BrouillonCompteRendu,
   type CompteRenduPrepare,
   type ErreursCompteRendu,
+  type LiensEchange,
 } from './compte-rendu-express'
 import { prochaineAffichee, prochaineVide, type BrouillonProchaine } from './prochaine-action'
 
 /**
- * « Consigner un échange », en tête de l'onglet Activité d'une fiche (étape D.6) : le rituel
- * « après chaque échange » sans ouvrir de fenêtre. La saisie est celle du compte rendu
+ * « Consigner un échange », en tête de l'onglet Activité d'une fiche (étape D.6 pour la fiche
+ * Contact, D.7 pour les fiches Bien et Projet, où l'échange est aussi lié au bien ou au
+ * projet) : le rituel « après chaque échange » sans ouvrir de fenêtre. La saisie est celle du compte rendu
  * express (`compte-rendu-express.ts`), le contact déjà choisi ; quand l'échange répond à une
  * relance ou à un rendez-vous du jour (ou en retard), il la clôt comme la boucle de relance
  * (`boucle.ts`, fonction `boucler_tache`) : tâche faite, activité au journal, prochaine action.
@@ -67,7 +70,7 @@ export const AUTRES_TYPES_ECHANGE: readonly OptionType[] = TYPES_ACTIVITE.filter
 )
 
 /** Le brouillon de départ : un appel, sans texte, la prochaine action laissée à la fiche. */
-export function brouillonEchange(contact: Contact): BrouillonCompteRendu {
+export function brouillonEchange(contact: Contact | null): BrouillonCompteRendu {
   // `deja_prevue` est un choix « par défaut » : sans rien de prévu, il vaut `planifier`
   // (voir `prochaineEffective`), et suit ainsi les tâches lues après coup.
   return {
@@ -119,6 +122,20 @@ export function tacheAClore(
           a.echeance.localeCompare(b.echeance) || (a.heure ?? '99').localeCompare(b.heure ?? '99'),
       )[0] ?? null
   )
+}
+
+/**
+ * Les tâches liées à la fiche ouverte (un bien, un projet) : seules celles-là peuvent être
+ * closes par un échange consigné depuis cette fiche, pour que l'activité, qui reprend les
+ * liens de la tâche close, reste liée à la fiche. Depuis la fiche d'un contact, toutes.
+ */
+export function tachesDeLaFiche(taches: readonly Tache[], lien: LienFiche): Tache[] {
+  if ('contactId' in lien) return [...taches]
+  if ('bienId' in lien) return taches.filter((tache) => tache.bien_id === lien.bienId)
+  if ('projetVendeurId' in lien) {
+    return taches.filter((tache) => tache.projet_vendeur_id === lien.projetVendeurId)
+  }
+  return taches.filter((tache) => tache.projet_acquereur_id === lien.projetAcquereurId)
 }
 
 /**
@@ -190,6 +207,10 @@ export type ContexteEchange = {
   taches: readonly Tache[]
   /** La tâche que l'échange clôt, ou `null`. */
   close: Tache | null
+  /** Le bien ou le projet de la fiche ouverte, liés à l'activité et à la prochaine action. */
+  liens?: LiensEchange
+  /** L'échange peut rester sans contact (fiche Bien) : rien n'est alors prévu ensuite. */
+  contactFacultatif?: boolean
 }
 
 /**
@@ -201,11 +222,17 @@ export function preparerEchange(
   brouillon: BrouillonCompteRendu,
   contexte: ContexteEchange,
 ): { ok: true; envoi: EnvoiEchange } | { ok: false; erreurs: ErreursCompteRendu } {
-  const { aujourdhui, heure, delais, taches, close } = contexte
+  const { aujourdhui, heure, delais, taches, close, liens, contactFacultatif } = contexte
   const contact = brouillon.contact
   const suite = resteePrevue(taches, close, aujourdhui)
   const effectif = { ...brouillon, prochaine: prochaineEffective(brouillon.prochaine, suite) }
-  const preparation = preparerCompteRendu(effectif, { aujourdhui, heure, delais })
+  const preparation = preparerCompteRendu(effectif, {
+    aujourdhui,
+    heure,
+    delais,
+    liens,
+    contactFacultatif,
+  })
   if (!preparation.ok) return preparation
   const echeance = preparation.valeurs.tache?.echeance ?? null
   if (close === null || contact === null) {
@@ -269,11 +296,12 @@ export async function enregistrerEchange(
 
 /** Le message qui confirme l'enregistrement. */
 export function messageEchange(
-  contact: Contact,
+  contact: Contact | null,
   echeance: string | null,
   aujourdhui: string,
 ): string {
-  const debut = `Ajouté au journal de ${nomComplet(contact)}.`
+  const debut =
+    contact === null ? 'Ajouté au journal.' : `Ajouté au journal de ${nomComplet(contact)}.`
   if (echeance === null) return debut
   const jour = formaterJourCourt(echeance, aujourdhui)
   // « mer. 25 nov. » finit déjà par un point.
@@ -299,8 +327,20 @@ export const JOURS_GARDE_BROUILLON = 14
 
 const PREFIXE_CLE = 'immocrm.echange.'
 
-export function cleBrouillonEchange(contactId: string): string {
-  return `${PREFIXE_CLE}${contactId}`
+/** La clé du brouillon gardé : l'identifiant de la fiche (`fiche`, voir `ficheEchange`). */
+export function cleBrouillonEchange(fiche: string): string {
+  return `${PREFIXE_CLE}${fiche}`
+}
+
+/**
+ * Ce qui distingue le brouillon d'une fiche : l'identifiant du contact (comme à l'étape D.6),
+ * « bien. », « vendeur. » ou « acquereur. » suivi de l'identifiant pour les autres fiches.
+ */
+export function ficheEchange(lien: LienFiche): string {
+  if ('contactId' in lien) return lien.contactId
+  if ('bienId' in lien) return `bien.${lien.bienId}`
+  if ('projetVendeurId' in lien) return `vendeur.${lien.projetVendeurId}`
+  return `acquereur.${lien.projetAcquereurId}`
 }
 
 /** Vrai s'il y a quelque chose à garder : du texte, ou un compte rendu de visite commencé. */
@@ -379,7 +419,7 @@ export function lireBrouillonGarde(
 /** Le bloc rempli avec un brouillon gardé (la prochaine action repart de la proposition). */
 export function brouillonDepuisGarde(
   garde: BrouillonGarde,
-  contact: Contact,
+  contact: Contact | null,
 ): BrouillonCompteRendu {
   return {
     ...brouillonEchange(contact),
@@ -390,25 +430,22 @@ export function brouillonDepuisGarde(
   }
 }
 
-/** Le brouillon gardé pour ce contact sur cet appareil, ou `null`. */
+/** Le brouillon gardé pour cette fiche (`ficheEchange`) sur cet appareil, ou `null`. */
 export function brouillonMemorise(
-  contactId: string,
+  fiche: string,
   maintenant: Date = new Date(),
 ): BrouillonGarde | null {
   try {
-    return lireBrouillonGarde(
-      window.localStorage.getItem(cleBrouillonEchange(contactId)),
-      maintenant,
-    )
+    return lireBrouillonGarde(window.localStorage.getItem(cleBrouillonEchange(fiche)), maintenant)
   } catch {
     return null
   }
 }
 
 /** Garde le brouillon (ou l'efface s'il n'y a plus rien à garder). */
-export function memoriserBrouillon(contactId: string, brouillon: BrouillonCompteRendu): void {
+export function memoriserBrouillon(fiche: string, brouillon: BrouillonCompteRendu): void {
   try {
-    const cle = cleBrouillonEchange(contactId)
+    const cle = cleBrouillonEchange(fiche)
     if (aGarder(brouillon)) {
       window.localStorage.setItem(cle, JSON.stringify(brouillonAGarder(brouillon, new Date())))
     } else {

@@ -13,6 +13,7 @@ import {
   PLAFOND_PHOTOS,
   supprimerPhoto,
   usageEspace,
+  rangSuivant,
 } from './photos'
 
 const COMPTE = '00000000-0000-4000-8000-0000000000aa'
@@ -162,5 +163,14 @@ describe('lireEspacePhotos', () => {
       ok: true,
       donnees: { photos: 12, octets: 3_400_000 },
     })
+  })
+})
+
+describe('rangSuivant', () => {
+  it('passe d’une photo à l’autre et fait le tour de la galerie', () => {
+    expect(rangSuivant(0, 3, 1)).toBe(1)
+    expect(rangSuivant(2, 3, 1)).toBe(0)
+    expect(rangSuivant(0, 3, -1)).toBe(2)
+    expect(rangSuivant(0, 0, 1)).toBe(0)
   })
 })

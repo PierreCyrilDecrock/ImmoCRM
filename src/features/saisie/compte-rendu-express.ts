@@ -12,7 +12,9 @@ import {
   type TypeActivite,
   type ValeursActivite,
 } from '../activites/activites'
+import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
+import type { LienProjet } from '../liens/lien-projet'
 import { JOURS_RAPPEL_APRES_VISITE, titreRappelVisite, titreRelance } from '../relances/boucle'
 import { proposerRelance, type DelaisRelance } from '../relances/delais'
 import {
@@ -97,19 +99,36 @@ export function prochaineProposeeCompteRendu(
 
 export type CompteRenduPrepare = { activite: ValeursActivite; tache: ValeursTache | null }
 
-/** Vérifie l'écran et prépare l'activité du journal et, s'il y a lieu, la prochaine action. */
+/**
+ * Les fiches auxquelles l'échange est lié en plus du contact : le bien ou le projet de la
+ * fiche ouverte (bloc « Consigner un échange » des fiches Bien et Projet, étape D.7).
+ */
+export type LiensEchange = { bien?: Bien | null; projet?: LienProjet | null }
+
+/**
+ * Vérifie l'écran et prépare l'activité du journal et, s'il y a lieu, la prochaine action.
+ * `liens` : l'activité et la tâche sont aussi liées à ce bien ou ce projet.
+ * `contactFacultatif` : l'échange peut rester sans contact (une note sur un bien) ; rien
+ * n'est alors prévu ensuite.
+ */
 export function preparerCompteRendu(
   brouillon: BrouillonCompteRendu,
-  contexte: { aujourdhui: string; heure: string; delais: DelaisRelance },
+  contexte: {
+    aujourdhui: string
+    heure: string
+    delais: DelaisRelance
+    liens?: LiensEchange
+    contactFacultatif?: boolean
+  },
 ): { ok: true; valeurs: CompteRenduPrepare } | { ok: false; erreurs: ErreursCompteRendu } {
-  const { aujourdhui, heure, delais } = contexte
+  const { aujourdhui, heure, delais, liens = {}, contactFacultatif = false } = contexte
   const erreurs: ErreursCompteRendu = {}
   const contact = brouillon.contact
-  if (contact === null) erreurs.contact = 'Choisissez le contact.'
+  if (contact === null && !contactFacultatif) erreurs.contact = 'Choisissez le contact.'
 
   const activite = preparerActivite(
     {
-      ...brouillonActiviteVide(brouillon.type, { date: aujourdhui, heure }, { contact }),
+      ...brouillonActiviteVide(brouillon.type, { date: aujourdhui, heure }, { ...liens, contact }),
       resultat: brouillon.resultat,
       compteRendu: brouillon.compteRendu,
       visite: brouillon.visite,
@@ -121,19 +140,22 @@ export function preparerCompteRendu(
   }
 
   const prochaine = verifierProchaine(
-    brouillon.prochaine,
+    // Sans contact, rien n'est prévu ensuite : il n'y a personne à relancer.
+    contact === null ? prochaineVide('aucune') : brouillon.prochaine,
     prochaineProposeeCompteRendu(brouillon, aujourdhui, delais),
     aujourdhui,
   )
   if (!prochaine.ok) Object.assign(erreurs, prochaine.erreurs)
 
-  if (contact === null || !activite.ok || !prochaine.ok) return { ok: false, erreurs }
+  if (Object.keys(erreurs).length > 0 || !activite.ok || !prochaine.ok) {
+    return { ok: false, erreurs }
+  }
 
   let tache: ValeursTache | null = null
   if (prochaine.tache !== null) {
     const categorie: CategorieTache = 'relance'
     const preparee = preparerTache({
-      ...brouillonTacheVide(prochaine.tache.echeance, { contact }),
+      ...brouillonTacheVide(prochaine.tache.echeance, { ...liens, contact }),
       titre: prochaine.tache.titre,
       categorie,
     })

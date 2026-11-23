@@ -18,7 +18,7 @@ Une seule question chaque matin : **qui dois-je contacter aujourd'hui, et pourqu
 
 C'est le seul effort de saisie demandé.
 
-**Depuis la fiche du contact — le plus simple.** En haut de l'onglet **Activité**, le bloc **« Consigner un échange »**, sans fenêtre (sur téléphone, **« Consigner »** dans la barre du bas y mène, le curseur dans le texte) :
+**Depuis la fiche — le plus simple.** En haut de l'onglet **Activité** d'une fiche (contact, bien, projet de vente ou d'achat), le bloc **« Consigner un échange »**, sans fenêtre (sur téléphone, **« Consigner »** dans la barre du bas y mène, le curseur dans le texte) :
 
 1. **Le type** : Appel (déjà choisi), Rendez-vous, Visite, Message, Note ; « Autre » pour un courriel, une estimation, un porte-à-porte, un document envoyé.
 2. **« Qu'avez-vous échangé avec Camille ? »** : écrire, ou dicter avec le micro du clavier.
@@ -28,6 +28,8 @@ C'est le seul effort de saisie demandé.
 6. **« Enregistrer »** (ou **⌘ Entrée**, **Ctrl Entrée** sur PC). L'échange apparaît en haut de l'**Historique**, la prochaine action et « Dernier échange » de la fiche se mettent à jour, et le bloc se vide pour le suivant.
 
 Pour une **visite**, choisir Visite : les champs du compte rendu (points positifs et négatifs, intérêt, suite) s'ajoutent, et le rappel de l'acquéreur est proposé pour le lendemain.
+
+Depuis la fiche d'un **bien** ou d'un **projet**, une ligne **« Avec »** vient d'abord : la personne de l'échange, déjà choisie (le premier propriétaire du bien, le vendeur, l'acquéreur), une autre d'un toucher (un autre propriétaire, le co-acquéreur) ou par **« Autre contact »**. L'échange et la prochaine action sont alors liés aussi au bien ou au projet ; seule une relance de ce bien ou de ce projet est proposée à la clôture. Sur un bien, **« Sans contact »** note une remarque sur le bien seul (rien n'est prévu ensuite).
 
 Un texte commencé et pas enregistré n'est pas perdu : en quittant la fiche, il reste sur l'appareil (deux semaines) et revient au retour, avec « Brouillon non enregistré du …, repris ici » et un bouton « Effacer ».
 
@@ -47,7 +49,7 @@ Avant d'appeler quelqu'un pour la première fois, noter son **accord pour être 
 
 ## Le vendredi — 20 minutes
 
-1. **Pipelines → Vendeurs, puis Acquéreurs.** Pour chaque projet : l'étape est-elle juste ? Une prochaine action est-elle prévue ? Faire avancer, mettre « À recontacter » (avec une date) ou « Perdu » (avec le motif). Rien ne se supprime.
+1. **Pipelines → Vendeurs, puis Acquéreurs.** Pour chaque projet : l'étape est-elle juste ? Une prochaine action est-elle prévue ? Faire avancer, mettre « À recontacter » (avec une date) ou « Perdu » (avec le motif). Rien ne se supprime. Sur ordinateur, ouvrir le premier projet d'une colonne, puis passer au suivant avec **J** (ou la flèche en haut à droite) : la revue se fait sans revenir au tableau.
 2. **Tâches → En retard** : faire, reporter ou annuler. La liste doit être vide : la pastille rouge de l'entrée Tâches disparaît alors.
 3. **Contacts → Sans prochaine action** : planifier une relance pour chacun, ou confirmer qu'il n'y en aura pas. Le compteur doit tendre vers zéro.
 4. **La semaine suivante** : bloquer les créneaux de prospection comme des rendez-vous (« + » → Nouvelle tâche, catégorie Prospection, avec une heure).
@@ -63,14 +65,18 @@ Les objectifs et le tableau de bord de la revue arriveront avec la version 3.
   - L'onglet ouvert fait partie de l'adresse : le retour du navigateur ramène à l'onglet d'avant, et un lien gardé rouvre le même onglet.
   - **Projets** : chaque projet en cours montre ses étapes en barre, depuis quand il est dans son étape, ce qu'il faut pour passer à la suivante et ce qui manque encore ; **« Étape suivante »** l'y fait passer (en demandant ce qui manque).
   - **Contact suivant** : ouvert depuis la liste des contacts, sur ordinateur, la fiche affiche « 12 sur 48 » et deux flèches (touches **J** suivant, **K** précédent) qui suivent la liste telle qu'on l'a laissée, recherche et filtres compris.
+- **Les fiches d'un bien, d'un projet de vente et d'un projet d'achat** sont rangées comme celle d'un contact : à gauche sur ordinateur ce qu'on cherche en y allant, à droite les onglets (touches **1 à 4**) ; sur téléphone et tablette tenue en hauteur, un en-tête, puis les onglets.
+  - **Bien** : à gauche la photo principale (un toucher ouvre la galerie : « Précédente », « Suivante », ou les flèches du clavier), le type et le statut, l'adresse avec **Copier** et **Itinéraire**, le prix et la surface, les **propriétaires** avec **Appeler** pour chacun, la **prochaine tâche** (« C'est fait », reports), puis Modifier et le menu « … » (archiver, restaurer). Onglets **Activité** (consigner, à venir, historique), **Projets et acquéreurs** (projets de vente avec leurs étapes, à qui le bien a été proposé, demandes reçues), **Tâches**, **Détails** (caractéristiques, diagnostics, historique des prix, description, photos à ajouter ou ranger ; sur téléphone, les propriétaires en tête). Sur téléphone, **Itinéraire, Appeler (le propriétaire) et Consigner** sont en bas de l'écran ; Appeler compose le numéro du premier propriétaire qui accepte d'être appelé.
+  - **Projet de vente, projet d'achat** : à gauche les **étapes en barre**, « Pour passer à l'étape suivante (…) : … », ce qui manque et **« Étape suivante »** (un critère manquant ouvre la fenêtre habituelle) ; toucher une autre étape y fait passer. Dessous, « À recontacter… », « Perdu… » (et « Offre acceptée… » à la dernière étape d'un achat), le contact (**Appeler**) et le bien (**Itinéraire**) liés, la **prochaine action** du projet. Onglets **Activité**, **Biens proposés** (projet d'achat), **Tâches**, **Détails** (le projet, ou la recherche, avec les notes). Sur téléphone, **Appeler, SMS et Consigner** sont en bas.
+  - **Précédent et suivant** : sur ordinateur, ouverte depuis la liste des biens, une fiche Bien affiche « 3 sur 20 » et les flèches (J, K), comme un contact ; ouverte depuis le pipeline, une fiche Projet suit l'ordre de sa colonne.
 - **Retrouver quelqu'un** : le champ de recherche (en haut de chaque page ; sur ordinateur, en haut de la colonne de gauche) cherche par nom, téléphone (sous toutes ses formes), courriel ou adresse. Au clavier, « / » ou ⌘K (Ctrl K sur PC) y mène directement, et « N » ouvre le menu de création.
 - **La colonne de gauche, sur ordinateur** : sous les entrées, **« Consultés récemment »** rouvre d'un clic les trois dernières fiches vues. En bas, « Créer », puis l'état : « Tout est enregistré », « Enregistrement… » pendant un envoi, « Connexion perdue » sans réseau (attendre « Tout est enregistré » avant de fermer).
 - **Tâches en retard** : leur nombre s'affiche en rouge sur l'entrée Tâches (« 9+ » au-delà de neuf ; un point rouge sur téléphone). Il se met à jour dès qu'une tâche est faite ou reportée.
-- **Reporter en un toucher** : sur la prochaine action d'un contact, dans la page Tâches et sur les relances d'Aujourd'hui (sur ordinateur), « Demain », « Dans 3 jours », « Lundi », ou le calendrier pour une autre date. Une erreur ? « Annuler » dans le message qui confirme (ou Ctrl Z sur ordinateur) remet l'ancienne date.
+- **Reporter en un toucher** : sur la prochaine action d'un contact, la prochaine tâche d'un bien ou d'un projet, dans la page Tâches et sur les relances d'Aujourd'hui (sur ordinateur), « Demain », « Dans 3 jours », « Lundi », ou le calendrier pour une autre date. Une erreur ? « Annuler » dans le message qui confirme (ou Ctrl Z sur ordinateur) remet l'ancienne date.
 - **Sur téléphone, page Tâches et écran Aujourd'hui** (relances et tâches) : glisser une ligne vers la gauche découvre « Reporter » et « Fait ». Sur une relance, « Fait » ouvre l'écran de compte rendu. Les boutons de la ligne font la même chose.
 - **Sur ordinateur, écran Aujourd'hui** : en passant la souris sur une relance (ou en y arrivant au clavier), « Demain », « Dans 3 jours », « Lundi », le calendrier et « Fait » apparaissent à côté d'« Appeler ». Une relance reportée quitte la liste ; « Annuler » dans le message la fait revenir.
 - **Bloc Tâches d'Aujourd'hui** : « En retard » d'abord, puis « Aujourd'hui », avec l'échéance à droite (« Hier », « 17 h 30 »).
-- **Copier** un numéro, un courriel ou une adresse : le petit bouton « Copier » à côté (sur ordinateur, il apparaît au survol de la ligne ; sur téléphone, les coordonnées d'un contact sont dans l'onglet Infos).
+- **Copier** un numéro, un courriel ou une adresse : le petit bouton « Copier » à côté (sur ordinateur, il apparaît au survol de la ligne ; sur téléphone, les coordonnées d'un contact sont dans l'onglet Infos, l'adresse d'un bien dans son en-tête).
 - **Les biens** se cherchent depuis la page Biens (par morceau d'adresse).
 - **Le journal complet** est dans Plus → Journal, filtrable par période et par type.
 - **Hors réseau**, l'application ne s'ouvre pas : il faut une connexion.

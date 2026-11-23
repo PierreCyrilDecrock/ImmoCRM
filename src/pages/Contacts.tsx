@@ -40,7 +40,7 @@ import {
 } from '../features/contacts/filtres'
 import FormulaireContact from '../features/contacts/FormulaireContact'
 import { useListeContacts } from '../features/contacts/liste-contacts'
-import { memoriserParcours, type EtatParcours } from '../features/contacts/parcours'
+import { memoriserParcours, type EtatParcours } from '../lib/parcours'
 import { formaterDate } from '../lib/dates'
 import { accorder } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
@@ -184,7 +184,7 @@ export default function Contacts() {
   const { cle, total, rafraichissement, erreur, contacts } = liste
   useEffect(() => {
     if (cle === null || total === null || rafraichissement || erreur !== null) return
-    memoriserParcours({ cle, total, ids: contacts.map((contact) => contact.id) })
+    memoriserParcours('contacts', { cle, total, ids: contacts.map((contact) => contact.id) })
   }, [cle, total, rafraichissement, erreur, contacts])
   const etatLien: EtatParcours | undefined = cle === null ? undefined : { parcours: cle }
 

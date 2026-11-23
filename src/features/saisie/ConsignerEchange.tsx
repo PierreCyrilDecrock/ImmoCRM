@@ -15,10 +15,13 @@ import {
   RESULTATS_APPEL,
 } from '../activites/activites'
 import { libelleTemperature, nomComplet, type Contact } from '../contacts/contacts'
+import SelecteurContact from '../contacts/SelecteurContact'
+import { lienDeFiche, liensDeFiche, type FicheOrigine } from '../liens/fiche-origine'
 import { JOURS_RAPPEL_APRES_VISITE } from '../relances/boucle'
 import { libelleDelai, proposerRelance } from '../relances/delais'
 import { listerTachesLiees, type Tache } from '../taches/taches'
 import ChampsProchaineAction from './ChampsProchaineAction'
+import { prochaineVide } from './prochaine-action'
 import {
   prochaineProposeeCompteRendu,
   type BrouillonCompteRendu,
@@ -30,12 +33,14 @@ import {
   brouillonEchange,
   brouillonMemorise,
   enregistrerEchange,
+  ficheEchange,
   memoriserBrouillon,
   messageEchange,
   preparerEchange,
   prochaineEffective,
   resteePrevue,
   tacheAClore,
+  tachesDeLaFiche,
   texteDejaPrevu,
   texteTacheClose,
   TYPES_ECHANGE,
@@ -46,7 +51,14 @@ import { ID_CONSIGNER_ECHANGE, placerCurseur } from './curseur-consigner'
 import GroupePastilles from './GroupePastilles'
 
 type Props = {
-  contact: Contact
+  /** La fiche ouverte (contact, bien, projet) : l'échange lui est lié. */
+  fiche: FicheOrigine
+  /**
+   * Fiches Bien et Projet : les personnes avec qui l'échange a pu avoir lieu (propriétaires,
+   * acquéreur et co-acquéreur), la première choisie d'emblée. Une autre se cherche par
+   * « Autre contact ». Sur la fiche d'un contact, c'est lui.
+   */
+  contacts?: readonly Contact[]
   /** Change quand la fiche se relit (après un geste ailleurs) : les tâches se relisent. */
   version: number
   /** Appelé après l'enregistrement : la fiche relit ses rubriques et le contact. */
@@ -67,15 +79,21 @@ function momentDuBrouillon(garde: BrouillonGarde, aujourdhui: string): string {
     : `du ${formaterJourCourt(jour, aujourdhui)} à ${heure}`
 }
 
+/** Avec qui : le premier proposé (par défaut), une personne choisie, ou personne (un bien). */
+type Choix = { genre: 'defaut' } | { genre: 'contact'; contact: Contact } | { genre: 'aucun' }
+
 /**
- * « Consigner un échange », en tête de l'onglet Activité de la fiche Contact (étape D.6) : le
- * type en pastilles, le texte (à dicter avec le micro du clavier), le résultat d'un appel,
- * « Ensuite » (la prochaine action proposée selon la température), puis « Enregistrer »
- * (ou ⌘ Entrée, Ctrl Entrée). Sans fenêtre. Un texte non enregistré est gardé sur l'appareil
- * et repris au retour sur la fiche.
+ * « Consigner un échange », en tête de l'onglet Activité d'une fiche (étape D.6 pour la fiche
+ * Contact, D.7 pour les fiches Bien et Projet) : le type en pastilles, le texte (à dicter
+ * avec le micro du clavier), le résultat d'un appel, « Ensuite » (la prochaine action
+ * proposée selon la température), puis « Enregistrer » (ou ⌘ Entrée, Ctrl Entrée). Sans
+ * fenêtre. Un texte non enregistré est gardé sur l'appareil et repris au retour sur la fiche.
+ * Depuis un bien ou un projet, on choisit d'abord avec qui ; l'activité et la prochaine
+ * action sont liées à la fiche.
  */
 export default function ConsignerEchange({
-  contact,
+  fiche,
+  contacts,
   version,
   onEnregistre,
   demandeFocus = false,
@@ -84,11 +102,32 @@ export default function ConsignerEchange({
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
   const delais = useDelaisRelance()
-  const [repris, setRepris] = useState<BrouillonGarde | null>(() => brouillonMemorise(contact.id))
+  const lien = lienDeFiche(fiche)
+  const cleFiche = ficheEchange(lien)
+  const ficheContact = fiche.contact !== undefined
+  // Un échange noté sur un bien peut rester sans contact (une note) ; pas sur un projet.
+  const sansContactPermis = fiche.bien !== undefined
+  const proposes: readonly Contact[] =
+    fiche.contact !== undefined
+      ? [fiche.contact]
+      : (contacts ?? (fiche.projet?.contact == null ? [] : [fiche.projet.contact]))
+  const [choix, setChoix] = useState<Choix>({ genre: 'defaut' })
+  const [recherche, setRecherche] = useState(false)
+  // La fiche suit les changements faits ailleurs (température) : le contact vient des props.
+  const contact: Contact | null =
+    choix.genre === 'aucun'
+      ? null
+      : choix.genre === 'contact'
+        ? (proposes.find((propose) => propose.id === choix.contact.id) ?? choix.contact)
+        : (proposes[0] ?? null)
+  const { bien, projet } = liensDeFiche(fiche)
+  const liens = { bien, projet }
+  const [repris, setRepris] = useState<BrouillonGarde | null>(() => brouillonMemorise(cleFiche))
   const [brouillon, setBrouillon] = useState<BrouillonCompteRendu>(() =>
     repris === null ? brouillonEchange(contact) : brouillonDepuisGarde(repris, contact),
   )
-  const [taches, setTaches] = useState<Tache[] | null>(null)
+  /** Les tâches à faire lues, et pour quel contact. */
+  const [lues, setLues] = useState<{ pour: string; taches: Tache[] } | null>(null)
   /** La tâche que l'utilisateur a choisi de ne pas cocher. */
   const [refusee, setRefusee] = useState<string | null>(null)
   const [autresTypes, setAutresTypes] = useState(() =>
@@ -101,25 +140,31 @@ export default function ConsignerEchange({
   const [activiteCreee, setActiviteCreee] = useState(false)
   const zoneTexte = useRef<HTMLDivElement>(null)
 
-  // La fiche suit les changements faits ailleurs (température) : le contact vient des props.
   const saisie: BrouillonCompteRendu = { ...brouillon, contact }
-  const prenom = contact.prenom.trim() || nomComplet(contact)
+  const prenom = contact === null ? null : contact.prenom.trim() || nomComplet(contact)
+  const contactId = contact?.id ?? null
+
+  // Sans contact, rien à clore ; un autre contact choisi : ses tâches sont à relire.
+  const taches = contactId === null ? [] : lues?.pour === contactId ? lues.taches : null
 
   // Les tâches à faire du contact : celle que l'échange clôt, et ce qui reste prévu.
   useEffect(() => {
     let actif = true
-    void listerTachesLiees(exigerSupabase(), { contactId: contact.id }).then((resultat) => {
-      if (actif) setTaches(resultat.ok ? resultat.donnees.map((affichee) => affichee.tache) : [])
+    if (contactId === null) return
+    void listerTachesLiees(exigerSupabase(), { contactId }).then((resultat) => {
+      if (!actif) return
+      const taches = resultat.ok ? resultat.donnees.map((affichee) => affichee.tache) : []
+      setLues({ pour: contactId, taches })
     })
     return () => {
       actif = false
     }
-  }, [contact.id, version])
+  }, [contactId, version])
 
   // Le texte est gardé sur l'appareil à chaque frappe : quitter la fiche ne le perd pas.
   useEffect(() => {
-    memoriserBrouillon(contact.id, brouillon)
-  }, [contact.id, brouillon])
+    memoriserBrouillon(cleFiche, brouillon)
+  }, [cleFiche, brouillon])
 
   // « Consigner » de la barre du bas : le curseur va dans le texte.
   useEffect(() => {
@@ -136,7 +181,17 @@ export default function ConsignerEchange({
     setBrouillon((actuel) => ({ ...actuel, [champ]: valeur }))
   }
 
-  const candidate = taches === null ? null : tacheAClore(taches, brouillon.type, aujourdhui)
+  /** Change la personne : la tâche à clore et la prochaine action repartent de zéro. */
+  function choisir(suivant: Choix) {
+    setChoix(suivant)
+    setRecherche(false)
+    setRefusee(null)
+    setBrouillon((actuel) => ({ ...actuel, prochaine: prochaineVide('deja_prevue') }))
+  }
+
+  // Depuis un bien ou un projet, seule une tâche liée à la fiche peut être close.
+  const candidate =
+    taches === null ? null : tacheAClore(tachesDeLaFiche(taches, lien), brouillon.type, aujourdhui)
   const close = candidate !== null && candidate.id !== refusee ? candidate : null
   const suite = taches === null ? null : resteePrevue(taches, close, aujourdhui)
   const prochaine = prochaineEffective(brouillon.prochaine, suite)
@@ -150,6 +205,8 @@ export default function ConsignerEchange({
       delais,
       taches,
       close: activiteCreee ? null : close,
+      liens,
+      contactFacultatif: sansContactPermis,
     })
     setErreurs(preparation.ok ? {} : preparation.erreurs)
     if (!preparation.ok) return
@@ -185,7 +242,7 @@ export default function ConsignerEchange({
   }
 
   // D'où vient la date proposée : la température, ou le lendemain d'une visite.
-  const rythme = proposerRelance(aujourdhui, contact.temperature, delais)
+  const rythme = proposerRelance(aujourdhui, contact?.temperature ?? null, delais)
   const temperature = libelleTemperature(rythme.temperature)?.toLowerCase() ?? ''
   const origineDate =
     brouillon.type === 'visite'
@@ -198,10 +255,19 @@ export default function ConsignerEchange({
 
   const libelleTexte =
     brouillon.type === 'note'
-      ? `Votre note sur ${prenom}`
+      ? prenom === null
+        ? 'Votre note'
+        : `Votre note sur ${prenom}`
       : brouillon.type === 'visite'
-        ? `Autres remarques sur la visite avec ${prenom}`
-        : `Qu’avez-vous échangé avec ${prenom} ?`
+        ? `Autres remarques sur la visite${prenom === null ? '' : ` avec ${prenom}`}`
+        : prenom === null
+          ? 'Qu’avez-vous échangé ?'
+          : `Qu’avez-vous échangé avec ${prenom} ?`
+  // Une personne cherchée hors des propositions reste proposée tant qu'elle est choisie.
+  const autre =
+    choix.genre === 'contact' && !proposes.some((propose) => propose.id === choix.contact.id)
+      ? choix.contact
+      : null
 
   return (
     <section
@@ -234,6 +300,43 @@ export default function ConsignerEchange({
         )}
 
         <fieldset disabled={activiteCreee || envoi} className="flex min-w-0 flex-col gap-4">
+          {!ficheContact && (
+            <div className="flex flex-col gap-2">
+              <GroupePastilles legende="Avec">
+                {[...proposes, ...(autre === null ? [] : [autre])].map((personne) => (
+                  <Pastille
+                    key={personne.id}
+                    choisie={contact?.id === personne.id}
+                    onClick={() => choisir({ genre: 'contact', contact: personne })}
+                  >
+                    {nomComplet(personne)}
+                  </Pastille>
+                ))}
+                {sansContactPermis && (
+                  <Pastille choisie={contact === null} onClick={() => choisir({ genre: 'aucun' })}>
+                    Sans contact
+                  </Pastille>
+                )}
+                <button
+                  type="button"
+                  aria-expanded={recherche}
+                  onClick={() => setRecherche(!recherche)}
+                  className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-medium text-accent ring-1 ring-bord-fort/40 ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  <Icone nom="recherche" className="size-4" />
+                  Autre contact
+                </button>
+              </GroupePastilles>
+              {recherche && (
+                <SelecteurContact
+                  libelle="Chercher le contact"
+                  autoFocus
+                  onChoisir={(trouve) => choisir({ genre: 'contact', contact: trouve })}
+                />
+              )}
+              {erreurs.contact !== undefined && <Message genre="erreur">{erreurs.contact}</Message>}
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap gap-2" role="group" aria-label="Type d’échange">
               {TYPES_ECHANGE.map((option) => (
@@ -330,7 +433,11 @@ export default function ConsignerEchange({
           <h3 id="consigner-echange-ensuite" className="text-base font-semibold text-encre">
             Ensuite
           </h3>
-          {taches === null ? (
+          {contact === null ? (
+            <p className="text-sm text-encre-douce">
+              Sans contact, rien n’est prévu ensuite. Une tâche s’ajoute depuis l’onglet Tâches.
+            </p>
+          ) : taches === null ? (
             <p className="text-sm text-encre-douce">Lecture des tâches du contact…</p>
           ) : (
             <ChampsProchaineAction

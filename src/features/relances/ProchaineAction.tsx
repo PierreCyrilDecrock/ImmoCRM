@@ -7,11 +7,10 @@ import { exigerSupabase } from '../../lib/supabase'
 import type { Contact } from '../contacts/contacts'
 import { lireReglages } from '../reglages/reglages'
 import { useActionsTache } from '../taches/actions-tache'
-import { libelleJour } from '../taches/echeances'
+import CarteProchaineTache from '../taches/CarteProchaineTache'
 import FormulaireTache from '../taches/FormulaireTache'
-import ReportsRapides from '../taches/ReportsRapides'
 import ReportTache from '../taches/ReportTache'
-import { horaireTache, lireProchaineTache, type Tache } from '../taches/taches'
+import { lireProchaineTache, type Tache } from '../taches/taches'
 import { titreRelance } from './boucle'
 import BoucleRelance from './BoucleRelance'
 import { DELAIS_PAR_DEFAUT, proposerRelance } from './delais'
@@ -91,52 +90,20 @@ export default function ProchaineAction({
   }
 
   const tache = etat.tache
-  const enRetard = tache !== null && tache.echeance < aujourdhui
-  const horaire = tache === null ? '' : horaireTache(tache)
-  const boutonFait =
-    tache === null ? null : (
-      <Bouton
-        variante="secondaire"
-        icone="succes"
-        pleineLargeur={compacte}
-        disabled={actions.occupee === tache.id}
-        onClick={() => setBoucle(true)}
-      >
-        C’est fait
-      </Bouton>
-    )
 
   return (
     <>
       {tache !== null ? (
-        <div className="flex flex-col gap-3 rounded-2xl bg-surface p-3 ring-1 ring-bord">
-          <div className="flex items-center gap-3">
-            <Icone nom="taches" className="size-6 shrink-0 text-accent" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-encre-douce">Prochaine action</p>
-              <p className="text-base font-semibold break-words text-encre">{tache.titre}</p>
-              <p className="text-sm">
-                <span className={enRetard ? 'font-semibold text-danger' : 'text-encre-douce'}>
-                  {libelleJour(tache.echeance, aujourdhui)}
-                  {enRetard && ' · en retard'}
-                </span>
-                {horaire !== '' && <span className="font-semibold text-encre"> · {horaire}</span>}
-              </p>
-            </div>
-            {!compacte && boutonFait}
-          </div>
-          {compacte && boutonFait}
-          <div className={compacte ? undefined : 'md:pl-9'}>
-            <ReportsRapides
-              aujourdhui={aujourdhui}
-              titre={tache.titre}
-              avecLibelle={!compacte}
-              desactive={actions.occupee === tache.id}
-              onReporter={(date) => void actions.reporter(tache, date, aujourdhui)}
-              onAutreDate={() => setAutreDate(true)}
-            />
-          </div>
-        </div>
+        <CarteProchaineTache
+          tache={tache}
+          aujourdhui={aujourdhui}
+          libelle="Prochaine action"
+          compacte={compacte}
+          occupee={actions.occupee === tache.id}
+          onFait={() => setBoucle(true)}
+          onReporter={(date) => void actions.reporter(tache, date, aujourdhui)}
+          onAutreDate={() => setAutreDate(true)}
+        />
       ) : (
         <div
           role="status"

@@ -3,7 +3,10 @@ import {
   cleDeLEtat,
   fusionnerParcours,
   libellePosition,
+  lireListeParcours,
   lireParcours,
+  PARCOURS_GARDES,
+  rangerParcours,
   noterIds,
   rangDans,
   rangVoisin,
@@ -62,5 +65,37 @@ describe('mémoire et historique', () => {
     expect(cleDeLEtat(null)).toBeNull()
     expect(cleDeLEtat({ autre: 1 })).toBeNull()
     expect(cleDeLEtat({ parcours: '' })).toBeNull()
+  })
+})
+
+describe('plusieurs parcours gardés', () => {
+  it('range le dernier en tête et remplace celui de la même recherche', () => {
+    const colonneA: Parcours = { cle: 'estimation', total: 2, ids: ['a', 'b'] }
+    const colonneB: Parcours = { cle: 'decouverte', total: 1, ids: ['c'] }
+    const liste = rangerParcours(rangerParcours([], colonneA, true), colonneB, true)
+    expect(liste.map((p) => p.cle)).toEqual(['decouverte', 'estimation'])
+    const relue = rangerParcours(liste, { ...colonneA, ids: ['b', 'a'] }, false)
+    expect(relue.map((p) => p.cle)).toEqual(['estimation', 'decouverte'])
+    expect(relue[0]?.ids).toEqual(['b', 'a'])
+  })
+
+  it('fusionne avec les rangs lus depuis la fiche, et oublie les plus anciens', () => {
+    const plusLoin = noterIds(parcours, 3, ['d'])
+    expect(rangerParcours([plusLoin], parcours, true)[0]?.ids).toEqual(['a', 'b', 'c', 'd'])
+    const beaucoup = Array.from({ length: PARCOURS_GARDES + 3 }, (_, rang) => ({
+      cle: String(rang),
+      total: 0,
+      ids: [],
+    }))
+    const liste = beaucoup.reduce<Parcours[]>((gardes, p) => rangerParcours(gardes, p, true), [])
+    expect(liste).toHaveLength(PARCOURS_GARDES)
+    expect(liste[0]?.cle).toBe(String(PARCOURS_GARDES + 2))
+  })
+
+  it('relit la mémoire et écarte ce qui est illisible', () => {
+    expect(lireListeParcours(JSON.stringify([parcours, { cle: 1 }]))).toEqual([parcours])
+    expect(lireListeParcours('{')).toEqual([])
+    expect(lireListeParcours(JSON.stringify(parcours))).toEqual([])
+    expect(lireListeParcours(null)).toEqual([])
   })
 })

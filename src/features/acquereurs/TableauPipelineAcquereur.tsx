@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import TableauPipeline from '../../components/TableauPipeline'
+import { memoriserParcours } from '../../lib/parcours'
 import { nomComplet } from '../contacts/contacts'
 import CarteProjetAcquereur from './CarteProjetAcquereur'
 import {
@@ -30,6 +32,16 @@ export default function TableauPipelineAcquereur({
     }
     return { etape, libelle, critere, projets: dansEtape }
   })
+  // Chaque colonne est gardée pour l'onglet : la fiche d'un projet passe au précédent ou au
+  // suivant de sa colonne, dans l'ordre affiché.
+  const ordre = JSON.stringify(
+    colonnes.map(({ etape, projets }) => [etape, projets.map((p) => p.id)]),
+  )
+  useEffect(() => {
+    for (const [etape, ids] of JSON.parse(ordre) as [string, string[]][]) {
+      memoriserParcours('projets-acquereurs', { cle: etape, total: ids.length, ids })
+    }
+  }, [ordre])
   return (
     <TableauPipeline
       colonnes={colonnes}

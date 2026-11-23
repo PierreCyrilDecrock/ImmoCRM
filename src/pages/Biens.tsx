@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Bouton from '../components/Bouton'
 import ChampChoix from '../components/ChampChoix'
 import ChampRecherche from '../components/ChampRecherche'
@@ -30,6 +30,7 @@ import {
 } from '../features/biens/filtres'
 import NouveauBien from '../features/biens/NouveauBien'
 import { useListeBiens } from '../features/biens/liste-biens'
+import { memoriserParcours, type EtatParcours } from '../lib/parcours'
 import { useVignettesBiens } from '../features/biens/vignettes-biens'
 import { accorder } from '../lib/nombres'
 
@@ -49,6 +50,14 @@ export default function Biens() {
   const restreinte = listeBiensRestreinte(filtres)
   const nbFiltres = nombreFiltresBiens(filtres)
   const filtresSaisis = nbFiltres > 0 || filtres.prixMin !== '' || filtres.prixMax !== ''
+
+  // La liste lue est gardée pour l'onglet : la fiche d'un bien passe au précédent ou au suivant.
+  const { cle, total, rafraichissement, erreur, lignes } = liste
+  useEffect(() => {
+    if (cle === null || total === null || rafraichissement || erreur !== null) return
+    memoriserParcours('biens', { cle, total, ids: lignes.map((bien) => bien.id) })
+  }, [cle, total, rafraichissement, erreur, lignes])
+  const etatLien: EtatParcours | undefined = cle === null ? undefined : { parcours: cle }
 
   function changerFiltres(valeurs: Partial<FiltresBiens>) {
     const suivants = { ...filtres, ...valeurs }
@@ -234,6 +243,7 @@ export default function Biens() {
                   </Etiquette>
                 }
                 vers={`/biens/${bien.id}`}
+                etat={etatLien}
               />
             ))}
           </Liste>
