@@ -1,29 +1,47 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState, type ReactNode } from 'react'
+import { useParams } from 'react-router-dom'
+import BarreActionsFiche from '../components/BarreActionsFiche'
+import BarreEtapes from '../components/BarreEtapes'
 import Bouton from '../components/Bouton'
 import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
 import Etiquette from '../components/Etiquette'
 import FenetreModale from '../components/FenetreModale'
+import Icone from '../components/Icone'
 import Information from '../components/Information'
+import LienAction from '../components/LienAction'
+import MenuActions from '../components/MenuActions'
 import Message from '../components/Message'
+import NavigationFiche from '../components/NavigationFiche'
 import { useNotifications } from '../components/notifications-contexte'
+import OngletsFiche from '../components/OngletsFiche'
 import Page from '../components/Page'
+import ProfilFiche from '../components/ProfilFiche'
 import SectionJournal from '../features/activites/SectionJournal'
-import { adresseBien } from '../features/biens/biens'
-import { libelleSource, nomComplet } from '../features/contacts/contacts'
+import { cartesDeLAppareil } from '../features/aujourdhui/journee'
+import { libelleSource } from '../features/contacts/contacts'
+import { estPortable, lienSms } from '../features/contacts/telephone'
+import { appelFiche } from '../features/liens/appel-fiche'
+import { lireCompteursFiche, type CompteursFiche } from '../features/liens/compteurs-fiche'
+import {
+  LIBELLES_ONGLETS_PROJET,
+  ongletsProjet,
+  type OngletProjet,
+} from '../features/liens/fiche-projet'
+import LiensProjet from '../features/liens/LiensProjet'
 import { useChangementEtape } from '../features/projets/changement-etape'
 import FormulaireProjetVendeur from '../features/projets/FormulaireProjetVendeur'
 import {
+  aideEtapeSuivante,
   ancienneteEtape,
+  estEtapeVendeur,
   ETAPES_VENDEUR,
-  etapeSuivante,
+  etapeQuiTraine,
   genreEtatProjet,
   libelleEtape,
   libelleEtatProjet,
   libelleMotifPerte,
   libelleTypeMandat,
-  rangEtape,
   resumeEtat,
 } from '../features/projets/pipeline-vendeur'
 import {
@@ -34,12 +52,18 @@ import {
   type ProjetVendeurAffiche,
 } from '../features/projets/projets-vendeurs'
 import SortieProjet from '../features/projets/SortieProjet'
-import SectionTaches from '../features/taches/SectionTaches'
-import { dateDuJour, formaterDate } from '../lib/dates'
-import { formaterPrix } from '../lib/nombres'
-import { exigerSupabase } from '../lib/supabase'
+import ConsignerEchange from '../features/saisie/ConsignerEchange'
+import { champConsigner, placerCurseur } from '../features/saisie/curseur-consigner'
 import { ficheDeProjetVendeur } from '../features/saisie/fiches-consultees'
 import { useConsultation } from '../features/saisie/recents'
+import ProchaineTacheFiche from '../features/taches/ProchaineTacheFiche'
+import SectionTaches from '../features/taches/SectionTaches'
+import { dateDuJour, formaterDate, formaterJourCourt } from '../lib/dates'
+import { useTailleEcran } from '../lib/ecran'
+import { etatsEtapes, phraseManque, phrasePassage } from '../lib/etapes'
+import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
+import { formaterPrix } from '../lib/nombres'
+import { exigerSupabase } from '../lib/supabase'
 
 type Etat =
   | { phase: 'chargement' }
@@ -48,29 +72,52 @@ type Etat =
 
 const RETOUR = { vers: '/pipelines', libelle: 'Pipelines' }
 
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
+/** Nombre de tâches à venir montrées dans l'onglet Activité (les autres sont dans Tâches). */
+const TACHES_DANS_ACTIVITE = 3
+
+const ONGLETS = ongletsProjet('vendeur')
 
 const prix = (montant: number | null) => (montant === null ? null : formaterPrix(montant))
 
 /**
- * Fiche d'un projet vendeur : son étape (à changer d'un toucher, avec les critères de
- * sortie), ses sorties (à recontacter, perdu), ce qu'on sait du projet, puis ses tâches et
- * son journal.
+ * Fiche d'un projet de vente (étape D.7), organisée comme la fiche Contact.
+ * - Ordinateur : à gauche le profil (état, étapes en barre avec « Pour passer à l'étape
+ *   suivante : … » et « Étape suivante », sorties, vendeur et bien, prochaine action), qui
+ *   ne bouge pas ; à droite les onglets Activité, Tâches, Détails (touches 1 à 3). Depuis le
+ *   pipeline, « 2 sur 5 » et deux flèches (K, J) dans l'ordre de la colonne de l'étape.
+ * - Tablette et téléphone : un en-tête compact, les étapes, la prochaine action, puis les
+ *   onglets (vendeur et bien en tête de Détails). Sur téléphone, Appeler, SMS et Consigner
+ *   sont en bas de l'écran.
  */
 export default function FicheProjetVendeur() {
   const { id = '' } = useParams()
+  const taille = useTailleEcran()
+  const ordinateur = taille === 'ordinateur'
   const { notifier } = useNotifications()
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [version, setVersion] = useState(0)
+  const [compteurs, setCompteurs] = useState<CompteursFiche | null>(null)
   const [modification, setModification] = useState(false)
   const [sortie, setSortie] = useState<'a_recontacter' | 'perdu' | null>(null)
   const [archivage, setArchivage] = useState(false)
   const [envoi, setEnvoi] = useState(false)
+  const [focusConsigner, setFocusConsigner] = useState(false)
+  const [cartes] = useState(() => cartesDeLAppareil(navigator.userAgent))
   const toutRelire = () => setVersion((v) => v + 1)
   const changement = useChangementEtape(toutRelire)
   const aujourdhui = dateDuJour()
   useConsultation(etat.phase === 'pret' ? ficheDeProjetVendeur(etat.affiche) : null)
+
+  const [onglet, choisirOnglet] = useOngletFiche(ONGLETS)
+  // Le parcours de la colonne du pipeline d'où l'on vient.
+  const parcours = useParcoursFiche({
+    domaine: 'projets-vendeurs',
+    id,
+    actif: ordinateur,
+    chemin: (voisin) => `/pipelines/vendeurs/${voisin}`,
+    echec: "Le projet suivant n'a pas pu être lu.",
+  })
+  useRaccourcisFiche({ onglets: ONGLETS, choisir: choisirOnglet, parcours })
 
   useEffect(() => {
     let actif = true
@@ -87,6 +134,17 @@ export default function FicheProjetVendeur() {
     }
     void charger().then((suivant) => {
       if (actif) setEtat(suivant)
+    })
+    return () => {
+      actif = false
+    }
+  }, [id, version])
+
+  // Les compteurs des onglets, relus après chaque geste.
+  useEffect(() => {
+    let actif = true
+    void lireCompteursFiche(exigerSupabase(), { projetVendeurId: id }).then((lus) => {
+      if (actif) setCompteurs(lus)
     })
     return () => {
       actif = false
@@ -113,8 +171,11 @@ export default function FicheProjetVendeur() {
   const archive = projet.archived_at !== null
   const actif = projet.etat === 'actif' && !archive
   const dansLePipeline = (projet.etat === 'actif' || projet.etat === 'gagne') && !archive
-  const suivante = etapeSuivante(projet.etape)
+  const aide = actif ? aideEtapeSuivante(projet, contact?.source ?? null) : null
   const origine = { lien: { genre: 'vendeur' as const, id: projet.id }, contact, bien }
+  const titre = bien === null ? 'Projet de vente' : `Vente — ${bien.adresse}`
+  const appel = appelFiche(contact === null ? [] : [contact], 'contact introuvable')
+  const portable = contact?.telephones.find(estPortable) ?? contact?.telephones[0]
 
   async function reprendre() {
     setEnvoi(true)
@@ -181,189 +242,248 @@ export default function FicheProjetVendeur() {
   ]
   const renseignees = informations.filter((info): info is [string, string] => info[1] !== null)
 
-  return (
-    <Page
-      titre={bien === null ? 'Projet de vente' : `Vente — ${bien.adresse}`}
-      retour={RETOUR}
-      actions={
-        archive ? undefined : (
-          <Bouton variante="secondaire" icone="modifier" onClick={() => setModification(true)}>
-            Modifier
-          </Bouton>
-        )
-      }
-    >
-      {archive && (
-        <Message genre="info">
-          Ce projet est archivé depuis le {formaterDate(projet.archived_at)} : il n'apparaît plus
-          dans le pipeline ni sur les fiches.
-        </Message>
-      )}
+  const message = archive && (
+    <Message genre="info">
+      Ce projet est archivé depuis le {formaterDate(projet.archived_at)} : il n'apparaît plus dans
+      le pipeline ni sur les fiches.
+    </Message>
+  )
 
-      <div className="flex flex-wrap items-center gap-2">
+  const modifier = archive ? null : (
+    <Bouton variante="secondaire" onClick={() => setModification(true)}>
+      <Icone nom="modifier" className="size-5 md:hidden" />
+      <span className="max-md:sr-only">Modifier</span>
+    </Bouton>
+  )
+  const menu = archive ? null : (
+    <MenuActions
+      libelle="Autres actions sur le projet"
+      elements={[{ libelle: 'Archiver', icone: 'archiver', onChoisir: () => setArchivage(true) }]}
+    />
+  )
+
+  const identite = (grande: boolean) => (
+    <div className="flex min-w-0 flex-col gap-1">
+      <p className="flex flex-wrap items-center gap-2">
         <Etiquette genre={genreEtatProjet(projet.etat)}>{libelleEtatProjet(projet.etat)}</Etiquette>
-        <span className="text-sm text-encre-douce">
-          {resumeEtat(projet)}
-          {projet.etat === 'actif' &&
-            ` · ${ancienneteEtape(projet.etape_le, aujourdhui).toLowerCase()}`}
-        </span>
-      </div>
+        <span className="text-sm text-encre-douce">Projet de vente</span>
+      </p>
+      <h1
+        className={`leading-tight font-bold tracking-tight break-words text-encre ${
+          grande ? 'text-2xl' : 'text-[1.375rem] md:text-[1.75rem]'
+        }`}
+      >
+        {titre}
+      </h1>
+      <p className="text-sm text-encre-douce">{resumeEtat(projet)}</p>
+    </div>
+  )
 
-      <Carte titre="Vendeur et bien">
-        <dl className="divide-y divide-bord">
-          <Information nom="Vendeur">
-            {contact === null ? (
-              'Contact introuvable'
-            ) : (
-              <>
-                <Link to={`/contacts/${contact.id}`} className={CLASSES_LIEN}>
-                  {nomComplet(contact)}
-                </Link>
-                <span className="block text-sm text-encre-douce">
-                  Source : {libelleSource(contact.source) ?? 'non précisée'}
-                </span>
-              </>
-            )}
-          </Information>
-          <Information nom="Bien">
-            {bien === null ? (
-              'Bien introuvable'
-            ) : (
-              <Link to={`/biens/${bien.id}`} className={`${CLASSES_LIEN} break-words`}>
-                {adresseBien(bien)}
-              </Link>
-            )}
-          </Information>
-        </dl>
-      </Carte>
-
-      {dansLePipeline && (
-        <Carte titre="Étape du pipeline">
-          <ol className="flex flex-wrap gap-2" aria-label="Étapes">
-            {ETAPES_VENDEUR.map((etape) => {
-              const courante = etape.valeur === projet.etape
-              const franchie = rangEtape(etape.valeur) < rangEtape(projet.etape)
-              return (
-                <li key={etape.valeur}>
-                  <button
-                    type="button"
-                    aria-current={courante ? 'step' : undefined}
-                    disabled={courante || changement.enCours !== null}
-                    onClick={() => changement.demander(affiche, etape.valeur)}
-                    className={`flex min-h-11 flex-col items-start justify-center rounded-xl px-3 py-1 text-left ring-1 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                      courante
-                        ? 'bg-accent text-sur-plein ring-accent'
-                        : franchie
-                          ? 'bg-accent-doux text-accent-fort ring-accent/30 hover:bg-creux'
-                          : 'bg-surface text-encre ring-bord-fort hover:bg-creux'
-                    }`}
-                  >
-                    <span className="text-sm font-semibold">{etape.libelle}</span>
-                    <span className={`text-xs ${courante ? '' : 'text-encre-douce'}`}>
-                      {etape.critere}
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ol>
-          <p className="mt-3 text-sm text-encre-douce">
-            Touchez une étape pour y passer. Pour avancer, le critère de sortie des étapes franchies
-            est demandé s'il manque.
-          </p>
-          {actif && (
-            <div className="mt-4 flex flex-col gap-2 md:flex-row">
-              {suivante !== null && (
-                <Bouton
-                  disabled={changement.enCours !== null}
-                  onClick={() => changement.demander(affiche, suivante)}
-                >
-                  Passer à « {libelleEtape(suivante)} »
-                </Bouton>
-              )}
-              <Bouton variante="secondaire" onClick={() => setSortie('a_recontacter')}>
-                À recontacter…
-              </Bouton>
-              <Bouton variante="secondaire" onClick={() => setSortie('perdu')}>
-                Perdu…
-              </Bouton>
-            </div>
-          )}
-        </Carte>
-      )}
-
-      {(projet.etat === 'a_recontacter' || projet.etat === 'perdu') && !archive && (
-        <Carte titre="Hors du pipeline">
-          <dl className="divide-y divide-bord">
-            <Information nom="Étape atteinte">{libelleEtape(projet.etape)}</Information>
-            {projet.etat === 'a_recontacter' && (
-              <Information nom="À recontacter le">
-                {formaterDate(projet.recontacter_le)}
-              </Information>
-            )}
-            {projet.etat === 'perdu' && (
-              <Information nom="Motif">
-                {libelleMotifPerte(projet.motif_perte)}
-                {projet.motif_perte_detail !== '' && (
-                  <span className="block text-sm text-encre-douce">
-                    {projet.motif_perte_detail}
-                  </span>
-                )}
-              </Information>
-            )}
-          </dl>
-          <div className="mt-4">
-            <Bouton variante="secondaire" disabled={envoi} onClick={() => void reprendre()}>
-              {envoi ? 'Reprise…' : 'Remettre dans le pipeline'}
-            </Bouton>
-          </div>
-        </Carte>
-      )}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="min-w-0">
-          <Carte titre="Le projet">
-            {renseignees.length === 0 && projet.notes === '' ? (
-              <p className="text-sm text-encre-douce">
-                Rien de noté pour l'instant. Touchez « Modifier » pour ajouter le motif, le délai,
-                le prix espéré ou la concurrence.
-              </p>
-            ) : (
-              <dl className="divide-y divide-bord">
-                {renseignees.map(([nom, valeur]) => (
-                  <Information key={nom} nom={nom}>
-                    {valeur}
-                  </Information>
-                ))}
-                {projet.notes !== '' && (
-                  <Information nom="Notes">
-                    <span className="break-words whitespace-pre-wrap">{projet.notes}</span>
-                  </Information>
-                )}
-              </dl>
-            )}
-          </Carte>
-        </div>
-        <div className="min-w-0">
-          <SectionTaches projet={origine} version={version} onChangement={toutRelire} />
-        </div>
-        <div className="min-w-0 lg:col-span-2">
-          <SectionJournal projet={origine} version={version} onChangement={toutRelire} />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <p className="text-sm text-encre-douce">
-          Projet ouvert le {formaterDate(projet.created_at)}, modifié le{' '}
-          {formaterDate(projet.updated_at)}.
-        </p>
-        {!archive && (
-          <Bouton variante="secondaire" icone="archiver" onClick={() => setArchivage(true)}>
-            Archiver
+  // L'étape en barre, ce qu'il faut pour la suivante, et les sorties du pipeline.
+  const etapes = dansLePipeline && (
+    <Carte titre="Étape">
+      <BarreEtapes
+        etapes={etatsEtapes(ETAPES_VENDEUR, projet.etape, projet.etat === 'gagne')}
+        anciennete={
+          projet.etat === 'actif'
+            ? {
+                texte: ancienneteEtape(projet.etape_le, aujourdhui),
+                alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
+              }
+            : undefined
+        }
+        critere={
+          aide === null ? undefined : phrasePassage(libelleEtape(aide.suivante), aide.critere)
+        }
+        manque={aide === null ? undefined : phraseManque(aide.manquantes)}
+        suivante={
+          aide === null
+            ? undefined
+            : {
+                libelle: libelleEtape(aide.suivante),
+                onPasser: () => changement.demander(affiche, aide.suivante),
+                desactive: changement.enCours !== null,
+              }
+        }
+        choix={{
+          onChoisir: (valeur) => {
+            if (estEtapeVendeur(valeur)) changement.demander(affiche, valeur)
+          },
+          desactive: changement.enCours !== null,
+        }}
+      />
+      <p className="mt-2 text-sm text-encre-douce">
+        Touchez une étape pour y passer. Pour avancer, le critère de sortie des étapes franchies est
+        demandé s'il manque.
+      </p>
+      {actif && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Bouton variante="secondaire" onClick={() => setSortie('a_recontacter')}>
+            À recontacter…
           </Bouton>
-        )}
-      </div>
+          <Bouton variante="secondaire" onClick={() => setSortie('perdu')}>
+            Perdu…
+          </Bouton>
+        </div>
+      )}
+    </Carte>
+  )
 
+  const horsPipeline = (projet.etat === 'a_recontacter' || projet.etat === 'perdu') && !archive && (
+    <Carte titre="Hors du pipeline">
+      <dl className="divide-y divide-bord">
+        <Information nom="Étape atteinte" empilee={ordinateur}>
+          {libelleEtape(projet.etape)}
+        </Information>
+        {projet.etat === 'a_recontacter' && (
+          <Information nom="À recontacter le" empilee={ordinateur}>
+            {formaterDate(projet.recontacter_le)}
+          </Information>
+        )}
+        {projet.etat === 'perdu' && (
+          <Information nom="Motif" empilee={ordinateur}>
+            {libelleMotifPerte(projet.motif_perte)}
+            {projet.motif_perte_detail !== '' && (
+              <span className="block text-sm text-encre-douce">{projet.motif_perte_detail}</span>
+            )}
+          </Information>
+        )}
+      </dl>
+      <div className="mt-4">
+        <Bouton variante="secondaire" disabled={envoi} onClick={() => void reprendre()}>
+          {envoi ? 'Reprise…' : 'Remettre dans le pipeline'}
+        </Bouton>
+      </div>
+    </Carte>
+  )
+
+  const liens = (
+    <LiensProjet
+      titre="Vendeur et bien"
+      contact={{
+        role: 'Vendeur',
+        fiche: contact,
+        detail:
+          contact === null
+            ? undefined
+            : `Source : ${libelleSource(contact.source) ?? 'non précisée'}`,
+      }}
+      bien={bien === null ? undefined : { role: 'Bien', fiche: bien }}
+      cartes={cartes}
+      empilee={ordinateur}
+    />
+  )
+
+  const prochaineAction = (
+    <ProchaineTacheFiche
+      fiche={{ projet: origine }}
+      version={version}
+      onChangement={toutRelire}
+      libelle="Prochaine action"
+      vide="Aucune action prévue pour ce projet"
+      alerte={actif}
+      repli={
+        contact?.prochaine_action_le == null
+          ? undefined
+          : `Prochaine action du vendeur, hors de ce projet : ${formaterJourCourt(contact.prochaine_action_le, aujourdhui)}.`
+      }
+      compacte={ordinateur}
+      lectureSeule={archive}
+    />
+  )
+  const ligneDates = (
+    <p className="text-sm text-encre-douce">{ligneDatesFiche(projet, aujourdhui, true)}</p>
+  )
+
+  function contenuOnglet(choisi: OngletProjet): ReactNode {
+    switch (choisi) {
+      case 'activite':
+        return (
+          <>
+            {!archive && (
+              <ConsignerEchange
+                key={projet.id}
+                fiche={{ projet: origine }}
+                version={version}
+                onEnregistre={toutRelire}
+                demandeFocus={focusConsigner}
+                onFocusDonne={() => setFocusConsigner(false)}
+              />
+            )}
+            <SectionTaches
+              projet={origine}
+              version={version}
+              onChangement={toutRelire}
+              titre="À venir"
+              limite={TACHES_DANS_ACTIVITE}
+              onVoirTout={() => choisirOnglet('taches')}
+            />
+            <SectionJournal
+              projet={origine}
+              version={version}
+              onChangement={toutRelire}
+              historique
+            />
+          </>
+        )
+      case 'taches':
+        return <SectionTaches projet={origine} version={version} onChangement={toutRelire} />
+      case 'biens':
+      case 'details':
+        return (
+          <>
+            {!ordinateur && liens}
+            <Carte titre="Le projet">
+              {renseignees.length === 0 && projet.notes === '' ? (
+                <p className="text-sm text-encre-douce">
+                  Rien de noté pour l'instant. Touchez « Modifier » pour ajouter le motif, le délai,
+                  le prix espéré ou la concurrence.
+                </p>
+              ) : (
+                <dl className="divide-y divide-bord">
+                  {renseignees.map(([nom, valeur]) => (
+                    <Information key={nom} nom={nom}>
+                      {valeur}
+                    </Information>
+                  ))}
+                  {projet.notes !== '' && (
+                    <Information nom="Notes">
+                      <span className="break-words whitespace-pre-wrap">{projet.notes}</span>
+                    </Information>
+                  )}
+                </dl>
+              )}
+            </Carte>
+            {!ordinateur && ligneDates}
+          </>
+        )
+    }
+  }
+
+  const compteurDe: Record<OngletProjet, number | null | undefined> = {
+    activite: compteurs?.activites,
+    taches: compteurs?.taches,
+    biens: undefined,
+    details: undefined,
+  }
+  const ongletsFiche = (
+    <OngletsFiche
+      id="onglets-fiche-projet"
+      libelle="Rubriques du projet"
+      options={ONGLETS.map((valeur) => ({
+        valeur,
+        libelle: LIBELLES_ONGLETS_PROJET[valeur],
+        compteur: compteurDe[valeur],
+      }))}
+      valeur={onglet}
+      onChange={choisirOnglet}
+    >
+      {contenuOnglet(onglet)}
+    </OngletsFiche>
+  )
+
+  const fenetres = (
+    <>
       {changement.fenetre}
       {modification && (
         <FormulaireProjetVendeur
@@ -407,6 +527,121 @@ export default function FicheProjetVendeur() {
           recontacter » : le motif est gardé pour les statistiques.
         </p>
       </FenetreModale>
+    </>
+  )
+
+  if (ordinateur) {
+    return (
+      <Page
+        titre={titre}
+        retour={RETOUR}
+        enTete={null}
+        finRetour={
+          parcours !== null && (
+            <NavigationFiche
+              position={parcours.position}
+              quoi="la colonne du pipeline"
+              enCours={parcours.enCours}
+              onPrecedent={parcours.onPrecedent}
+              onSuivant={parcours.onSuivant}
+            />
+          )
+        }
+      >
+        {message}
+        <div className="grid items-start gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
+          <ProfilFiche libelle={`Profil du projet ${titre}`}>
+            {identite(true)}
+            {etapes}
+            {horsPipeline}
+            {liens}
+            {prochaineAction}
+            <div className="flex flex-col gap-2">
+              {ligneDates}
+              <div className="flex gap-2">
+                {modifier}
+                {menu}
+              </div>
+            </div>
+          </ProfilFiche>
+          {ongletsFiche}
+        </div>
+        {fenetres}
+      </Page>
+    )
+  }
+
+  return (
+    <Page
+      titre={titre}
+      retour={RETOUR}
+      enTete={
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">{identite(false)}</div>
+          <div className="flex shrink-0 gap-2">
+            {modifier}
+            {menu}
+          </div>
+        </div>
+      }
+    >
+      {message}
+      {etapes}
+      {horsPipeline}
+      {prochaineAction}
+      {taille === 'tablette' && (
+        <div className="flex gap-2">
+          <LienAction
+            libelle="Appeler"
+            icone="telephone"
+            href={appel.lien}
+            annonce={appel.annonce}
+          />
+          <LienAction
+            libelle="SMS"
+            icone="sms"
+            variante="secondaire"
+            href={portable === undefined ? undefined : lienSms(portable)}
+          />
+        </div>
+      )}
+      {ongletsFiche}
+      {taille === 'telephone' && (
+        <BarreActionsFiche libelle={`Actions sur ${titre}`}>
+          <div className="flex flex-[2]">
+            <LienAction
+              libelle="Appeler"
+              icone="telephone"
+              href={appel.lien}
+              annonce={appel.annonce}
+            />
+          </div>
+          <LienAction
+            libelle="SMS"
+            icone="sms"
+            variante="secondaire"
+            href={portable === undefined ? undefined : lienSms(portable)}
+          />
+          <LienAction
+            libelle="Consigner"
+            icone="journal"
+            variante="secondaire"
+            onClick={
+              archive
+                ? undefined
+                : () => {
+                    const champ = champConsigner()
+                    if (champ !== null) placerCurseur(champ)
+                    else {
+                      choisirOnglet('activite')
+                      setFocusConsigner(true)
+                    }
+                  }
+            }
+          />
+        </BarreActionsFiche>
+      )}
+      {fenetres}
     </Page>
   )
 }

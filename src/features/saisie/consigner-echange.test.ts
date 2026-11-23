@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fauxClient } from '../../lib/faux-client'
+import { bienEssai } from '../biens/bien-essai'
 import { contactEssai } from '../contacts/contact-essai'
 import { DELAIS_PAR_DEFAUT } from '../relances/delais'
 import { tacheEssai } from '../taches/tache-essai'
@@ -11,12 +12,14 @@ import {
   brouillonEchange,
   cleBrouillonEchange,
   enregistrerEchange,
+  ficheEchange,
   lireBrouillonGarde,
   messageEchange,
   preparerEchange,
   prochaineEffective,
   resteePrevue,
   tacheAClore,
+  tachesDeLaFiche,
   texteDejaPrevu,
   texteTacheClose,
   TYPES_ECHANGE,
@@ -365,5 +368,92 @@ describe('brouillon gardé sur l’appareil', () => {
       visite: { pointsPositifs: '', pointsNegatifs: '', interet: '', suite: 'offre' },
       le: '2026-11-22T10:00:00.000Z',
     })
+  })
+})
+
+describe('échange consigné depuis une fiche Bien ou Projet (étape D.7)', () => {
+  const BIEN_ID = '00000000-0000-4000-8000-0000000000b1'
+  const PROJET_ID = '00000000-0000-4000-8000-0000000000p1'
+  const bien = bienEssai({ id: BIEN_ID })
+  const relanceDuBien = tacheEssai({
+    id: 'relance-bien',
+    echeance: '2026-11-22',
+    contact_id: CONTACT_ID,
+    bien_id: BIEN_ID,
+  })
+  const relanceDuProjet = tacheEssai({
+    id: 'relance-projet',
+    echeance: '2026-11-22',
+    contact_id: CONTACT_ID,
+    projet_vendeur_id: PROJET_ID,
+  })
+
+  it('ne clôt que les tâches liées à la fiche ouverte', () => {
+    const taches = [relanceEnRetard, relanceDuBien, relanceDuProjet]
+    expect(tachesDeLaFiche(taches, { contactId: CONTACT_ID })).toHaveLength(3)
+    expect(tachesDeLaFiche(taches, { bienId: BIEN_ID }).map((t) => t.id)).toEqual(['relance-bien'])
+    expect(tachesDeLaFiche(taches, { projetVendeurId: PROJET_ID }).map((t) => t.id)).toEqual([
+      'relance-projet',
+    ])
+    expect(tachesDeLaFiche(taches, { projetAcquereurId: PROJET_ID })).toEqual([])
+  })
+
+  it('garde un brouillon par fiche', () => {
+    expect(ficheEchange({ contactId: CONTACT_ID })).toBe(CONTACT_ID)
+    expect(ficheEchange({ bienId: BIEN_ID })).toBe(`bien.${BIEN_ID}`)
+    expect(ficheEchange({ projetVendeurId: PROJET_ID })).toBe(`vendeur.${PROJET_ID}`)
+    expect(ficheEchange({ projetAcquereurId: PROJET_ID })).toBe(`acquereur.${PROJET_ID}`)
+  })
+
+  it('lie l’activité et la relance au bien et au projet de la fiche', () => {
+    const preparation = preparerEchange(
+      { ...brouillonEchange(contact), compteRendu: 'Point sur le prix.' },
+      {
+        ...CONTEXTE,
+        taches: [],
+        close: null,
+        liens: { bien, projet: { genre: 'vendeur', id: PROJET_ID } },
+      },
+    )
+    expect(preparation.ok).toBe(true)
+    if (!preparation.ok || preparation.envoi.genre !== 'simple') return
+    const { activite, tache } = preparation.envoi.valeurs
+    expect(activite).toMatchObject({
+      contact_id: CONTACT_ID,
+      bien_id: BIEN_ID,
+      projet_vendeur_id: PROJET_ID,
+      projet_acquereur_id: null,
+    })
+    expect(tache).toMatchObject({
+      contact_id: CONTACT_ID,
+      bien_id: BIEN_ID,
+      projet_vendeur_id: PROJET_ID,
+    })
+  })
+
+  it('sans contact sur un bien : une note au journal du bien, rien de prévu ensuite', () => {
+    const brouillon = {
+      ...brouillonEchange(null),
+      type: 'note' as const,
+      compteRendu: 'Toiture refaite.',
+    }
+    const refuse = preparerEchange(brouillon, { ...CONTEXTE, taches: [], close: null })
+    expect(refuse).toMatchObject({ ok: false, erreurs: { contact: 'Choisissez le contact.' } })
+    const preparation = preparerEchange(brouillon, {
+      ...CONTEXTE,
+      taches: [],
+      close: null,
+      liens: { bien },
+      contactFacultatif: true,
+    })
+    expect(preparation.ok).toBe(true)
+    if (!preparation.ok || preparation.envoi.genre !== 'simple') return
+    expect(preparation.envoi.valeurs.activite).toMatchObject({
+      type: 'note',
+      contact_id: null,
+      bien_id: BIEN_ID,
+    })
+    expect(preparation.envoi.valeurs.tache).toBeNull()
+    expect(messageEchange(null, null, AUJOURDHUI)).toBe('Ajouté au journal.')
   })
 })

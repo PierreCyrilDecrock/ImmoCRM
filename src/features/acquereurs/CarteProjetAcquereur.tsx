@@ -58,6 +58,8 @@ export default function CarteProjetAcquereur({
       action={prochaineActionAcquereur(affiche, aujourdhui)}
       onSaisir={onSaisir}
       estompee={estompee}
+      // La colonne de l'étape : la fiche passe au projet voisin de cette colonne.
+      etat={{ parcours: projet.etape }}
     />
   )
 }

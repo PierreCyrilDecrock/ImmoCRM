@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { compter, type Resultat } from '../../lib/donnees'
 import { lireDernierEchange, type Activite } from '../activites/activites'
+import { sommeOuNull } from '../liens/compteurs-fiche'
 
 /**
  * Les compteurs des onglets de la fiche Contact et son dernier échange. Des comptages sans
@@ -39,13 +40,10 @@ export async function lireCompteursContact(
     }),
     lireDernierEchange(client, contactId),
   ])
-  const projets = [nombre(vendeurs), nombre(acquereurs), nombre(coAcquereurs)]
   return {
     activites: nombre(activites),
     taches: nombre(taches),
-    projets: projets.some((n) => n === null)
-      ? null
-      : projets.reduce<number>((somme, n) => somme + (n ?? 0), 0),
+    projets: sommeOuNull([nombre(vendeurs), nombre(acquereurs), nombre(coAcquereurs)]),
     dernier: dernier.ok ? dernier.donnees : undefined,
   }
 }

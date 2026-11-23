@@ -4,7 +4,11 @@ import { exigerSupabase } from '../../lib/supabase'
 import { chercherBiens, TAILLE_PAGE_BIENS, type Bien } from './biens'
 import { conditionsBiens, type FiltresBiens } from './filtres'
 
-const lirePage: LecteurPage<Bien> = (cle, debut, compter) => {
+/**
+ * Lit une page de 50 biens à partir du rang `debut`, pour la recherche décrite par `cle`
+ * (celle de `useListeBiens`). Sert aussi à la fiche pour trouver le bien suivant.
+ */
+export const lirePageBiens: LecteurPage<Bien> = (cle, debut, compter) => {
   const [conditions, archives] = JSON.parse(cle) as [Filtre<'biens'>[], boolean]
   return chercherBiens(exigerSupabase(), { conditions, archives, debut, compter })
 }
@@ -16,7 +20,7 @@ const lirePage: LecteurPage<Bien> = (cle, debut, compter) => {
 export function useListeBiens(filtres: FiltresBiens, archives: boolean): ListePaginee<Bien> {
   return useListePaginee(
     JSON.stringify([conditionsBiens(filtres), archives]),
-    lirePage,
+    lirePageBiens,
     TAILLE_PAGE_BIENS,
   )
 }

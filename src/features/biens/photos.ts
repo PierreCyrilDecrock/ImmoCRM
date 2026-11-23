@@ -62,6 +62,12 @@ export function mettreEnTete(ids: readonly string[], id: string): string[] {
   return [id, ...ids.filter((autre) => autre !== id)]
 }
 
+/** Le rang voisin dans la galerie, en revenant au début après la dernière photo. */
+export function rangSuivant(rang: number, total: number, sens: 1 | -1): number {
+  if (total <= 0) return 0
+  return (rang + sens + total) % total
+}
+
 export type NiveauEspace = 'normal' | 'alerte' | 'danger'
 
 /** Part de l'espace gratuit occupée, en pourcentage, et niveau d'alerte correspondant. */

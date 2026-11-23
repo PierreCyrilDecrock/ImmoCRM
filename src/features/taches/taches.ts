@@ -364,6 +364,26 @@ export async function lireProchaineTache(
   return { ok: true, donnees: page.donnees.lignes[0] ?? null }
 }
 
+/**
+ * La prochaine tâche à faire liée à une fiche (un bien, un projet), avec son contact et son
+ * bien, ou `null` s'il n'y en a pas. Deux lectures au plus.
+ */
+export async function lireProchaineTacheLiee(
+  client: SupabaseClient,
+  lien: LienFiche,
+): Promise<Resultat<TacheAffichee | null>> {
+  const page = await listerPage(client, 'taches', {
+    filtres: [filtreLien(lien), { colonne: 'etat', genre: 'egal', valeur: 'a_faire' }],
+    tri: TRI_A_FAIRE,
+    debut: 0,
+    taille: 1,
+  })
+  if (!page.ok) return page
+  const completees = await completerTaches(client, page.donnees.lignes)
+  if (!completees.ok) return completees
+  return { ok: true, donnees: completees.donnees[0] ?? null }
+}
+
 // ---------------------------------------------------------------------------
 // Écriture
 // ---------------------------------------------------------------------------

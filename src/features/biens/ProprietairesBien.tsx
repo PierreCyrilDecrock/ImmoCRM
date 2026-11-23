@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import Bouton from '../../components/Bouton'
 import Carte from '../../components/Carte'
@@ -7,23 +7,34 @@ import FenetreModale from '../../components/FenetreModale'
 import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import { exigerSupabase } from '../../lib/supabase'
+import BoutonAppel from '../aujourdhui/BoutonAppel'
 import { nomComplet, type Contact } from '../contacts/contacts'
 import SelecteurContact from '../contacts/SelecteurContact'
 import {
   ajouterProprietaire,
   formaterQuotePart,
   lireQuotePart,
-  listerProprietaires,
   modifierQuotePart,
   remarqueQuotesParts,
   retirerProprietaire,
   type Proprietaire,
 } from './proprietaires'
 
-type Etat =
+/** Les propriétaires lus par la fiche : en cours de lecture, en échec, ou la liste. */
+export type EtatProprietaires =
   | { phase: 'chargement' }
   | { phase: 'erreur'; message: string }
   | { phase: 'pret'; proprietaires: Proprietaire[] }
+
+type Props = {
+  bienId: string
+  /** Lus par la fiche, qui s'en sert aussi pour « Appeler le propriétaire » et Consigner. */
+  etat: EtatProprietaires
+  /** Appelé après un ajout, un retrait ou une quote-part : la fiche relit les propriétaires. */
+  onChangement: () => void
+  /** Fiche archivée : la liste seule, sans ajout. */
+  lectureSeule?: boolean
+}
 
 /** Ce que la fenêtre est en train de faire : choisir un contact, puis préciser sa quote-part. */
 type Saisie =
@@ -34,38 +45,19 @@ const CLASSES_LIEN =
 
 /**
  * Carte « Propriétaires » de la fiche d'un bien : la liste (chaque nom ouvre la fiche du
- * contact), l'ajout par la recherche, la quote-part facultative et le retrait.
+ * contact, « Appeler » d'un toucher, accord pour être appelé respecté), l'ajout par la
+ * recherche, la quote-part facultative et le retrait.
  */
-export default function ProprietairesBien({ bienId }: { bienId: string }) {
+export default function ProprietairesBien({
+  bienId,
+  etat,
+  onChangement,
+  lectureSeule = false,
+}: Props) {
   const { notifier } = useNotifications()
-  const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [saisie, setSaisie] = useState<Saisie | null>(null)
   const [erreurPart, setErreurPart] = useState<string | undefined>(undefined)
   const [envoi, setEnvoi] = useState(false)
-
-  async function charger() {
-    const resultat = await listerProprietaires(exigerSupabase(), bienId)
-    setEtat(
-      resultat.ok
-        ? { phase: 'pret', proprietaires: resultat.donnees }
-        : { phase: 'erreur', message: resultat.erreur.message },
-    )
-  }
-
-  useEffect(() => {
-    let actif = true
-    void listerProprietaires(exigerSupabase(), bienId).then((resultat) => {
-      if (!actif) return
-      setEtat(
-        resultat.ok
-          ? { phase: 'pret', proprietaires: resultat.donnees }
-          : { phase: 'erreur', message: resultat.erreur.message },
-      )
-    })
-    return () => {
-      actif = false
-    }
-  }, [bienId])
 
   const proprietaires = etat.phase === 'pret' ? etat.proprietaires : []
 
@@ -111,7 +103,7 @@ export default function ProprietairesBien({ bienId }: { bienId: string }) {
     }
     notifier('succes', saisie.lienId === null ? 'Propriétaire ajouté' : 'Quote-part enregistrée')
     fermer()
-    await charger()
+    onChangement()
   }
 
   async function retirer(lienId: string) {
@@ -124,7 +116,7 @@ export default function ProprietairesBien({ bienId }: { bienId: string }) {
     }
     notifier('succes', 'Propriétaire retiré')
     fermer()
-    await charger()
+    onChangement()
   }
 
   const remarque = remarqueQuotesParts(proprietaires.map((p) => p.lien.quote_part))
@@ -141,8 +133,8 @@ export default function ProprietairesBien({ bienId }: { bienId: string }) {
       {proprietaires.length > 0 && (
         <ul className="divide-y divide-bord">
           {proprietaires.map(({ lien, contact }) => (
-            <li key={lien.id} className="flex min-h-11 items-center gap-3 py-1">
-              <span className="min-w-0 flex-1">
+            <li key={lien.id} className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 py-1">
+              <span className="min-w-[8rem] flex-1">
                 <Link to={`/contacts/${contact.id}`} className={`${CLASSES_LIEN} break-words`}>
                   {nomComplet(contact)}
                 </Link>
@@ -150,19 +142,28 @@ export default function ProprietairesBien({ bienId }: { bienId: string }) {
                   <span className="text-sm text-encre-douce"> (fiche archivée)</span>
                 )}
               </span>
-              <Bouton
-                variante="discret"
-                aria-label={`Quote-part de ${nomComplet(contact)}`}
-                onClick={() => choisir(contact)}
-              >
-                {lien.quote_part === null ? 'Quote-part' : formaterQuotePart(lien.quote_part)}
-              </Bouton>
+              {lectureSeule ? (
+                lien.quote_part !== null && (
+                  <span className="text-sm text-encre-douce">
+                    {formaterQuotePart(lien.quote_part)}
+                  </span>
+                )
+              ) : (
+                <Bouton
+                  variante="discret"
+                  aria-label={`Quote-part de ${nomComplet(contact)}`}
+                  onClick={() => choisir(contact)}
+                >
+                  {lien.quote_part === null ? 'Quote-part' : formaterQuotePart(lien.quote_part)}
+                </Bouton>
+              )}
+              <BoutonAppel contact={contact} />
             </li>
           ))}
         </ul>
       )}
       {remarque !== null && <p className="mt-2 text-sm text-alerte">{remarque}</p>}
-      {etat.phase === 'pret' && (
+      {etat.phase === 'pret' && !lectureSeule && (
         <div className="mt-3">
           <Bouton
             variante="secondaire"

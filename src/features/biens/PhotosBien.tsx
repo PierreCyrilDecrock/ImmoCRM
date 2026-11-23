@@ -52,7 +52,14 @@ async function chargerPhotos(
  * (chaque photo est compressée avant l'envoi), choix de la photo principale, ordre,
  * suppression. Les images s'affichent par des adresses temporaires.
  */
-export default function PhotosBien({ bienId }: { bienId: string }) {
+export default function PhotosBien({
+  bienId,
+  onChangement,
+}: {
+  bienId: string
+  /** Appelé après un ajout, un changement d'ordre ou une suppression (photo principale). */
+  onChangement?: () => void
+}) {
   const { notifier } = useNotifications()
   const { session } = useSession()
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
@@ -148,6 +155,7 @@ export default function PhotosBien({ bienId }: { bienId: string }) {
 
     if (ajoutees > 0) {
       notifier('succes', accorder(ajoutees, 'photo ajoutée', 'photos ajoutées'))
+      onChangement?.()
     }
     const remarques = [
       echec === null ? null : `L'envoi a échoué. ${echec}`,
@@ -192,7 +200,9 @@ export default function PhotosBien({ bienId }: { bienId: string }) {
     if (!resultat.ok) {
       notifier('erreur', `L'ordre n'a pas pu être enregistré. ${resultat.erreur.message}`)
       await recharger()
+      return
     }
+    onChangement?.()
   }
 
   async function supprimer(photo: PhotoBien) {
@@ -206,6 +216,7 @@ export default function PhotosBien({ bienId }: { bienId: string }) {
     fermer()
     notifier('succes', 'Photo supprimée')
     await recharger()
+    onChangement?.()
   }
 
   const ids = photos.map((photo) => photo.id)
