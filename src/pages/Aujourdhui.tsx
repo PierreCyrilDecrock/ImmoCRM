@@ -25,10 +25,12 @@ import {
   finDuDernierRendezVous,
   placeDuTrait,
   progression,
+  rendezVousCiDessus,
   resumeJournee,
   salutation,
 } from '../features/aujourdhui/maintenant'
 import {
+  basculerRelance,
   compteurRappels,
   echeanceADroite,
   filtrerRappels,
@@ -38,6 +40,7 @@ import {
   memoriserFiltreRappels,
   parUrgence,
   premieresRelances,
+  relanceDeplieeAffichee,
   RELANCES_D_EMBLEE,
   videRappels,
   type FiltreRappels,
@@ -52,6 +55,7 @@ import { useGestesTache } from '../features/taches/gestes-tache'
 import LigneTache from '../features/taches/LigneTache'
 import { dateDuJour, formaterJourEtSemaine, heureDuMoment, minutesDuJour } from '../lib/dates'
 import type { Resultat } from '../lib/donnees'
+import { useSurvolPossible } from '../lib/ecran'
 import { useMaintenant } from '../lib/horloge'
 import { exigerSupabase } from '../lib/supabase'
 
@@ -115,6 +119,9 @@ export default function Aujourdhui() {
   const [aPlanifier, setAPlanifier] = useState<Contact | null>(null)
   const [filtreRappels, setFiltreRappels] = useState<FiltreRappels>(filtreRappelsMemorise)
   const [toutesRelances, setToutesRelances] = useState(false)
+  // Sur écran tactile, une seule relance dépliée à la fois.
+  const [relanceTouchee, setRelanceTouchee] = useState<string | null>(null)
+  const survol = useSurvolPossible()
   const derniereLecture = useRef(0)
   const [cartes] = useState(() => cartesDeLAppareil(navigator.userAgent))
 
@@ -213,6 +220,8 @@ export default function Aujourdhui() {
     rappelsAffiches,
     toutesRelances,
   )
+  const relanceDepliee = relanceDeplieeAffichee(relanceTouchee, relancesMontrees)
+  const ciDessus = rendezVousCiDessus(choix)
   const groupesTaches = grouperTaches(lignesTaches, aujourdhui)
 
   return (
@@ -281,6 +290,7 @@ export default function Aujourdhui() {
                       onCocher={() => gestes.cocher(affichee)}
                       onOuvrir={() => gestes.ouvrir(affichee)}
                       passe={etatRendezVous(affichee.tache, minutes) === 'passe'}
+                      ciDessus={affichee.id === ciDessus}
                     />
                   </Fragment>
                 ))}
@@ -330,6 +340,11 @@ export default function Aujourdhui() {
                     relance={relance}
                     aujourdhui={aujourdhui}
                     occupee={gestes.occupee === relance.id}
+                    survol={survol}
+                    depliee={relance.id === relanceDepliee}
+                    onBasculer={() =>
+                      setRelanceTouchee(basculerRelance(relanceDepliee, relance.id))
+                    }
                     onConsigner={() => gestes.cocher(relance)}
                     onReporter={() => gestes.reporter(relance)}
                     onReporterA={(echeance) => gestes.reporterA(relance, echeance)}

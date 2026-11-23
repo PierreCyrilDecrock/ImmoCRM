@@ -1,55 +1,113 @@
+import { useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import Bouton from '../../components/Bouton'
-import Icone from '../../components/Icone'
+import LienBouton from '../../components/LienBouton'
 import LigneGlissable from '../../components/LigneGlissable'
 import { VISIBLE_AU_SURVOL } from '../../components/survol'
 import { nomComplet } from '../contacts/contacts'
 import { initialesDe } from '../saisie/recents'
 import ReportsRapides from '../taches/ReportsRapides'
 import BoutonAppel from './BoutonAppel'
-import { enUneLigne } from './journee'
+import InitialesRole from './InitialesRole'
 import type { Relance } from './lecture-journee'
-import { dernierEchange, pastilleRetard, rolesDuContact } from './ordre-journee'
+import { dernierEchange, pastilleRetard, rolesDuContact, teinteRole } from './ordre-journee'
 
 type Props = {
   relance: Relance
   aujourdhui: string
   occupee: boolean
+  /**
+   * Appareil à souris (ordinateur) : la ligne mène à la fiche, et les reports en un geste
+   * avec « Fait » apparaissent au survol ou au clavier. Sinon, toucher la ligne la déplie.
+   */
+  survol: boolean
+  /** La ligne est dépliée (écran tactile ; une seule à la fois, choisie par la page). */
+  depliee: boolean
+  /** Toucher la ligne : la déplie, ou la replie. */
+  onBasculer: () => void
   /** Ouvre la boucle de relance : résultat, compte rendu, prochaine action. */
   onConsigner: () => void
   /** Ouvre la fenêtre de report (délais et calendrier). */
   onReporter: () => void
   /** Reporte aussitôt à cette date, avec « Annuler » dans la confirmation. */
   onReporterA: (echeance: string) => void
+  /** Ouvre la relance elle-même (relance sans contact : il n'y a pas de fiche). */
   onOuvrir: () => void
 }
 
-/** Sur un appareil à souris seulement (ordinateur) ; caché sur écran tactile. */
-const SOURIS_SEULEMENT = 'hidden [@media(hover:hover)]:inline-flex'
-/** Sur écran tactile seulement : sur ordinateur, les reports en un geste le remplacent. */
-const TACTILE_SEULEMENT = 'inline-flex [@media(hover:hover)]:hidden'
+const CLASSES_ZONE =
+  'flex min-h-16 w-full min-w-0 items-center gap-3 rounded-lg py-2 pr-1 pl-2 text-left focus-visible:outline-2 focus-visible:outline-accent'
 
 /**
- * Un contact à rappeler. En tête, ses initiales, son nom, son rôle et le retard en pastille
- * rouge ; puis le motif (le titre de la tâche) en texte principal, et le dernier échange.
- * « Appeler » compose le numéro et ouvre aussitôt la saisie du résultat ; « Consigner »
- * l'ouvre sans appeler. Sur ordinateur, les reports en un geste et « Fait » apparaissent au
- * survol ou au clavier ; sur téléphone, la ligne se glisse pour découvrir « Reporter » et
- * « Fait », et le bouton « Reporter » reste visible.
+ * Un contact à rappeler, en une ligne de 64 px : les initiales colorées selon le rôle, le nom
+ * en gras et le motif (titre de la tâche) dessous, le retard en pastille courte (« 5 j ») et
+ * un seul geste, Appeler, qui compose le numéro et ouvre aussitôt la saisie du résultat.
+ *
+ * Sur écran tactile, toucher la ligne la déplie (l'équivalent visible du glisser) : le
+ * dernier échange, puis Consigner, Fait, la fiche et les reports en un geste ; Échap la
+ * replie. Glisser la ligne découvre toujours Reporter et Fait. Sur ordinateur, la ligne
+ * garde la même forme, mène à la fiche, montre le dernier échange à droite du motif, et les
+ * reports avec « Fait » apparaissent au survol ou au clavier.
  */
 export default function LigneRelance({
   relance,
   aujourdhui,
   occupee,
+  survol,
+  depliee,
+  onBasculer,
   onConsigner,
   onReporter,
   onReporterA,
   onOuvrir,
 }: Props) {
   const { tache, contact, derniere } = relance
+  const bascule = useRef<HTMLButtonElement>(null)
   const retard = pastilleRetard(tache.echeance, aujourdhui)
-  const motif = enUneLigne(tache.motif)
-  const initiales = contact === null ? '' : initialesDe(nomComplet(contact))
+  const nom = contact === null ? 'Sans contact' : nomComplet(contact)
+  const role = contact === null ? null : rolesDuContact(contact)
+  // Une lecture en échec (`undefined`) ne dit rien : « Jamais contacté » seulement si c'est vrai.
+  const echange =
+    contact === null || derniere === undefined ? null : dernierEchange(derniere, aujourdhui)
+  const peutAppeler = contact !== null && contact.telephones[0] !== undefined
+  const idGestes = `gestes-relance-${relance.id}`
+  const ouverte = !survol && depliee
+
+  function surTouche(evenement: KeyboardEvent<HTMLDivElement>) {
+    if (evenement.key !== 'Escape' || !ouverte) return
+    evenement.stopPropagation()
+    onBasculer()
+    bascule.current?.focus()
+  }
+
+  const texte: ReactNode = (
+    <>
+      <InitialesRole
+        initiales={contact === null ? '' : initialesDe(nom)}
+        teinte={teinteRole(contact)}
+        role={role ?? undefined}
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-base font-semibold text-encre">{nom}</span>
+        <span className="flex min-w-0 items-baseline gap-1.5 text-sm text-encre-douce">
+          <span className="sr-only">{role === null ? ', ' : `, ${role}, `}</span>
+          <span
+            className={`min-w-0 truncate ${survol && echange !== null ? 'md:max-w-[60%] md:shrink-0' : ''}`}
+          >
+            {tache.titre}
+          </span>
+          {survol && echange !== null && (
+            // À la souris, la place ne manque pas : le dernier échange suit le motif.
+            <span className="hidden min-w-0 items-baseline gap-1.5 md:flex">
+              <span aria-hidden="true">·</span>
+              <span className="min-w-0 truncate">{echange}</span>
+            </span>
+          )}
+        </span>
+        {retard !== null && <span className="sr-only">, {retard.annonce}</span>}
+      </span>
+    </>
+  )
 
   return (
     <LigneGlissable
@@ -60,103 +118,130 @@ export default function LigneRelance({
         { libelle: 'Fait', icone: 'succes', genre: 'succes', onAction: onConsigner },
       ]}
     >
-      <div className="py-2 pr-3 pl-4">
-        <div className="flex items-start gap-3">
-          <span
-            aria-hidden="true"
-            className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-doux text-xs font-semibold text-accent-fort"
-          >
-            {initiales === '' ? <Icone nom="telephone" className="size-4" /> : initiales}
-          </span>
+      <div onKeyDown={surTouche}>
+        <div
+          className={`flex items-center gap-2 pr-3 pl-2 ${survol ? 'group-focus-within/ligne:bg-creux group-hover/ligne:bg-creux' : ''}`}
+        >
+          <div className="relative flex min-w-0 flex-1">
+            {!survol ? (
+              <button
+                ref={bascule}
+                type="button"
+                aria-expanded={ouverte}
+                aria-controls={idGestes}
+                onClick={onBasculer}
+                className={`${CLASSES_ZONE} ${ouverte ? '' : 'active:bg-creux'}`}
+              >
+                {texte}
+              </button>
+            ) : contact !== null ? (
+              <Link to={`/contacts/${contact.id}`} className={CLASSES_ZONE}>
+                {texte}
+              </Link>
+            ) : (
+              <button type="button" onClick={onOuvrir} className={CLASSES_ZONE}>
+                {texte}
+              </button>
+            )}
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              {contact === null ? (
-                <p className="flex min-h-11 items-center text-sm text-encre-douce">Sans contact</p>
-              ) : (
-                <Link
-                  to={`/contacts/${contact.id}`}
-                  className="group/nom flex min-h-11 min-w-0 flex-col justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
-                >
-                  <span className="text-sm font-semibold break-words text-encre underline-offset-2 group-hover/nom:underline">
-                    {nomComplet(contact)}
-                  </span>
-                  <span className="text-[0.8125rem] text-encre-douce">
-                    <span className="sr-only">, </span>
-                    {rolesDuContact(contact)}
-                  </span>
-                </Link>
-              )}
-              {retard !== null && (
-                <span className="mt-1 shrink-0 rounded-full bg-danger-doux px-2.5 py-0.5 text-[0.8125rem] font-semibold whitespace-nowrap text-danger tabular-nums">
-                  <span aria-hidden="true">{retard.texte}</span>
-                  <span className="sr-only">{retard.annonce}</span>
-                </span>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={onOuvrir}
-              className="mt-1 flex min-h-11 w-full flex-col justify-center rounded-lg text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent"
-            >
-              <span className="block text-base font-semibold break-words text-encre">
-                {tache.titre}
-              </span>
-              {motif !== '' && (
-                <span className="block truncate text-sm text-encre-douce">{motif}</span>
-              )}
-            </button>
-            {contact !== null && (
-              <p className="mt-0.5 flex items-start gap-1 text-sm text-encre-douce">
-                <Icone nom="journal" className="mt-0.5 size-4 shrink-0" />
-                <span className="min-w-0 break-words">{dernierEchange(derniere, aujourdhui)}</span>
-              </p>
+            {/* Ordinateur : les reports et « Fait » viennent par-dessus la fin du texte. */}
+            {survol && (
+              <div className={`absolute inset-y-0 right-0 flex ${VISIBLE_AU_SURVOL}`}>
+                <span aria-hidden="true" className="w-6 bg-linear-to-r from-transparent to-creux" />
+                <div className="flex items-center gap-1.5 bg-creux pl-1">
+                  <ReportsRapides
+                    aujourdhui={aujourdhui}
+                    titre={tache.titre}
+                    desactive={occupee}
+                    onReporter={onReporterA}
+                    onAutreDate={onReporter}
+                  />
+                  <Bouton
+                    variante="secondaire"
+                    icone="succes"
+                    disabled={occupee}
+                    onClick={onConsigner}
+                    aria-label={`Fait : consigner « ${tache.titre} »`}
+                  >
+                    <span className="text-sm">Fait</span>
+                  </Bouton>
+                </div>
+              </div>
             )}
           </div>
+
+          {retard !== null && (
+            <span
+              aria-hidden="true"
+              className="shrink-0 rounded-full bg-danger-doux px-2 py-0.5 text-[0.8125rem] font-semibold whitespace-nowrap text-danger tabular-nums"
+            >
+              {retard.texte}
+            </span>
+          )}
+          {peutAppeler ? (
+            <BoutonAppel contact={contact} rond onAppel={onConsigner} />
+          ) : (
+            // La place d'Appeler est gardée : les pastilles de retard restent alignées.
+            <span aria-hidden="true" className="size-11 shrink-0" />
+          )}
         </div>
 
-        {/* Sur toute la largeur sur téléphone ; alignés sous le texte au-delà. */}
-        <div className="mt-2 flex flex-wrap items-center gap-2 sm:pl-12">
-          {contact !== null && <BoutonAppel contact={contact} onAppel={onConsigner} />}
-          <Bouton variante="secondaire" icone="journal" disabled={occupee} onClick={onConsigner}>
-            <span className="text-sm">{contact === null ? 'Fait' : 'Consigner'}</span>
-          </Bouton>
-          <span className={TACTILE_SEULEMENT}>
-            <Bouton
-              variante="discret"
-              icone="horloge"
-              disabled={occupee}
-              onClick={onReporter}
-              aria-label={`Reporter « ${tache.titre} »`}
-            >
-              <span className="hidden text-sm sm:inline">Reporter</span>
-            </Bouton>
-          </span>
-          <span className={`${SOURIS_SEULEMENT} flex-wrap items-center gap-2`}>
-            <ReportsRapides
-              aujourdhui={aujourdhui}
-              titre={tache.titre}
-              desactive={occupee}
-              auSurvol
-              onReporter={onReporterA}
-              onAutreDate={onReporter}
-            />
-            {contact !== null && (
-              <span className={VISIBLE_AU_SURVOL}>
+        {ouverte && (
+          <div id={idGestes} className="flex flex-col gap-2 px-4 pb-3">
+            {(role !== null || echange !== null) && (
+              <p className="pl-[3.25rem] text-sm text-encre-douce">
+                {[role, echange].filter((morceau) => morceau !== null).join(' · ')}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {contact !== null && (
                 <Bouton
                   variante="secondaire"
-                  icone="succes"
+                  icone="journal"
                   disabled={occupee}
                   onClick={onConsigner}
-                  aria-label={`Fait : consigner « ${tache.titre} »`}
                 >
-                  <span className="text-sm">Fait</span>
+                  <span className="text-sm">Consigner</span>
                 </Bouton>
-              </span>
-            )}
-          </span>
-        </div>
+              )}
+              <Bouton
+                variante="secondaire"
+                icone="succes"
+                disabled={occupee}
+                onClick={onConsigner}
+                aria-label={`Fait : ${contact === null ? 'clore' : 'consigner'} « ${tache.titre} »`}
+              >
+                <span className="text-sm">Fait</span>
+              </Bouton>
+              {contact !== null ? (
+                <LienBouton
+                  icone="contacts"
+                  variante="discret"
+                  vers={`/contacts/${contact.id}`}
+                  aria-label={`Ouvrir la fiche de ${nom}`}
+                >
+                  Fiche
+                </LienBouton>
+              ) : (
+                <Bouton variante="discret" icone="modifier" disabled={occupee} onClick={onOuvrir}>
+                  <span className="text-sm">Ouvrir</span>
+                </Bouton>
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <p aria-hidden="true" className="text-xs font-semibold text-encre-douce">
+                Reporter
+              </p>
+              <ReportsRapides
+                aujourdhui={aujourdhui}
+                titre={tache.titre}
+                desactive={occupee}
+                onReporter={onReporterA}
+                onAutreDate={onReporter}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </LigneGlissable>
   )

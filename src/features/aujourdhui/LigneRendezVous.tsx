@@ -1,27 +1,37 @@
-import Icone from '../../components/Icone'
+import { Link } from 'react-router-dom'
 import LienBouton from '../../components/LienBouton'
-import { adresseBien } from '../biens/biens'
+import { formaterHeure } from '../../lib/dates'
 import { nomComplet } from '../contacts/contacts'
-import { horaireTache, libelleCategorie, type TacheAffichee } from '../taches/taches'
-import BoutonAppel from './BoutonAppel'
+import type { TacheAffichee } from '../taches/taches'
 import CaseTache from './CaseTache'
 import { adresseRendezVous, lienItineraire, type Cartes } from './journee'
+import { detailRendezVous, ficheDuRendezVous } from './maintenant'
 
 type Props = {
   affichee: TacheAffichee
   cartes: Cartes
   occupee: boolean
   onCocher: () => void
+  /** Ouvre le rendez-vous lui-même : seulement s'il n'est lié ni à un bien ni à un contact. */
   onOuvrir: () => void
   /** Rendez-vous fini (au-dessus du trait « maintenant ») : il s'estompe légèrement. */
   passe?: boolean
+  /** Déjà montré par la carte « Maintenant » : la marque « Ci-dessus », sans geste. */
+  ciDessus?: boolean
 }
 
+/** Largeur de la colonne des heures : la même que celle du trait « maintenant ». */
+const COLONNE_HEURE = 'w-14 shrink-0'
+
+const CLASSES_ZONE =
+  'flex min-h-14 min-w-0 flex-1 flex-col justify-center rounded-lg py-1.5 pr-1 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent'
+
 /**
- * Un rendez-vous de l'agenda du jour : l'heure, ce qu'il faut faire, l'adresse, puis les
- * gestes : appeler, lancer l'itinéraire, ouvrir la fiche. Le toucher sur le titre ouvre le
- * rendez-vous pour le modifier ou le reporter ; la case le clôt (avec le compte rendu si un
- * contact y est lié).
+ * Un rendez-vous de l'agenda du jour, en frise : l'heure de début dans une colonne à gauche
+ * (chiffres alignés), la case ronde qui le clôt, le titre, puis la durée et le lieu (ou le
+ * contact). Toucher la ligne ouvre la fiche du bien, sinon celle du contact. Un seul geste,
+ * Itinéraire (dessin seul) ; Appeler reste dans la carte « Maintenant » et dans la fiche.
+ * Le rendez-vous déjà montré par la carte porte « Ci-dessus » à la place.
  */
 export default function LigneRendezVous({
   affichee,
@@ -30,72 +40,65 @@ export default function LigneRendezVous({
   onCocher,
   onOuvrir,
   passe = false,
+  ciDessus = false,
 }: Props) {
   const { tache, contact, bien } = affichee
   const adresse = adresseRendezVous(tache, bien, contact)
-  const liens = [
+  const fiche = ficheDuRendezVous(affichee)
+  const heure = formaterHeure(tache.heure)
+  const detail = detailRendezVous(
+    tache.duree,
+    adresse,
     contact === null ? null : nomComplet(contact),
-    bien === null ? null : adresseBien(bien),
-  ]
-    .filter((lien) => lien !== null)
-    .filter((lien) => lien !== adresse)
+  )
+  const couleur = passe ? 'text-encre-douce' : 'text-encre'
+
+  const contenu = (
+    <>
+      <span className="sr-only">
+        {heure}, {passe ? 'terminé : ' : ''}
+      </span>
+      <span className={`block truncate text-base font-medium ${couleur}`}>{tache.titre}</span>
+      {detail !== '' && <span className="block truncate text-sm text-encre-douce">{detail}</span>}
+    </>
+  )
 
   return (
-    <li className="flex items-start gap-1 py-2">
+    <li className="flex items-center gap-1">
+      <span
+        aria-hidden="true"
+        className={`${COLONNE_HEURE} text-sm font-semibold tabular-nums ${couleur}`}
+      >
+        {heure}
+      </span>
       <CaseTache titre={tache.titre} occupee={occupee} onCocher={onCocher} />
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={onOuvrir}
-          className="block w-full rounded-lg py-1 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          <span className="block text-sm text-encre-douce">
-            <span className={`font-bold ${passe ? 'text-encre-douce' : 'text-encre'}`}>
-              {horaireTache(tache)}
-            </span>
-            {' · '}
-            {libelleCategorie(tache.categorie)}
-          </span>
-          <span
-            className={`block text-base font-medium break-words ${passe ? 'text-encre-douce' : 'text-encre'}`}
-          >
-            {passe && <span className="sr-only">Terminé : </span>}
-            {tache.titre}
-          </span>
-          {liens.length > 0 && (
-            <span className="block truncate text-sm text-encre-douce">{liens.join(' · ')}</span>
-          )}
+      {fiche !== null ? (
+        <Link to={fiche} className={CLASSES_ZONE}>
+          {contenu}
+        </Link>
+      ) : (
+        <button type="button" onClick={onOuvrir} className={CLASSES_ZONE}>
+          {contenu}
         </button>
-        {adresse !== null && (
-          <p className="flex items-start gap-1 text-sm break-words text-encre-douce">
-            <Icone nom="lieu" className="mt-0.5 size-4" />
-            {adresse}
-          </p>
-        )}
-        <div className="mt-2 flex flex-wrap gap-2">
-          {contact !== null && <BoutonAppel contact={contact} />}
-          {adresse !== null && (
-            <LienBouton
-              icone="itineraire"
-              href={lienItineraire(adresse, cartes)}
-              nouvelOnglet
-              aria-label={`Itinéraire jusqu'à ${adresse}`}
-            >
-              Itinéraire
-            </LienBouton>
-          )}
-          {contact !== null && (
-            <LienBouton icone="contacts" variante="discret" vers={`/contacts/${contact.id}`}>
-              Contact
-            </LienBouton>
-          )}
-          {bien !== null && (
-            <LienBouton icone="biens" variante="discret" vers={`/biens/${bien.id}`}>
-              Bien
-            </LienBouton>
-          )}
-        </div>
-      </div>
+      )}
+      {ciDessus ? (
+        <span className="shrink-0 rounded-full bg-creux px-2.5 py-0.5 text-xs font-semibold text-encre-douce">
+          Ci-dessus
+          <span className="sr-only"> : dans la carte « Maintenant »</span>
+        </span>
+      ) : (
+        adresse !== null && (
+          <LienBouton
+            icone="itineraire"
+            href={lienItineraire(adresse, cartes)}
+            nouvelOnglet
+            dessinSeul
+            aria-label={`Itinéraire jusqu'à ${adresse}`}
+          >
+            Itinéraire
+          </LienBouton>
+        )
+      )}
     </li>
   )
 }

@@ -150,8 +150,8 @@ export function rolesDuContact(contact: Pick<Contact, 'roles'>): string {
 }
 
 /**
- * La pastille de retard : « En retard · 2 j », et ce qu'entend un lecteur d'écran
- * (« En retard de 2 jours »). `null` pour une relance du jour : pas de pastille.
+ * La pastille de retard, courte : « 2 j », et ce qu'entend un lecteur d'écran (« En retard
+ * de 2 jours »). `null` pour une relance du jour : pas de pastille.
  */
 export function pastilleRetard(
   echeance: string,
@@ -160,7 +160,7 @@ export function pastilleRetard(
   const jours = ecartJours(echeance, aujourdhui)
   if (jours <= 0) return null
   return {
-    texte: `En retard · ${jours} j`,
+    texte: `${jours} j`,
     annonce: jours === 1 ? "En retard d'un jour" : `En retard de ${jours} jours`,
   }
 }
@@ -175,15 +175,51 @@ function typeEnMinuscules(activite: Pick<Activite, 'type' | 'resultat'>): string
 
 /**
  * Le dernier échange avec le contact, en une ligne : « Dernier échange il y a 8 jours ·
- * rendez-vous ». Sans activité au journal : « Aucun échange au journal ».
+ * rendez-vous ». Sans aucune activité au journal : « Jamais contacté » (à n'appeler qu'avec
+ * une lecture réussie : une lecture en échec ne dit rien).
  */
 export function dernierEchange(
   activite: Pick<Activite, 'type' | 'resultat' | 'date_activite'> | null,
   aujourdhui: string,
 ): string {
-  if (activite === null) return 'Aucun échange au journal'
+  if (activite === null) return 'Jamais contacté'
   const jours = ecartJours(activite.date_activite, aujourdhui)
   return `Dernier échange ${depuisQuand(jours)} · ${typeEnMinuscules(activite)}`
+}
+
+/** La teinte des initiales d'une relance, d'après le rôle du contact. */
+export type TeinteRole = 'vendeur' | 'acquereur' | 'prospect'
+
+/**
+ * La teinte des initiales : vendeur (bleu doux), sinon acquéreur (vert doux), sinon gris
+ * (prospect, notaire, prescripteur, autre, ou relance sans contact). Un contact à la fois
+ * vendeur et acquéreur prend la teinte vendeur : c'est le mandat qui se gagne.
+ */
+export function teinteRole(contact: Pick<Contact, 'roles'> | null): TeinteRole {
+  if (contact === null) return 'prospect'
+  if (contact.roles.includes('vendeur')) return 'vendeur'
+  if (contact.roles.includes('acquereur')) return 'acquereur'
+  return 'prospect'
+}
+
+/**
+ * La relance dépliée après un toucher sur la ligne `touchee` : une seule à la fois. Toucher
+ * la ligne déjà dépliée la replie ; toucher une autre ligne replie la première.
+ */
+export function basculerRelance(depliee: string | null, touchee: string): string | null {
+  return depliee === touchee ? null : touchee
+}
+
+/**
+ * La relance dépliée, si elle est encore à l'écran : une relance faite, reportée ou cachée
+ * par le filtre ne laisse aucune ligne dépliée (la suivante ne s'ouvre pas d'elle-même).
+ */
+export function relanceDeplieeAffichee(
+  depliee: string | null,
+  affichees: readonly { id: string }[],
+): string | null {
+  if (depliee === null) return null
+  return affichees.some((ligne) => ligne.id === depliee) ? depliee : null
 }
 
 // ---------------------------------------------------------------------------

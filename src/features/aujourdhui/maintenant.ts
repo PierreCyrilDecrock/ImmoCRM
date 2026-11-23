@@ -1,4 +1,4 @@
-import { formaterHeure, heureDeFin, minutesDuJour } from '../../lib/dates'
+import { formaterDuree, formaterHeure, heureDeFin, minutesDuJour } from '../../lib/dates'
 import type { Tache, TacheAffichee } from '../taches/taches'
 
 /**
@@ -105,6 +105,48 @@ export function placeDuTrait(
 ): number {
   const place = agenda.findIndex(({ tache }) => etatRendezVous(tache, minutes) === 'a_venir')
   return place === -1 ? agenda.length : place
+}
+
+// ---------------------------------------------------------------------------
+// Agenda du jour, en frise
+// ---------------------------------------------------------------------------
+
+/**
+ * Le rendez-vous déjà montré par la carte « Maintenant » : dans l'agenda, il porte la marque
+ * « Ci-dessus » et aucun geste (ils sont dans la carte). `null` si la carte montre une
+ * relance ou n'est pas affichée.
+ */
+export function rendezVousCiDessus<R>(choix: ChoixMaintenant<R> | null): string | null {
+  return choix !== null && choix.genre === 'rendez_vous' ? choix.affichee.id : null
+}
+
+/**
+ * La fiche qu'ouvre le toucher sur un rendez-vous de l'agenda : celle du bien, sinon celle
+ * du contact. `null` sans l'un ni l'autre : le toucher ouvre alors le rendez-vous lui-même.
+ */
+export function ficheDuRendezVous(affichee: {
+  contact: { id: string } | null
+  bien: { id: string } | null
+}): string | null {
+  if (affichee.bien !== null) return `/biens/${affichee.bien.id}`
+  if (affichee.contact !== null) return `/contacts/${affichee.contact.id}`
+  return null
+}
+
+/**
+ * La seconde ligne d'un rendez-vous de la frise : la durée, puis le lieu, ou à défaut le
+ * contact (« 1 h 30 · 12 rue des Essais, Lyon », « 45 min · Camille Fictif »). Ce qui manque
+ * est omis ; rien du tout : une chaîne vide.
+ */
+export function detailRendezVous(
+  duree: number | null,
+  lieu: string | null,
+  contact: string | null,
+): string {
+  const ou = lieu ?? contact
+  return [duree === null || duree <= 0 ? null : formaterDuree(duree), ou]
+    .filter((morceau) => morceau !== null && morceau !== '')
+    .join(' · ')
 }
 
 /**
