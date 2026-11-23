@@ -16,7 +16,6 @@ import NavigationFiche from '../components/NavigationFiche'
 import { useNotifications } from '../components/notifications-contexte'
 import OngletsFiche from '../components/OngletsFiche'
 import Page from '../components/Page'
-import ProfilFiche from '../components/ProfilFiche'
 import SectionJournal from '../features/activites/SectionJournal'
 import { cartesDeLAppareil } from '../features/aujourdhui/journee'
 import { libelleSource } from '../features/contacts/contacts'
@@ -93,6 +92,7 @@ export default function FicheProjetVendeur() {
   const { id = '' } = useParams()
   const taille = useTailleEcran()
   const ordinateur = taille === 'ordinateur'
+  const telephone = taille === 'telephone'
   const { notifier } = useNotifications()
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [version, setVersion] = useState(0)
@@ -332,16 +332,12 @@ export default function FicheProjetVendeur() {
   const horsPipeline = (projet.etat === 'a_recontacter' || projet.etat === 'perdu') && !archive && (
     <Carte titre="Hors du pipeline">
       <dl className="divide-y divide-bord">
-        <Information nom="Étape atteinte" empilee={ordinateur}>
-          {libelleEtape(projet.etape)}
-        </Information>
+        <Information nom="Étape atteinte">{libelleEtape(projet.etape)}</Information>
         {projet.etat === 'a_recontacter' && (
-          <Information nom="À recontacter le" empilee={ordinateur}>
-            {formaterDate(projet.recontacter_le)}
-          </Information>
+          <Information nom="À recontacter le">{formaterDate(projet.recontacter_le)}</Information>
         )}
         {projet.etat === 'perdu' && (
-          <Information nom="Motif" empilee={ordinateur}>
+          <Information nom="Motif">
             {libelleMotifPerte(projet.motif_perte)}
             {projet.motif_perte_detail !== '' && (
               <span className="block text-sm text-encre-douce">{projet.motif_perte_detail}</span>
@@ -370,7 +366,6 @@ export default function FicheProjetVendeur() {
       }}
       bien={bien === null ? undefined : { role: 'Bien', fiche: bien }}
       cartes={cartes}
-      empilee={ordinateur}
     />
   )
 
@@ -387,7 +382,6 @@ export default function FicheProjetVendeur() {
           ? undefined
           : `Prochaine action du vendeur, hors de ce projet : ${formaterJourCourt(contact.prochaine_action_le, aujourdhui)}.`
       }
-      compacte={ordinateur}
       lectureSeule={archive}
     />
   )
@@ -432,7 +426,7 @@ export default function FicheProjetVendeur() {
       case 'details':
         return (
           <>
-            {!ordinateur && liens}
+            {telephone && liens}
             <Carte titre="Le projet">
               {renseignees.length === 0 && projet.notes === '' ? (
                 <p className="text-sm text-encre-douce">
@@ -454,7 +448,7 @@ export default function FicheProjetVendeur() {
                 </dl>
               )}
             </Carte>
-            {!ordinateur && ligneDates}
+            {ligneDates}
           </>
         )
     }
@@ -530,51 +524,23 @@ export default function FicheProjetVendeur() {
     </>
   )
 
-  if (ordinateur) {
-    return (
-      <Page
-        titre={titre}
-        retour={RETOUR}
-        enTete={null}
-        finRetour={
-          parcours !== null && (
-            <NavigationFiche
-              position={parcours.position}
-              quoi="la colonne du pipeline"
-              enCours={parcours.enCours}
-              onPrecedent={parcours.onPrecedent}
-              onSuivant={parcours.onSuivant}
-            />
-          )
-        }
-      >
-        {message}
-        <div className="grid items-start gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
-          <ProfilFiche libelle={`Profil du projet ${titre}`}>
-            {identite(true)}
-            {etapes}
-            {horsPipeline}
-            {liens}
-            {prochaineAction}
-            <div className="flex flex-col gap-2">
-              {ligneDates}
-              <div className="flex gap-2">
-                {modifier}
-                {menu}
-              </div>
-            </div>
-          </ProfilFiche>
-          {ongletsFiche}
-        </div>
-        {fenetres}
-      </Page>
-    )
-  }
-
+  // Pleine page sur tous les écrans : l'en-tête, la frise des étapes en premier, puis le reste
+  // et les onglets dessous. Pas de colonne de profil : la frise a toute la largeur.
   return (
     <Page
       titre={titre}
       retour={RETOUR}
+      finRetour={
+        parcours !== null && (
+          <NavigationFiche
+            position={parcours.position}
+            quoi="la colonne du pipeline"
+            enCours={parcours.enCours}
+            onPrecedent={parcours.onPrecedent}
+            onSuivant={parcours.onSuivant}
+          />
+        )
+      }
       enTete={
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">{identite(false)}</div>
@@ -588,25 +554,16 @@ export default function FicheProjetVendeur() {
       {message}
       {etapes}
       {horsPipeline}
-      {prochaineAction}
-      {taille === 'tablette' && (
-        <div className="flex gap-2">
-          <LienAction
-            libelle="Appeler"
-            icone="telephone"
-            href={appel.lien}
-            annonce={appel.annonce}
-          />
-          <LienAction
-            libelle="SMS"
-            icone="sms"
-            variante="secondaire"
-            href={portable === undefined ? undefined : lienSms(portable)}
-          />
+      {telephone ? (
+        prochaineAction
+      ) : (
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          {liens}
+          {prochaineAction}
         </div>
       )}
       {ongletsFiche}
-      {taille === 'telephone' && (
+      {telephone && (
         <BarreActionsFiche libelle={`Actions sur ${titre}`}>
           <div className="flex flex-[2]">
             <LienAction
