@@ -26,6 +26,7 @@ import {
 } from './activites'
 import FilActivites from './FilActivites'
 import FormulaireActivite from './FormulaireActivite'
+import HistoriqueParJour from './HistoriqueParJour'
 
 type Props = FicheOrigine & {
   /** Change quand la fiche demande une relecture (après un geste fait ailleurs sur la fiche). */
@@ -35,6 +36,12 @@ type Props = FicheOrigine & {
    * ses rubriques (en changeant `version`) ; absent, le fil se relit seul.
    */
   onChangement?: () => void
+  /**
+   * Présentation « Historique » (onglet Activité de la fiche Contact, étape D.6) : les
+   * activités en cartes groupées par jour, sans les boutons de saisie (le bloc « Consigner
+   * un échange » est au-dessus).
+   */
+  historique?: boolean
 }
 
 /** Lit une page du fil décrit par la clé (critère, numéro de relecture). */
@@ -65,26 +72,29 @@ export default function SectionJournal(props: Props) {
   )
 
   const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
+  const historique = props.historique === true
 
   return (
-    <Carte titre="Journal">
+    <Carte titre={historique ? 'Historique' : 'Journal'}>
       <div className="flex flex-col gap-4">
-        <div>
-          <p className="mb-2 text-sm font-medium text-encre">Consigner</p>
-          <div className="flex flex-wrap gap-2">
-            {TYPES_ACTIVITE.map((option) => (
-              <button
-                key={option.valeur}
-                type="button"
-                onClick={() => setSaisie(option.valeur)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-surface px-3 text-sm font-medium text-encre ring-1 ring-bord-fort ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                <Icone nom={option.icone} className="size-4 text-accent" />
-                {option.libelle}
-              </button>
-            ))}
+        {!historique && (
+          <div>
+            <p className="mb-2 text-sm font-medium text-encre">Consigner</p>
+            <div className="flex flex-wrap gap-2">
+              {TYPES_ACTIVITE.map((option) => (
+                <button
+                  key={option.valeur}
+                  type="button"
+                  onClick={() => setSaisie(option.valeur)}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-surface px-3 text-sm font-medium text-encre ring-1 ring-bord-fort ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  <Icone nom={option.icone} className="size-4 text-accent" />
+                  {option.libelle}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="md:max-w-xs">
           <ChampChoix
@@ -106,18 +116,31 @@ export default function SectionJournal(props: Props) {
         ) : fil.lignes.length === 0 ? (
           <p className="text-sm text-encre-douce">
             {type === ''
-              ? 'Aucune activité pour l’instant. Les appels, messages, visites et notes consignés ici s’afficheront du plus récent au plus ancien.'
+              ? historique
+                ? 'Aucun échange pour l’instant. Ce que vous consignez au-dessus s’affichera ici, jour par jour, le plus récent en haut.'
+                : 'Aucune activité pour l’instant. Les appels, messages, visites et notes consignés ici s’afficheront du plus récent au plus ancien.'
               : 'Aucune activité de ce type.'}
           </p>
         ) : (
-          <div className={`-mx-4 ${fil.rafraichissement ? 'opacity-60' : ''}`}>
-            <FilActivites
-              activites={fil.lignes}
-              aujourdhui={aujourdhui}
-              masquer={masquer}
-              onChangement={relire}
-            />
-            <div className="px-4">
+          <div
+            className={`${historique ? '' : '-mx-4'} ${fil.rafraichissement ? 'opacity-60' : ''}`}
+          >
+            {historique ? (
+              <HistoriqueParJour
+                activites={fil.lignes}
+                aujourdhui={aujourdhui}
+                masquer={masquer}
+                onChangement={relire}
+              />
+            ) : (
+              <FilActivites
+                activites={fil.lignes}
+                aujourdhui={aujourdhui}
+                masquer={masquer}
+                onChangement={relire}
+              />
+            )}
+            <div className={historique ? '' : 'px-4'}>
               <SuiteListe
                 resteALire={fil.resteALire}
                 suiteEnCours={fil.suiteEnCours}

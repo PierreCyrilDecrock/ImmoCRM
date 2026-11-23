@@ -18,12 +18,28 @@ Une seule question chaque matin : **qui dois-je contacter aujourd'hui, et pourqu
 
 C'est le seul effort de saisie demandé.
 
+**Depuis la fiche du contact — le plus simple.** En haut de l'onglet **Activité**, le bloc **« Consigner un échange »**, sans fenêtre (sur téléphone, **« Consigner »** dans la barre du bas y mène, le curseur dans le texte) :
+
+1. **Le type** : Appel (déjà choisi), Rendez-vous, Visite, Message, Note ; « Autre » pour un courriel, une estimation, un porte-à-porte, un document envoyé.
+2. **« Qu'avez-vous échangé avec Camille ? »** : écrire, ou dicter avec le micro du clavier.
+3. **Le résultat**, pour un appel : Joint, Messagerie, Pas de réponse, À rappeler.
+4. Si l'échange répond à une relance du jour ou en retard, la case **« Marquer comme faite « Relancer … » »** est cochée : la relance sera close. La décocher si ce n'est pas le cas.
+5. **« Ensuite »** : la prochaine action est déjà proposée à la date que donne la température (chaud : 1 semaine, tiède : 1 mois, froid : 3 mois, veille : 6 mois ; après une visite, le lendemain). Un toucher sur **2 jours, 1 semaine, 1 mois…** change la date ; **« Modifier »** change le titre ou choisit un autre jour ; **« Ne rien prévoir »** reste possible. Si une autre tâche est déjà prévue, elle est rappelée, et « Ajouter une relance quand même » en ajoute une.
+6. **« Enregistrer »** (ou **⌘ Entrée**, **Ctrl Entrée** sur PC). L'échange apparaît en haut de l'**Historique**, la prochaine action et « Dernier échange » de la fiche se mettent à jour, et le bloc se vide pour le suivant.
+
+Pour une **visite**, choisir Visite : les champs du compte rendu (points positifs et négatifs, intérêt, suite) s'ajoutent, et le rappel de l'acquéreur est proposé pour le lendemain.
+
+Un texte commencé et pas enregistré n'est pas perdu : en quittant la fiche, il reste sur l'appareil (deux semaines) et revient au retour, avec « Brouillon non enregistré du …, repris ici » et un bouton « Effacer ».
+
+Sous le bloc : **« À venir »** (les tâches du contact, la plus proche d'abord, en rouge si en retard ; la case ouvre le compte rendu habituel), puis **« Historique »**, jour par jour (« Jeudi 13 novembre · il y a 8 jours »), chaque échange en carte avec son heure, son résultat en pastille (« Pas de réponse », « Intéressé ») et son texte. Toucher une carte pour la corriger.
+
+**Ailleurs que dans la fiche :**
+
 - **Un appel prévu** : dans À rappeler, « Appeler » compose le numéro puis ouvre l'écran de compte rendu. « Consigner » (ou « Fait ») l'ouvre sans appeler.
-- **Depuis la fiche du contact, sur téléphone** : **« Consigner »**, dans la barre du bas, ouvre le compte rendu, le contact déjà choisi.
-- **Un échange imprévu** : bouton **« + »** (en bas à droite, partout ; sur ordinateur, **« Créer »** en bas de la colonne de gauche) → Nouvelle activité. La fiche consultée à l'instant est proposée d'emblée.
+- **Un échange imprévu, sans ouvrir la fiche** : bouton **« + »** (en bas à droite, partout ; sur ordinateur, **« Créer »** en bas de la colonne de gauche) → Nouvelle activité. La fiche consultée à l'instant est proposée d'emblée.
 - **Une nouvelle personne** : « + » → Nouveau contact : prénom, nom, téléphone, source, température, une note.
 
-Dans chaque cas, trois temps sur un seul écran : **le résultat** (joint, messagerie, pas de réponse), **le compte rendu** (à dicter avec le micro du clavier), **la prochaine action**, déjà proposée à la date que donne la température (chaud : 1 semaine, tiède : 1 mois, froid : 3 mois, veille : 6 mois). On change la date d'un toucher. « Ne rien prévoir » se confirme : c'est un choix, pas un oubli.
+Ces écrans suivent les mêmes trois temps : **le résultat**, **le compte rendu**, **la prochaine action** proposée selon la température. « Ne rien prévoir » se confirme : c'est un choix, pas un oubli.
 
 Après une visite, cocher la visite : le compte rendu (points positifs et négatifs, intérêt, suite) se range sur les fiches de l'acquéreur, du bien et du projet, et un rappel de l'acquéreur est proposé pour le lendemain.
 
@@ -42,7 +58,7 @@ Les objectifs et le tableau de bord de la revue arriveront avec la version 3.
 ## Bon à savoir
 
 - **La fiche d'un contact** : ce qu'il faut pour l'appeler reste sous les yeux.
-  - Sur ordinateur, à gauche : le nom et les rôles, la température (**Froid, Tiède, Chaud**, d'un clic, avec « Annuler »), **Appeler**, SMS, Courriel, **Itinéraire**, la prochaine action (« C'est fait », reports), **« À savoir »** (étiquettes et notes), les coordonnées avec « Copier », l'origine et l'accord pour être appelé (une ligne verte, ou l'avertissement). Le détail du consentement se déplie sous cette ligne. En bas, **Modifier** et le menu **« … »** : fusionner, exporter ses données, archiver, supprimer définitivement. À droite, les onglets **Activité** (les trois prochaines tâches, le journal), **Projets** (vente et achat), **Tâches**, **Biens** (ceux dont le contact est propriétaire) ; les touches **1 à 4** passent de l'un à l'autre. Une tablette tenue en largeur affiche la fiche de la même façon.
+  - Sur ordinateur, à gauche : le nom et les rôles, la température (**Froid, Tiède, Chaud**, d'un clic, avec « Annuler »), **Appeler**, SMS, Courriel, **Itinéraire**, la prochaine action (« C'est fait », reports), **« À savoir »** (étiquettes et notes), les coordonnées avec « Copier », l'origine et l'accord pour être appelé (une ligne verte, ou l'avertissement). Le détail du consentement se déplie sous cette ligne. En bas, **Modifier** et le menu **« … »** : fusionner, exporter ses données, archiver, supprimer définitivement. À droite, les onglets **Activité** (« Consigner un échange », les trois prochaines tâches, l'historique par jour), **Projets** (vente et achat), **Tâches**, **Biens** (ceux dont le contact est propriétaire) ; les touches **1 à 4** passent de l'un à l'autre. Une tablette tenue en largeur affiche la fiche de la même façon.
   - Sur téléphone et sur tablette tenue en hauteur : l'en-tête (nom, rôles, dernier échange, température), la prochaine action, puis les mêmes onglets Activité, Projets, Tâches, Biens, et un cinquième, **Infos**, qui remplace la colonne de gauche (coordonnées, origine, « À savoir », consentement). Sur téléphone, **Appeler, SMS et Consigner** sont en bas de l'écran ; on revient par « ‹ Contacts » en haut.
   - L'onglet ouvert fait partie de l'adresse : le retour du navigateur ramène à l'onglet d'avant, et un lien gardé rouvre le même onglet.
   - **Projets** : chaque projet en cours montre ses étapes en barre, depuis quand il est dans son étape, ce qu'il faut pour passer à la suivante et ce qui manque encore ; **« Étape suivante »** l'y fait passer (en demandant ce qui manque).

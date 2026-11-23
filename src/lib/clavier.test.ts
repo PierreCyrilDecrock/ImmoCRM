@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { estAnnulation, estAppareilApple, rappelRecherche } from './clavier'
+import {
+  estAnnulation,
+  estAppareilApple,
+  estEnregistrement,
+  rappelEnregistrer,
+  rappelRecherche,
+} from './clavier'
 
 const appui = { key: 'z', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false }
 
@@ -34,5 +40,27 @@ describe('rappelRecherche', () => {
     expect(rappelRecherche('Windows')).toBe('Ctrl K')
     expect(rappelRecherche('Linux x86_64')).toBe('Ctrl K')
     expect(rappelRecherche('')).toBe('Ctrl K')
+  })
+})
+
+describe('estEnregistrement', () => {
+  const appui = { key: 'Enter', ctrlKey: false, metaKey: false, altKey: false }
+
+  it('reconnaît ⌘ Entrée et Ctrl Entrée', () => {
+    expect(estEnregistrement({ ...appui, metaKey: true })).toBe(true)
+    expect(estEnregistrement({ ...appui, ctrlKey: true })).toBe(true)
+  })
+
+  it('laisse Entrée seule passer à la ligne', () => {
+    expect(estEnregistrement(appui)).toBe(false)
+    expect(estEnregistrement({ ...appui, ctrlKey: true, altKey: true })).toBe(false)
+    expect(estEnregistrement({ ...appui, key: 'a', ctrlKey: true })).toBe(false)
+  })
+})
+
+describe('rappelEnregistrer', () => {
+  it('suit le système', () => {
+    expect(rappelEnregistrer('MacIntel')).toBe('⌘ Entrée')
+    expect(rappelEnregistrer('Win32')).toBe('Ctrl Entrée')
   })
 })
