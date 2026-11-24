@@ -1,10 +1,13 @@
 import {
   useEffect,
+  useId,
   useRef,
   useState,
   type PointerEvent as EvenementPointeur,
   type ReactNode,
 } from 'react'
+import { useSuiteADroite } from './defilement'
+import { basculerCritere, separerEtapes } from './tableau-pipeline'
 
 /** Une colonne du tableau : une étape, son critère de sortie et ses projets. */
 export type ColonnePipeline<E extends string, P> = {
@@ -38,11 +41,73 @@ type Props<E extends string, P> = {
   enCours: string | null
 }
 
+/**
+ * Téléphone : les étapes sans projet, repliées en une ligne de pastilles (« Estimation 0 »).
+ * Toucher une pastille montre son critère, rien d'autre ; la toucher de nouveau le cache. Si
+ * la ligne déborde, elle défile de côté et un fondu signale la suite.
+ */
+function EtapesVides<E extends string>({
+  colonnes,
+}: {
+  colonnes: readonly { etape: E; libelle: string; critere: string }[]
+}) {
+  const [montree, setMontree] = useState<E | null>(null)
+  const rangee = useRef<HTMLDivElement>(null)
+  const suite = useSuiteADroite(rangee)
+  const id = useId()
+  const choisie = colonnes.find((colonne) => colonne.etape === montree)
+  return (
+    <section aria-labelledby={`${id}-titre`} className="flex flex-col gap-1">
+      <h2 id={`${id}-titre`} className="text-sm font-medium text-encre-douce">
+        Étapes sans projet
+      </h2>
+      <div className="relative -mx-4">
+        <div ref={rangee} className="flex gap-1 overflow-x-auto px-4">
+          {colonnes.map(({ etape, libelle }) => {
+            const ouverte = etape === montree
+            return (
+              <button
+                key={etape}
+                type="button"
+                aria-expanded={ouverte}
+                aria-controls={`${id}-critere`}
+                onClick={() => setMontree(basculerCritere(montree, etape))}
+                className="flex min-h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <span
+                  className={`inline-flex min-h-[1.875rem] items-center gap-1 rounded-full px-2.5 text-[0.8125rem] whitespace-nowrap ${
+                    ouverte
+                      ? 'bg-encre font-semibold text-fond'
+                      : 'bg-surface font-medium text-encre ring-1 ring-bord-fort/40 ring-inset'
+                  }`}
+                >
+                  {libelle}
+                  <span className={`tabular-nums ${ouverte ? '' : 'text-encre-douce'}`}>0</span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        {suite && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-r from-transparent via-fond/70 to-fond"
+          />
+        )}
+      </div>
+      <p id={`${id}-critere`} aria-live="polite" className="text-sm text-encre-douce">
+        {choisie !== undefined && `${choisie.libelle} : ${choisie.critere}`}
+      </p>
+    </section>
+  )
+}
+
 /** Marge (px) près du bord du tableau où il défile tout seul pendant un glisser. */
 const BORD_DEFILEMENT = 48
 
 /**
- * Tableau d'un pipeline. Sur téléphone : une liste groupée par étape. Sur tablette et
+ * Tableau d'un pipeline. Sur téléphone : une liste groupée par étape, les étapes vides
+ * repliées en une ligne de pastilles. Sur tablette et
  * ordinateur : une colonne par étape ; une carte se glisse par sa poignée vers une autre
  * colonne (souris, doigt ou stylet). Le changement d'étape lui-même (critères, fenêtre de
  * saisie) est confié à `onDeposer`. Sans logique métier : il sert aux pipelines vendeur et
@@ -59,6 +124,7 @@ export default function TableauPipeline<E extends string, P>({
   enCours,
 }: Props<E, P>) {
   const [glisse, setGlisse] = useState<{ projet: P; x: number; y: number } | null>(null)
+  const { pleines, vides } = separerEtapes(colonnes)
   const [survol, setSurvol] = useState<E | null>(null)
   const tableau = useRef<HTMLDivElement>(null)
   // Le projet saisi, lu au lâcher (hors du rendu).
@@ -139,9 +205,10 @@ export default function TableauPipeline<E extends string, P>({
 
   return (
     <>
-      {/* Téléphone : liste groupée par étape. */}
+      {/* Téléphone : liste groupée par étape ; les étapes vides tiennent sur une ligne. */}
       <div className="flex flex-col gap-6 md:hidden">
-        {colonnes.map(({ etape, libelle, critere, projets }) => (
+        {vides.length > 0 && <EtapesVides colonnes={vides} />}
+        {pleines.map(({ etape, libelle, critere, projets }) => (
           <section key={etape} aria-label={libelle} className="flex flex-col gap-2">
             <h2 className="flex items-baseline justify-between gap-2">
               <span className="text-lg font-semibold text-encre">
@@ -150,13 +217,9 @@ export default function TableauPipeline<E extends string, P>({
               </span>
               <span className="text-sm text-encre-douce">{critere}</span>
             </h2>
-            {projets.length === 0 ? (
-              <p className="text-sm text-encre-douce">Aucun projet à cette étape.</p>
-            ) : (
-              projets.map((projet) => (
-                <div key={cle(projet)}>{carte(projet, { estompee: enCours === cle(projet) })}</div>
-              ))
-            )}
+            {projets.map((projet) => (
+              <div key={cle(projet)}>{carte(projet, { estompee: enCours === cle(projet) })}</div>
+            ))}
           </section>
         ))}
       </div>

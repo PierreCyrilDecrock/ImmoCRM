@@ -5,20 +5,13 @@ import ChampRecherche from '../components/ChampRecherche'
 import ChampSaisie from '../components/ChampSaisie'
 import EtatChargement from '../components/EtatChargement'
 import EtatVide from '../components/EtatVide'
-import Etiquette from '../components/Etiquette'
 import LigneListe from '../components/LigneListe'
+import PastilleStatut from '../features/biens/PastilleStatut'
 import Liste from '../components/Liste'
 import Message from '../components/Message'
 import Page from '../components/Page'
 import SuiteListe from '../components/SuiteListe'
-import {
-  genreStatut,
-  libelleStatut,
-  resumeBien,
-  STATUTS_BIEN,
-  TYPES_BIEN,
-  CATEGORIES_BIEN,
-} from '../features/biens/biens'
+import { resumeBien, STATUTS_BIEN, TYPES_BIEN, CATEGORIES_BIEN } from '../features/biens/biens'
 import {
   FILTRES_BIENS_VIDES,
   filtresBiensMemorises,
@@ -243,11 +236,7 @@ export default function Biens() {
                 vignette={vignettes.get(bien.id) ?? null}
                 titre={bien.adresse}
                 detail={resumeBien(bien)}
-                fin={
-                  <Etiquette genre={genreStatut(bien.statut)}>
-                    {libelleStatut(bien.statut)}
-                  </Etiquette>
-                }
+                fin={<PastilleStatut statut={bien.statut} />}
                 vers={`/biens/${bien.id}`}
                 etat={etatLien}
               />

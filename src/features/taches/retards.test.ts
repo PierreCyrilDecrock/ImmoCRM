@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fauxClient } from '../../lib/faux-client'
-import { compterTachesEnRetard, pastilleRetards } from './retards'
+import { compterTachesEnRetard, pastilleRetard, pastilleRetards } from './retards'
 
 describe('pastilleRetards', () => {
   it('n’affiche rien sans retard, ou tant que le nombre est inconnu', () => {
@@ -37,5 +37,24 @@ describe('compterTachesEnRetard', () => {
     const { client } = fauxClient('panne')
     const resultat = await compterTachesEnRetard(client, '2026-11-21')
     expect(resultat.ok === false && resultat.erreur.genre).toBe('reseau')
+  })
+})
+
+describe('pastilleRetard', () => {
+  const AUJOURDHUI = '2026-11-17'
+
+  it('met le retard en pastille courte, rien pour une échéance du jour ou à venir', () => {
+    expect(pastilleRetard(AUJOURDHUI, AUJOURDHUI)).toBeNull()
+    expect(pastilleRetard('2026-11-20', AUJOURDHUI)).toBeNull()
+    expect(pastilleRetard('2026-11-16', AUJOURDHUI)).toEqual({
+      jours: 1,
+      texte: '1 j',
+      annonce: "En retard d'un jour",
+    })
+    expect(pastilleRetard('2026-11-15', AUJOURDHUI)).toEqual({
+      jours: 2,
+      texte: '2 j',
+      annonce: 'En retard de 2 jours',
+    })
   })
 })

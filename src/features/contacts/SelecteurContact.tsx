@@ -3,7 +3,7 @@ import ChampRecherche from '../../components/ChampRecherche'
 import LigneListe from '../../components/LigneListe'
 import Liste from '../../components/Liste'
 import Message from '../../components/Message'
-import { nomDeListe, resumeContact, type Contact } from './contacts'
+import { nomComplet, resumeContact, type Contact } from './contacts'
 import { useRechercheContacts } from './recherche-contacts'
 
 type Props = {
@@ -42,7 +42,7 @@ export default function SelecteurContact({ libelle, sauf, onChoisir, autoFocus }
             {recherche.contacts.map((contact) => (
               <LigneListe
                 key={contact.id}
-                titre={nomDeListe(contact)}
+                titre={nomComplet(contact)}
                 detail={resumeContact(contact)}
                 onAction={() => onChoisir(contact)}
               />

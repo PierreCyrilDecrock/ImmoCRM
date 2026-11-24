@@ -13,7 +13,7 @@ import { dateDuJour, heureDuMoment } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import { adresseBien, type Bien } from '../biens/biens'
 import SelecteurBien from '../biens/SelecteurBien'
-import { nomComplet, nomDeListe, resumeContact, type Contact } from '../contacts/contacts'
+import { nomComplet, resumeContact, type Contact } from '../contacts/contacts'
 import { chercherDoublons } from '../contacts/doublons'
 import SelecteurContact from '../contacts/SelecteurContact'
 import AutreCreation from '../saisie/AutreCreation'
@@ -231,7 +231,7 @@ export default function DemandeEntrante({
                 {doublons.map((existant) => (
                   <LigneListe
                     key={existant.id}
-                    titre={nomDeListe(existant)}
+                    titre={nomComplet(existant)}
                     detail={resumeContact(existant)}
                     onAction={() => choisirContact(existant)}
                   />

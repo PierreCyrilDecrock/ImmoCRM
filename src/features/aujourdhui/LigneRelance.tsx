@@ -8,9 +8,12 @@ import { nomComplet } from '../contacts/contacts'
 import { initialesDe } from '../saisie/recents'
 import ReportsRapides from '../taches/ReportsRapides'
 import BoutonAppel from './BoutonAppel'
-import InitialesRole from './InitialesRole'
+import InitialesRole from '../contacts/InitialesRole'
 import type { Relance } from './lecture-journee'
-import { dernierEchange, pastilleRetard, rolesDuContact, teinteRole } from './ordre-journee'
+import { rolesDuContact, teinteRole } from '../contacts/ligne-contact'
+import PastilleRetard from '../taches/PastilleRetard'
+import { pastilleRetard } from '../taches/retards'
+import { dernierEchange } from './ordre-journee'
 
 type Props = {
   relance: Relance
@@ -170,14 +173,8 @@ export default function LigneRelance({
             )}
           </div>
 
-          {retard !== null && (
-            <span
-              aria-hidden="true"
-              className="shrink-0 rounded-full bg-danger-doux px-2 py-0.5 text-[0.8125rem] font-semibold whitespace-nowrap text-danger tabular-nums"
-            >
-              {retard.texte}
-            </span>
-          )}
+          {/* L'annonce est déjà lue avec le texte de la ligne. */}
+          {retard !== null && <PastilleRetard texte={retard.texte} />}
           {peutAppeler ? (
             <BoutonAppel contact={contact} rond onAppel={onConsigner} />
           ) : (

@@ -59,13 +59,18 @@ export const CATEGORIES_BIEN: readonly Option<CategorieBien>[] = [
   { valeur: 'viager', libelle: 'Viager' },
 ]
 
+/**
+ * Les statuts d'un bien, avec la couleur de leur pastille : une couleur par phase
+ * (estimation en bleu doux, mandat en vert, sous offre en ambre, vendu en encre), les autres
+ * en gris. Contrastes vérifiés dans les deux thèmes (au moins 4,7:1).
+ */
 export const STATUTS_BIEN: readonly (Option<StatutBien> & { genre: GenreEtiquette })[] = [
   { valeur: 'repere', libelle: 'Repéré', genre: 'neutre' },
   { valeur: 'en_veille', libelle: 'En veille', genre: 'neutre' },
   { valeur: 'en_estimation', libelle: 'En estimation', genre: 'info' },
   { valeur: 'en_mandat', libelle: 'En mandat', genre: 'succes' },
   { valeur: 'sous_offre', libelle: 'Sous offre', genre: 'alerte' },
-  { valeur: 'vendu', libelle: 'Vendu', genre: 'succes' },
+  { valeur: 'vendu', libelle: 'Vendu', genre: 'fort' },
   { valeur: 'retire', libelle: 'Retiré', genre: 'neutre' },
 ]
 
@@ -122,14 +127,23 @@ function parmi<V extends string>(options: readonly Option<V>[], valeur: string |
 /** Libellés français des valeurs enregistrées ; `null` si la valeur est vide ou inconnue. */
 export const libelleType = (type: string) => libelleDe(TYPES_BIEN, type) ?? type
 export const libelleCategorie = (categorie: string | null) => libelleDe(CATEGORIES_BIEN, categorie)
-export const libelleStatut = (statut: string) => libelleDe(STATUTS_BIEN, statut) ?? statut
 export const libelleEtat = (etat: string | null) => libelleDe(ETATS_BIEN, etat)
 export const libelleOccupation = (valeur: string | null) => libelleDe(OCCUPATIONS_VIAGER, valeur)
 export const libelleNatureCommerce = (valeur: string | null) => libelleDe(NATURES_COMMERCE, valeur)
 
-/** Couleur de la pastille d'un statut. */
-export function genreStatut(statut: string): GenreEtiquette {
-  return STATUTS_BIEN.find((option) => option.valeur === statut)?.genre ?? 'neutre'
+/**
+ * Le statut tel qu'il s'affiche : son libellé, toujours avec sa majuscule (« En estimation »,
+ * jamais « en_estimation » ni « estimation »), et sa couleur. Un statut inconnu reste lisible,
+ * en gris, avec sa majuscule.
+ */
+export function statutAffiche(statut: string): { libelle: string; genre: GenreEtiquette } {
+  const option = STATUTS_BIEN.find((s) => s.valeur === statut)
+  if (option !== undefined) return { libelle: option.libelle, genre: option.genre }
+  const texte = statut.replaceAll('_', ' ').trim()
+  return {
+    libelle: texte.charAt(0).toLocaleUpperCase('fr') + texte.slice(1),
+    genre: 'neutre',
+  }
 }
 
 /** Les champs qui n'existent que pour certains types de bien. */

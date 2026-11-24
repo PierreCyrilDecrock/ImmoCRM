@@ -6,7 +6,6 @@ import ChampRecherche from '../components/ChampRecherche'
 import EtatChargement from '../components/EtatChargement'
 import EtatVide from '../components/EtatVide'
 import FenetreModale from '../components/FenetreModale'
-import LigneListe from '../components/LigneListe'
 import Liste from '../components/Liste'
 import Message from '../components/Message'
 import { useNotifications } from '../components/notifications-contexte'
@@ -18,9 +17,7 @@ import {
   chercherContacts,
   creerContact,
   listerEtiquettes,
-  nomDeListe,
   preparerContact,
-  resumeContact,
   ROLES,
   SOURCES,
   TEMPERATURES,
@@ -40,9 +37,10 @@ import {
 } from '../features/contacts/filtres'
 import FormulaireContact from '../features/contacts/FormulaireContact'
 import { useCreationDeLaPage } from '../features/saisie/creation-page'
-import { useListeContacts } from '../features/contacts/liste-contacts'
+import LigneContact from '../features/contacts/LigneContact'
+import { useJamaisContactes, useListeContacts } from '../features/contacts/liste-contacts'
 import { memoriserParcours, type EtatParcours } from '../lib/parcours'
-import { formaterDate } from '../lib/dates'
+import { dateDuJour } from '../lib/dates'
 import { accorder } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
 
@@ -133,15 +131,6 @@ function NouveauContact({ ouverte, onFermer }: { ouverte: boolean; onFermer: () 
   )
 }
 
-/** Dans la vue « sans prochaine action » : depuis quand, et pourquoi la fiche y est. */
-function detailSansAction(contact: Contact): string {
-  const depuis =
-    contact.sans_prochaine_action_le !== null
-      ? `Confirmé le ${formaterDate(contact.sans_prochaine_action_le)}`
-      : `Dernier contact le ${formaterDate(contact.dernier_contact_le)}`
-  return [depuis, resumeContact(contact)].filter(Boolean).join(' · ')
-}
-
 const VUES = [
   { valeur: 'tous', libelle: 'Tous' },
   { valeur: 'sans_action', libelle: 'Sans prochaine action' },
@@ -162,6 +151,9 @@ export default function Contacts() {
   // Les fiches archivées n'ont pas besoin de prochaine action : la vue ne s'y applique pas.
   const sansAction = filtres.sansAction && !archives
   const liste = useListeContacts({ ...filtres, sansAction }, archives)
+  // Une lecture au plus par page : savoir qui n'a jamais été joint (le reste est sur la fiche).
+  const jamaisContactes = useJamaisContactes(liste.contacts)
+  const aujourdhui = dateDuJour()
   const restreinte = listeRestreinte(filtres)
   const nbFiltres = nombreFiltres(filtres)
   // Sur téléphone et tablette, le « + » crée un contact (« Nouveau contact express »).
@@ -400,11 +392,12 @@ export default function Contacts() {
           )}
           <Liste>
             {liste.contacts.map((contact) => (
-              <LigneListe
+              <LigneContact
                 key={contact.id}
-                titre={nomDeListe(contact)}
-                detail={sansAction ? detailSansAction(contact) : resumeContact(contact)}
-                vers={`/contacts/${contact.id}`}
+                contact={contact}
+                aujourdhui={aujourdhui}
+                jamaisContacte={jamaisContactes.get(contact.id)}
+                sansAction={sansAction}
                 etat={etatLien}
               />
             ))}

@@ -7,12 +7,18 @@ type Ligne = { texte: string; alerte: boolean }
 type Props = {
   /** Adresse de la fiche du projet. */
   vers: string
+  /** Ce qui distingue le projet : le bien (vente) ou l'acquéreur (achat). */
   titre: string
-  /** Lignes de détail, sous le titre (bien, recherche…). */
+  /** Juste sous le titre, en encre : le vendeur (vente) ou le budget (achat). */
+  sousTitre: string
+  /** Lignes de détail, plus discrètes (critères de recherche, biens proposés…). */
   details: readonly string[]
   /** Ancienneté dans l'étape, ou date de l'issue ; en couleur d'alerte si elle traîne. */
   etape: Ligne
-  /** Prochaine action ; en rouge si elle est en retard. Vide : rien n'est affiché. */
+  /**
+   * Prochaine action ; en rouge si elle est en retard, dit en clair (« Relance en retard ·
+   * 1 j »). Vide : rien n'est affiché.
+   */
   action: Ligne
   /** Fourni sur tablette et ordinateur : la poignée permet de glisser la carte. */
   onSaisir?: (evenement: PointerEvent<HTMLButtonElement>) => void
@@ -26,13 +32,15 @@ type Props = {
 }
 
 /**
- * Carte d'un projet dans un pipeline : le titre (le contact), les détails, l'ancienneté dans
+ * Carte d'un projet dans un pipeline : le titre (le bien d'un projet de vente, l'acquéreur
+ * d'un projet d'achat), le sous-titre (le vendeur, le budget), les détails, l'ancienneté dans
  * l'étape et la prochaine action. Toucher la carte ouvre le projet ; sur grand écran, la
  * poignée sert à la glisser vers une autre étape.
  */
 export default function CartePipeline({
   vers,
   titre,
+  sousTitre,
   details,
   etape,
   action,
@@ -52,6 +60,7 @@ export default function CartePipeline({
         <span className={`font-semibold text-encre ${onSaisir === undefined ? '' : 'pr-8'}`}>
           {titre}
         </span>
+        {sousTitre !== '' && <span className="text-sm text-encre">{sousTitre}</span>}
         {details
           .filter((detail) => detail !== '')
           .map((detail) => (

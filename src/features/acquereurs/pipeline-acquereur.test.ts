@@ -17,6 +17,7 @@ import {
   resumeEtatAcquereur,
   resumeOrigine,
   resumeRecherche,
+  lignesCarteAcquereur,
 } from './pipeline-acquereur'
 import { projetAcquereurEssai } from './projet-acquereur-essai'
 
@@ -362,5 +363,36 @@ describe('aideEtapeSuivanteAcquereur', () => {
     expect(aideEtapeSuivanteAcquereur(enSelection, 0)?.manquantes).toEqual(['un bien proposé'])
     expect(aideEtapeSuivanteAcquereur(enSelection, 2)?.manquantes).toEqual([])
     expect(aideEtapeSuivanteAcquereur({ ...enSelection, etape: 'visites' }, 2)).toBeNull()
+  })
+})
+
+describe('carte d’un projet d’achat', () => {
+  it('met l’acquéreur en titre et le budget dessous, sans le répéter', () => {
+    const projet = projetAcquereurEssai({
+      types_biens: ['maison'],
+      categories_biens: [],
+      secteurs: ['Villefictive'],
+      budget_min: null,
+      budget_max: 280000,
+      surface_min: null,
+      pieces_min: 3,
+    })
+    const lignes = lignesCarteAcquereur({ acquereur: 'Manon Essai', coAcquereur: null }, projet)
+    expect(lignes.titre).toBe('Manon Essai')
+    expect(lignes.sousTitre).toMatch(/^Jusqu’à 280\s000\s€$/)
+    expect(lignes.criteres).toBe('Maison · Villefictive · 3 p. min.')
+  })
+
+  it('nomme le co-acquéreur, et dit quand le budget manque', () => {
+    const projet = projetAcquereurEssai({ budget_min: null, budget_max: null })
+    const lignes = lignesCarteAcquereur(
+      { acquereur: 'Manon Essai', coAcquereur: 'Paul Essai' },
+      projet,
+    )
+    expect(lignes.titre).toBe('Manon Essai et Paul Essai')
+    expect(lignes.sousTitre).toBe('Budget à préciser')
+    expect(lignesCarteAcquereur({ acquereur: null, coAcquereur: null }, projet).titre).toBe(
+      'Contact introuvable',
+    )
   })
 })

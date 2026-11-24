@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
-export type GenreEtiquette = 'neutre' | 'info' | 'succes' | 'alerte' | 'danger'
+/** `fort` : en encre pleine, pour un état final qui doit se voir (un bien vendu). */
+export type GenreEtiquette = 'neutre' | 'info' | 'succes' | 'alerte' | 'danger' | 'fort'
 
 type Props = { genre?: GenreEtiquette; children: ReactNode }
 
@@ -10,6 +11,7 @@ const COULEURS: Record<GenreEtiquette, string> = {
   succes: 'bg-succes-doux text-succes',
   alerte: 'bg-alerte-doux text-alerte',
   danger: 'bg-danger-doux text-danger',
+  fort: 'bg-encre text-surface',
 }
 
 /** Petite pastille de texte qui qualifie un élément : un état, une catégorie, un environnement. */

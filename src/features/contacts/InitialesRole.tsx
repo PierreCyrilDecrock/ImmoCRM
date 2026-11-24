@@ -1,5 +1,5 @@
 import Icone from '../../components/Icone'
-import type { TeinteRole } from './ordre-journee'
+import type { TeinteRole } from './ligne-contact'
 
 const COULEURS: Record<TeinteRole, string> = {
   vendeur: 'bg-accent-doux text-accent-fort',

@@ -4,7 +4,7 @@ import ChampRecherche from '../../components/ChampRecherche'
 import LigneListe from '../../components/LigneListe'
 import { rappelRecherche } from '../../lib/clavier'
 import { formaterNombre } from '../../lib/nombres'
-import { nomDeListe, resumeContact } from '../contacts/contacts'
+import { nomComplet, resumeContact } from '../contacts/contacts'
 import { FILTRES_VIDES, memoriserFiltres } from '../contacts/filtres'
 import { useRechercheContacts } from '../contacts/recherche-contacts'
 import FichesRecentes from '../saisie/FichesRecentes'
@@ -95,7 +95,7 @@ export default function RechercheGlobale({ disposition = 'bandeau' }: Props) {
             {recherche.contacts.map((contact) => (
               <LigneListe
                 key={contact.id}
-                titre={nomDeListe(contact)}
+                titre={nomComplet(contact)}
                 detail={resumeContact(contact)}
                 vers={`/contacts/${contact.id}`}
               />

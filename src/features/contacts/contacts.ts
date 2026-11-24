@@ -161,10 +161,16 @@ export function nomAvecCivilite(contact: Identite): string {
   return assembler(libelleCivilite(contact.civilite), contact.prenom, contact.nom)
 }
 
-/** Nom tel qu'il est classé dans la liste : « Fictif Camille » (nom de famille d'abord). */
-export function nomDeListe(contact: Identite): string {
-  if (contact.type === 'societe') return contact.raison_sociale
-  return assembler(contact.nom, contact.prenom)
+/**
+ * Nom d'un contact dans la liste, en deux morceaux : le prénom (`debut`), puis le nom de
+ * famille (`nom`), écrit en gras. « Camille **Fictif** », comme partout ailleurs ; la liste
+ * reste classée par nom de famille (la base trie). Une société garde sa raison sociale.
+ */
+export function nomDeListe(contact: Identite): { debut: string; nom: string } {
+  if (contact.type === 'societe') return { debut: '', nom: contact.raison_sociale }
+  // Une fiche sans nom de famille : le prénom seul, en gras.
+  if (contact.nom.trim() === '') return { debut: '', nom: contact.prenom.trim() }
+  return { debut: contact.prenom.trim(), nom: contact.nom.trim() }
 }
 
 /** Pour une société : la personne à joindre, si elle est renseignée. */

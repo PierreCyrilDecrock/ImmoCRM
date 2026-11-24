@@ -76,7 +76,9 @@ export default function Pipelines() {
         </div>
       }
     >
+      {/* Onglets de page, soulignés ; les quatre vues suivent dessous, en petites pastilles. */}
       <Onglets
+        forme="soulignee"
         libelle="Pipeline"
         options={[
           { valeur: 'vendeurs', libelle: 'Vendeurs' },

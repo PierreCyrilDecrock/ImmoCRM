@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { ecartJours } from '../../lib/dates'
 import { compter, type Resultat } from '../../lib/donnees'
 import { conditionsVue } from './taches'
 
@@ -27,4 +28,22 @@ export function compterTachesEnRetard(
   aujourdhui: string,
 ): Promise<Resultat<number>> {
   return compter(client, 'taches', { filtres: conditionsVue('en_retard', aujourdhui) })
+}
+
+/**
+ * Le retard d'une échéance, en pastille courte : « 2 j », et ce qu'entend un lecteur d'écran
+ * (« En retard de 2 jours »). `null` pour une échéance du jour ou à venir : pas de pastille.
+ * Sert aux relances de l'accueil, à la liste des contacts et aux cartes des pipelines.
+ */
+export function pastilleRetard(
+  echeance: string,
+  aujourdhui: string,
+): { jours: number; texte: string; annonce: string } | null {
+  const jours = ecartJours(echeance, aujourdhui)
+  if (jours <= 0) return null
+  return {
+    jours,
+    texte: `${jours} j`,
+    annonce: jours === 1 ? "En retard d'un jour" : `En retard de ${jours} jours`,
+  }
 }
