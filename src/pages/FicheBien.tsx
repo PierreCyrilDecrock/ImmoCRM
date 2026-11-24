@@ -61,7 +61,13 @@ import ProchaineTacheFiche from '../features/taches/ProchaineTacheFiche'
 import SectionTaches from '../features/taches/SectionTaches'
 import { dateDuJour, formaterDate } from '../lib/dates'
 import { useTailleEcran } from '../lib/ecran'
-import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
+import {
+  GRILLE_FICHE,
+  ligneDatesFiche,
+  useOngletFiche,
+  useParcoursFiche,
+  useRaccourcisFiche,
+} from '../lib/fiche'
 import { formaterNombre, formaterPrix, formaterSurface } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
 
@@ -194,7 +200,7 @@ export default function FicheBien() {
 
   if (etat.phase !== 'pret') {
     return (
-      <Page titre="Bien" retour={RETOUR}>
+      <Page fiche titre="Bien" retour={RETOUR}>
         {etat.phase === 'chargement' ? (
           <EtatChargement />
         ) : (
@@ -440,6 +446,7 @@ export default function FicheBien() {
                 onEnregistre={toutRelire}
                 demandeFocus={focusConsigner}
                 onFocusDonne={() => setFocusConsigner(false)}
+                repliable={!ordinateur}
               />
             )}
             <SectionTaches
@@ -568,6 +575,7 @@ export default function FicheBien() {
   if (ordinateur) {
     return (
       <Page
+        fiche
         titre={bien.adresse}
         retour={RETOUR}
         enTete={null}
@@ -584,7 +592,7 @@ export default function FicheBien() {
         }
       >
         {message}
-        <div className="grid items-start gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
+        <div className={GRILLE_FICHE}>
           <ProfilFiche libelle={`Profil du bien ${adresse}`}>
             <PhotoPrincipale
               bienId={bien.id}
@@ -621,6 +629,7 @@ export default function FicheBien() {
 
   return (
     <Page
+      fiche
       titre={bien.adresse}
       retour={RETOUR}
       enTete={

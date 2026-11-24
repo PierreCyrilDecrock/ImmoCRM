@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from
 import { placerMenu } from '../lib/placement'
 
 /** Les éléments du menu que le clavier parcourt. */
-const ELEMENTS = '[role="menuitem"]:not(:disabled)'
+const ELEMENTS = '[role="menuitem"]:not(:disabled), [role="menuitemradio"]:not(:disabled)'
 
 /**
  * Ce qui est commun aux menus qui s'ouvrent d'un bouton par-dessus la page (le menu « … »
@@ -11,8 +11,8 @@ const ELEMENTS = '[role="menuitem"]:not(:disabled)'
  *
  * - À l'ouverture, le menu se place d'après le bouton avant d'être montré, puis le clavier
  *   va au premier élément (sans faire défiler la page).
- * - Au clavier : les flèches parcourent les éléments (`role="menuitem"`), Début et Fin vont
- *   aux bouts, Échap referme et rend le clavier au bouton, Tab referme.
+ * - Au clavier : les flèches parcourent les éléments (`role="menuitem"` ou `menuitemradio`),
+ *   Début et Fin vont aux bouts, Échap referme et rend le clavier au bouton, Tab referme.
  * - Un toucher à côté referme ; si la page défile ou change de taille, le menu suit le bouton.
  *
  * Avec `flottant` à faux (une feuille posée en bas de l'écran), le menu n'est pas placé : il

@@ -153,14 +153,14 @@ export default function FicheProjetVendeur() {
 
   if (etat.phase === 'chargement') {
     return (
-      <Page titre="Projet de vente" retour={RETOUR}>
+      <Page fiche titre="Projet de vente" retour={RETOUR}>
         <EtatChargement />
       </Page>
     )
   }
   if (etat.phase === 'erreur') {
     return (
-      <Page titre="Projet de vente" retour={RETOUR}>
+      <Page fiche titre="Projet de vente" retour={RETOUR}>
         <Message genre="erreur">Le projet n'a pas pu être ouvert. {etat.message}</Message>
       </Page>
     )
@@ -402,6 +402,7 @@ export default function FicheProjetVendeur() {
                 onEnregistre={toutRelire}
                 demandeFocus={focusConsigner}
                 onFocusDonne={() => setFocusConsigner(false)}
+                repliable={!ordinateur}
               />
             )}
             <SectionTaches
@@ -528,6 +529,7 @@ export default function FicheProjetVendeur() {
   // et les onglets dessous. Pas de colonne de profil : la frise a toute la largeur.
   return (
     <Page
+      fiche
       titre={titre}
       retour={RETOUR}
       finRetour={

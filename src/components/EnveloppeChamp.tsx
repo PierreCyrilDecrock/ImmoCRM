@@ -6,6 +6,8 @@ type Props = {
   libelle: string
   aide?: string
   erreur?: string
+  /** Libellé lu par les lecteurs d'écran seulement (le champ replié de « Consigner un échange »). */
+  libelleMasque?: boolean
   children: ReactNode
 }
 
@@ -14,13 +16,23 @@ type Props = {
  * `min-w-0` : placé dans une grille (Heure et Durée côte à côte), le champ rétrécit avec sa
  * colonne au lieu de déborder sur la voisine.
  */
-export default function EnveloppeChamp({ id, libelle, aide, erreur, children }: Props) {
+export default function EnveloppeChamp({
+  id,
+  libelle,
+  aide,
+  erreur,
+  libelleMasque = false,
+  children,
+}: Props) {
   return (
     <div className="min-w-0">
-      <label htmlFor={id} className="block text-sm font-medium text-encre">
+      <label
+        htmlFor={id}
+        className={libelleMasque ? 'sr-only' : 'block text-sm font-medium text-encre'}
+      >
         {libelle}
       </label>
-      <div className="mt-1">{children}</div>
+      <div className={libelleMasque ? undefined : 'mt-1'}>{children}</div>
       {aide !== undefined && (
         <p id={`${id}-aide`} className="mt-1 text-sm text-encre-douce">
           {aide}
