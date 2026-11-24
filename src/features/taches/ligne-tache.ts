@@ -1,6 +1,7 @@
 import { adresseBien, type Bien } from '../biens/biens'
 import { nomComplet } from '../contacts/contacts'
 import { libelleJour, type Vue } from './echeances'
+import { pastilleRetard } from './retards'
 import { horaireTache, libelleCategorie, type Tache } from './taches'
 
 /**
@@ -10,11 +11,29 @@ import { horaireTache, libelleCategorie, type Tache } from './taches'
  */
 
 /**
- * Le jour que dit déjà l'onglet affiché : celui d'« Aujourd'hui ». Les autres vues couvrent
- * plusieurs jours (« En retard », « Semaine »…) : chaque ligne garde le sien.
+ * Le jour que dit déjà l'onglet affiché : celui de la rubrique « Aujourd'hui » de l'onglet
+ * « À faire ». Les autres vues couvrent plusieurs jours (« Semaine », « Plus tard »…) :
+ * chaque ligne garde le sien.
  */
 export function jourDeLaVue(vue: Vue | undefined, aujourdhui: string): string | null {
-  return vue === 'aujourdhui' ? aujourdhui : null
+  return vue === 'a_faire' ? aujourdhui : null
+}
+
+/**
+ * Le retard d'une tâche dit en durée, pour la rubrique « En retard » (étape F.1) : « Depuis
+ * hier », « Depuis 6 j », et ce qu'entend un lecteur d'écran (« En retard de 6 jours »).
+ * `null` pour une échéance du jour ou à venir.
+ */
+export function depuisRetard(
+  echeance: string,
+  aujourdhui: string,
+): { texte: string; annonce: string } | null {
+  const retard = pastilleRetard(echeance, aujourdhui)
+  if (retard === null) return null
+  return {
+    texte: retard.jours === 1 ? 'Depuis hier' : `Depuis ${retard.texte}`,
+    annonce: retard.annonce,
+  }
 }
 
 /**
@@ -46,9 +65,21 @@ export function adresseUnique(
 }
 
 export type DetailLigneTache = {
-  /** Le jour, s'il diffère de l'onglet (en rouge quand la tâche est en retard). */
+  /**
+   * Le jour, s'il diffère de l'onglet (en rouge quand la tâche est en retard) ; « Depuis
+   * 6 j » avec `retardEnDuree`.
+   */
   jour: string | null
+  /** Ce qu'entend un lecteur d'écran à la place du jour, s'il diffère (« En retard de 6 jours »). */
+  annonceJour: string | null
   enRetard: boolean
+  /**
+   * L'heure ouvre la ligne de détail, avant la priorité : quand le jour n'est pas écrit
+   * (rubrique « Aujourd'hui ») et que la tâche a une heure.
+   */
+  heureEnTete: boolean
+  /** Le retard en durée (« Depuis 6 j ») ouvre la ligne, avant la priorité : règle 11. */
+  jourEnTete: boolean
   /** L'heure (« 14 h – 15 h »), écrite en gras ; vide sans heure. */
   horaire: string
   /** Le reste, dans l'ordre : le contact, l'adresse ; la catégorie s'il n'y a ni l'un ni l'autre. */
@@ -68,17 +99,26 @@ export function detailLigneTache(
     jourMasque?: string | null
     /** Le lien que la fiche affichée montre déjà. */
     masquer?: 'contact' | 'bien'
+    /** Un retard se dit en durée (« Depuis 6 j ») plutôt que par sa date : onglet « À faire ». */
+    retardEnDuree?: boolean
   },
 ): DetailLigneTache {
   const { tache, contact, bien } = affichee
-  const { aujourdhui, jourMasque = null, masquer } = options
+  const { aujourdhui, jourMasque = null, masquer, retardEnDuree = false } = options
   const contactAffiche = contact === null || masquer === 'contact' ? null : nomComplet(contact)
   const adresse = adresseUnique(tache.lieu, bien, masquer === 'bien')
   const autres = [contactAffiche, adresse].filter((morceau) => morceau !== null)
+  const enRetard = tache.etat === 'a_faire' && tache.echeance < aujourdhui
+  const depuis = enRetard && retardEnDuree ? depuisRetard(tache.echeance, aujourdhui) : null
+  const jour = depuis?.texte ?? jourAffiche(tache.echeance, aujourdhui, jourMasque)
+  const horaire = horaireTache(tache)
   return {
-    jour: jourAffiche(tache.echeance, aujourdhui, jourMasque),
-    enRetard: tache.etat === 'a_faire' && tache.echeance < aujourdhui,
-    horaire: horaireTache(tache),
+    jour,
+    annonceJour: depuis?.annonce ?? null,
+    enRetard,
+    heureEnTete: jour === null && horaire !== '',
+    jourEnTete: depuis !== null,
+    horaire,
     autres: autres.length > 0 ? autres : [libelleCategorie(tache.categorie)],
   }
 }

@@ -1,23 +1,46 @@
 import { describe, expect, it } from 'vitest'
 import { bienEssai } from '../biens/bien-essai'
 import { contactEssai } from '../contacts/contact-essai'
-import { adresseUnique, detailLigneTache, jourAffiche, jourDeLaVue } from './ligne-tache'
+import {
+  adresseUnique,
+  depuisRetard,
+  detailLigneTache,
+  jourAffiche,
+  jourDeLaVue,
+} from './ligne-tache'
 import { tacheEssai } from './tache-essai'
 
 // Mardi 24 novembre 2026.
 const AUJOURDHUI = '2026-11-24'
 
 describe('jourDeLaVue', () => {
-  it("donne le jour de l'onglet Aujourd'hui", () => {
-    expect(jourDeLaVue('aujourdhui', AUJOURDHUI)).toBe(AUJOURDHUI)
+  it("donne le jour de la rubrique Aujourd'hui de l'onglet « À faire »", () => {
+    expect(jourDeLaVue('a_faire', AUJOURDHUI)).toBe(AUJOURDHUI)
   })
 
   it('ne masque rien dans les vues de plusieurs jours, ni hors de la page Tâches', () => {
-    expect(jourDeLaVue('en_retard', AUJOURDHUI)).toBeNull()
     expect(jourDeLaVue('semaine', AUJOURDHUI)).toBeNull()
     expect(jourDeLaVue('plus_tard', AUJOURDHUI)).toBeNull()
     expect(jourDeLaVue('terminees', AUJOURDHUI)).toBeNull()
     expect(jourDeLaVue(undefined, AUJOURDHUI)).toBeNull()
+  })
+})
+
+describe('depuisRetard', () => {
+  it('dit le retard en durée, et en toutes lettres aux lecteurs d’écran', () => {
+    expect(depuisRetard('2026-11-18', AUJOURDHUI)).toEqual({
+      texte: 'Depuis 6 j',
+      annonce: 'En retard de 6 jours',
+    })
+    expect(depuisRetard('2026-11-23', AUJOURDHUI)).toEqual({
+      texte: 'Depuis hier',
+      annonce: "En retard d'un jour",
+    })
+  })
+
+  it('ne dit rien pour une tâche du jour ou à venir', () => {
+    expect(depuisRetard(AUJOURDHUI, AUJOURDHUI)).toBeNull()
+    expect(depuisRetard('2026-11-25', AUJOURDHUI)).toBeNull()
   })
 })
 
@@ -65,7 +88,7 @@ describe('detailLigneTache', () => {
   const contact = contactEssai({ prenom: 'Camille', nom: 'Fictif' })
   const bien = bienEssai({ adresse: '12 rue Imaginaire', code_postal: '', ville: '' })
 
-  it("dans l'onglet Aujourd'hui, garde l'heure et tait le jour", () => {
+  it("dans la rubrique Aujourd'hui, garde l'heure et tait le jour", () => {
     const detail = detailLigneTache(
       {
         tache: tacheEssai({ echeance: AUJOURDHUI, heure: '14:30:00', lieu: 'Mairie' }),
@@ -76,7 +99,41 @@ describe('detailLigneTache', () => {
     )
     expect(detail.jour).toBeNull()
     expect(detail.horaire).toBe('14 h 30')
+    // Le jour n'est pas écrit : l'heure ouvre la ligne de détail.
+    expect(detail.heureEnTete).toBe(true)
     expect(detail.autres).toEqual(['Camille Fictif', 'Mairie'])
+  })
+
+  it('dans « À faire », dit le retard en durée, en rouge', () => {
+    const detail = detailLigneTache(
+      { tache: tacheEssai({ echeance: '2026-11-18', heure: '10:00:00' }), contact: null, bien },
+      { aujourdhui: AUJOURDHUI, jourMasque: AUJOURDHUI, retardEnDuree: true },
+    )
+    expect(detail.jour).toBe('Depuis 6 j')
+    expect(detail.annonceJour).toBe('En retard de 6 jours')
+    expect(detail.enRetard).toBe(true)
+    // Le retard ouvre la ligne, avant la priorité ; l'heure vient après.
+    expect(detail.jourEnTete).toBe(true)
+    expect(detail.heureEnTete).toBe(false)
+  })
+
+  it('garde le jour des autres vues, et l’heure après lui', () => {
+    const detail = detailLigneTache(
+      { tache: tacheEssai({ echeance: '2026-11-26', heure: '09:00:00' }), contact: null, bien },
+      { aujourdhui: AUJOURDHUI, retardEnDuree: false },
+    )
+    expect(detail.jour).toBe('jeu. 26 nov.')
+    expect(detail.annonceJour).toBeNull()
+    expect(detail.jourEnTete).toBe(false)
+    expect(detail.heureEnTete).toBe(false)
+  })
+
+  it("sans heure, rien n'ouvre la ligne avant la priorité", () => {
+    const detail = detailLigneTache(
+      { tache: tacheEssai({ echeance: AUJOURDHUI }), contact: null, bien: null },
+      { aujourdhui: AUJOURDHUI, jourMasque: AUJOURDHUI },
+    )
+    expect(detail.heureEnTete).toBe(false)
   })
 
   it('signale le retard et écrit le jour hors de son onglet', () => {

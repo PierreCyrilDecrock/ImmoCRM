@@ -43,7 +43,7 @@ import {
 } from '../features/biens/biens'
 import { blocDeTache } from '../features/aujourdhui/journee'
 import { CATEGORIES_TACHE, brouillonTacheVide, preparerTache } from '../features/taches/taches'
-import { vueDe } from '../features/taches/echeances'
+import { trancheDe } from '../features/taches/echeances'
 import { fauxClient } from './faux-client'
 
 describe('personnes fictives', () => {
@@ -222,7 +222,7 @@ describe('tâches fictives', () => {
   })
 
   it('couvrent les vues, un rendez-vous avec lieu et une récurrence', () => {
-    const vues = new Set(taches.map((tache) => vueDe(tache.echeance, '2026-11-17')))
+    const vues = new Set(taches.map((tache) => trancheDe(tache.echeance, '2026-11-17')))
     expect([...vues].sort()).toEqual(['aujourdhui', 'en_retard', 'plus_tard', 'semaine'])
     expect(taches.some((t) => t.heure !== undefined && t.lieu !== undefined)).toBe(true)
     const mensuelle = taches.find((t) => t.recurrence === 'mois')

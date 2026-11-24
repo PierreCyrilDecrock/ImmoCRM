@@ -11,13 +11,25 @@ import {
  * sont des jours du calendrier, à l'heure de Paris (`dateDuJour`).
  */
 
-/** Les vues de la page Tâches. */
-export type Vue = 'en_retard' | 'aujourdhui' | 'semaine' | 'plus_tard' | 'terminees'
+/**
+ * Les tranches de dates où tombe une tâche à faire : en retard, aujourd'hui, d'ici dimanche,
+ * plus tard. La pastille de la navigation compte la première.
+ */
+export type Tranche = 'en_retard' | 'aujourdhui' | 'semaine' | 'plus_tard'
 
-export const VUES: readonly { valeur: Vue; libelle: string }[] = [
-  { valeur: 'en_retard', libelle: 'En retard' },
-  { valeur: 'aujourdhui', libelle: "Aujourd'hui" },
-  { valeur: 'semaine', libelle: 'Semaine' },
+/**
+ * Les vues (onglets) de la page Tâches. « À faire » réunit les deux premières tranches, en
+ * deux rubriques : en retard, puis aujourd'hui (étape F.1, proposition 1 de la revue n° 2).
+ */
+export type Vue = 'a_faire' | 'semaine' | 'plus_tard' | 'terminees'
+
+/** Les deux rubriques de l'onglet « À faire », dans leur ordre d'affichage. */
+export type RubriqueAFaire = 'en_retard' | 'aujourdhui'
+
+export const VUES: readonly { valeur: Vue; libelle: string; precision?: string }[] = [
+  { valeur: 'a_faire', libelle: 'À faire' },
+  // Dit aux lecteurs d'écran et en info-bulle, plutôt qu'en note de bas de page.
+  { valeur: 'semaine', libelle: 'Semaine', precision: "jusqu'à dimanche" },
   { valeur: 'plus_tard', libelle: 'Plus tard' },
   { valeur: 'terminees', libelle: 'Terminées' },
 ]
@@ -27,15 +39,33 @@ export function libelleVue(vue: Vue): string {
 }
 
 /**
- * Bornes des dates d'échéance d'une vue de tâches à faire, incluses (`AAAA-MM-JJ`).
- * « Semaine » va de demain à dimanche ; le dimanche, elle est donc vide.
+ * La vue (et la rubrique) qu'ouvre une adresse `#/taches?vue=…`. Les anciennes vues « En
+ * retard » et « Aujourd'hui » (liens de l'accueil, anciens favoris) mènent à « À faire », à
+ * leur rubrique ; une valeur inconnue ou absente aussi, sans rubrique.
+ */
+export function vueDepuisAdresse(valeur: string | null): {
+  vue: Vue
+  rubrique: RubriqueAFaire | null
+} {
+  if (valeur === 'en_retard' || valeur === 'aujourdhui') {
+    return { vue: 'a_faire', rubrique: valeur }
+  }
+  const vue = VUES.find((option) => option.valeur === valeur)?.valeur
+  return { vue: vue ?? 'a_faire', rubrique: null }
+}
+
+/**
+ * Bornes des dates d'échéance d'une tranche, ou de la vue « À faire », incluses
+ * (`AAAA-MM-JJ`). « Semaine » va de demain à dimanche ; le dimanche, elle est donc vide.
  */
 export function bornesVue(
-  vue: Exclude<Vue, 'terminees'>,
+  vue: Tranche | 'a_faire',
   aujourdhui: string,
 ): { min?: string; max?: string } {
   const dimanche = finDeSemaine(aujourdhui)
   switch (vue) {
+    case 'a_faire':
+      return { max: aujourdhui }
     case 'en_retard':
       return { max: ajouterJours(aujourdhui, -1) }
     case 'aujourdhui':
@@ -47,12 +77,18 @@ export function bornesVue(
   }
 }
 
-/** La vue dans laquelle une tâche à faire apparaît. */
-export function vueDe(echeance: string, aujourdhui: string): Exclude<Vue, 'terminees'> {
+/** La tranche où tombe une tâche à faire. */
+export function trancheDe(echeance: string, aujourdhui: string): Tranche {
   if (echeance < aujourdhui) return 'en_retard'
   if (echeance === aujourdhui) return 'aujourdhui'
   if (echeance <= finDeSemaine(aujourdhui)) return 'semaine'
   return 'plus_tard'
+}
+
+/** La vue (l'onglet) dans laquelle une tâche à faire apparaît. */
+export function vueDe(echeance: string, aujourdhui: string): Exclude<Vue, 'terminees'> {
+  const tranche = trancheDe(echeance, aujourdhui)
+  return tranche === 'en_retard' || tranche === 'aujourdhui' ? 'a_faire' : tranche
 }
 
 export type ChoixReport = 'demain' | 'trois_jours' | 'semaine'

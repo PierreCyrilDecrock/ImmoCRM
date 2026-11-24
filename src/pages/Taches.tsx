@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Bouton from '../components/Bouton'
 import Carte from '../components/Carte'
@@ -11,7 +11,14 @@ import Onglets from '../components/Onglets'
 import Page from '../components/Page'
 import SuiteListe from '../components/SuiteListe'
 import { useCreationDeLaPage } from '../features/saisie/creation-page'
-import { VUES, type Vue } from '../features/taches/echeances'
+import { compteurAFaire, rubriquesAFaire } from '../features/taches/a-faire'
+import {
+  VUES,
+  vueDepuisAdresse,
+  type RubriqueAFaire,
+  type Tranche,
+  type Vue,
+} from '../features/taches/echeances'
 import FormulaireTache from '../features/taches/FormulaireTache'
 import ListeTaches from '../features/taches/ListeTaches'
 import {
@@ -24,7 +31,7 @@ import {
   TAILLE_PAGE_TACHES,
   type TacheAffichee,
 } from '../features/taches/taches'
-import { dateDuJour, formaterJourCourt } from '../lib/dates'
+import { dateDuJour } from '../lib/dates'
 import { useListePaginee, type LecteurPage } from '../lib/liste-paginee'
 import { exigerSupabase } from '../lib/supabase'
 
@@ -35,8 +42,8 @@ const lirePage: LecteurPage<TacheAffichee> = (cle, debut, compter) => {
 }
 
 const MESSAGES_VIDES: Record<Vue, { titre: string; texte: string }> = {
-  en_retard: { titre: 'Rien en retard', texte: 'Toutes vos tâches sont à jour. Bravo.' },
-  aujourdhui: {
+  // Ni retard ni tâche du jour : rien ne contredit ce message.
+  a_faire: {
     titre: "Rien de prévu aujourd'hui",
     texte: 'Ajoutez une tâche ci-dessus, ou regardez ce qui vient cette semaine.',
   },
@@ -55,8 +62,10 @@ const MESSAGES_VIDES: Record<Vue, { titre: string; texte: string }> = {
 }
 
 /**
- * Page Tâches : les tâches et rendez-vous, rangés en vues (en retard, aujourd'hui, cette
- * semaine, plus tard, terminées), avec la création rapide en tête : un titre, puis Entrée.
+ * Page Tâches : les tâches et rendez-vous, rangés en vues (à faire, cette semaine, plus tard,
+ * terminées), avec la création rapide en tête. La page s'ouvre sur « À faire » : la rubrique
+ * « En retard » (titre rouge, la plus ancienne d'abord), puis « Aujourd'hui » (rendez-vous
+ * par heure, puis tâches sans heure) ; la pastille de la navigation y mène donc (étape F.1) : un titre, puis Entrée.
  * « Ajouter » n'apparaît qu'une fois du texte saisi ; « Plus de détails » ouvre le formulaire
  * complet. Il n'y a pas de bouton « Nouvelle tâche » : sur téléphone et tablette, le « + »
  * flottant crée une tâche.
@@ -64,13 +73,15 @@ const MESSAGES_VIDES: Record<Vue, { titre: string; texte: string }> = {
 export default function Taches() {
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
-  // Une vue peut être demandée par l'adresse (`#/taches?vue=en_retard`, depuis Aujourd'hui).
+  // Une vue peut être demandée par l'adresse (`#/taches?vue=en_retard`, depuis Aujourd'hui) ;
+  // les anciennes vues mènent à « À faire », à leur rubrique (`vueDepuisAdresse`).
   const [parametres] = useSearchParams()
-  const [vue, setVue] = useState<Vue>(
-    () => VUES.find((option) => option.valeur === parametres.get('vue'))?.valeur ?? 'aujourdhui',
-  )
+  const [demande] = useState(() => vueDepuisAdresse(parametres.get('vue')))
+  const [vue, setVue] = useState<Vue>(demande.vue)
+  // La rubrique à amener à l'écran une fois la liste lue (une seule fois).
+  const rubriqueDemandee = useRef<RubriqueAFaire | null>(demande.rubrique)
   const [version, setVersion] = useState(0)
-  const [comptes, setComptes] = useState<Partial<Record<Vue, number | null>>>({})
+  const [comptes, setComptes] = useState<Partial<Record<Tranche, number | null>>>({})
   const [titreRapide, setTitreRapide] = useState('')
   const [erreurRapide, setErreurRapide] = useState<string | undefined>(undefined)
   const [envoiRapide, setEnvoiRapide] = useState(false)
@@ -95,6 +106,22 @@ export default function Taches() {
   }, [aujourdhui, version])
 
   const relire = () => setVersion((v) => v + 1)
+
+  function choisirVue(nouvelle: Vue) {
+    rubriqueDemandee.current = null
+    setVue(nouvelle)
+  }
+
+  const rubriques = vue === 'a_faire' ? rubriquesAFaire(liste.lignes, aujourdhui, comptes) : []
+
+  // `?vue=aujourdhui` : la rubrique du jour est amenée en haut de l'écran, sous les retards.
+  // `?vue=en_retard` n'a rien à faire : les retards sont déjà en tête.
+  const rubriqueAujourdhuiLue = rubriques.some((rubrique) => rubrique.cle === 'aujourdhui')
+  useEffect(() => {
+    if (rubriqueDemandee.current !== 'aujourdhui' || !rubriqueAujourdhuiLue) return
+    rubriqueDemandee.current = null
+    document.getElementById('rubrique-aujourdhui')?.scrollIntoView({ block: 'start' })
+  }, [rubriqueAujourdhuiLue])
 
   /** Création rapide : le titre suffit, la tâche est pour aujourd'hui. */
   async function creerRapidement(evenement: FormEvent) {
@@ -158,10 +185,15 @@ export default function Taches() {
         libelle="Vues des tâches"
         options={VUES.map((option) => ({
           ...option,
-          compteur: option.valeur === 'terminees' ? undefined : (comptes[option.valeur] ?? null),
+          compteur:
+            option.valeur === 'terminees'
+              ? undefined
+              : option.valeur === 'a_faire'
+                ? compteurAFaire(comptes)
+                : (comptes[option.valeur] ?? null),
         }))}
         valeur={vue}
-        onChange={setVue}
+        onChange={choisirVue}
       />
 
       {liste.chargement ? (
@@ -174,16 +206,49 @@ export default function Taches() {
         </EtatVide>
       ) : (
         <div className={liste.rafraichissement ? 'opacity-60' : undefined}>
-          <Carte>
-            <div className="-mx-4 -my-2">
-              <ListeTaches
-                taches={liste.lignes}
-                aujourdhui={aujourdhui}
-                vue={vue}
-                onChangement={relire}
-              />
+          {vue === 'a_faire' ? (
+            <div className="flex flex-col gap-6">
+              {rubriques.map((rubrique) => (
+                <section
+                  key={rubrique.cle}
+                  aria-labelledby={`rubrique-${rubrique.cle}`}
+                  className="flex flex-col gap-2"
+                >
+                  <h2
+                    id={`rubrique-${rubrique.cle}`}
+                    className={`scroll-mt-4 text-base font-semibold ${rubrique.cle === 'en_retard' ? 'text-danger' : 'text-encre'}`}
+                  >
+                    {rubrique.titre}
+                    <span className="font-normal text-encre-douce tabular-nums">
+                      {' · '}
+                      {rubrique.nombre}
+                    </span>
+                  </h2>
+                  <Carte>
+                    <div className="-mx-4 -my-2">
+                      <ListeTaches
+                        taches={rubrique.taches}
+                        aujourdhui={aujourdhui}
+                        vue={vue}
+                        onChangement={relire}
+                      />
+                    </div>
+                  </Carte>
+                </section>
+              ))}
             </div>
-          </Carte>
+          ) : (
+            <Carte>
+              <div className="-mx-4 -my-2">
+                <ListeTaches
+                  taches={liste.lignes}
+                  aujourdhui={aujourdhui}
+                  vue={vue}
+                  onChangement={relire}
+                />
+              </div>
+            </Carte>
+          )}
           <SuiteListe
             resteALire={liste.resteALire}
             suiteEnCours={liste.suiteEnCours}
@@ -191,13 +256,6 @@ export default function Taches() {
             chargerSuite={liste.chargerSuite}
           />
         </div>
-      )}
-
-      {vue !== 'terminees' && (
-        <p className="text-sm text-encre-douce">
-          Nous sommes le {formaterJourCourt(aujourdhui, aujourdhui)} : « Semaine » va jusqu'à
-          dimanche. Une tâche reportée change de vue toute seule.
-        </p>
       )}
 
       {formulaire !== null && (

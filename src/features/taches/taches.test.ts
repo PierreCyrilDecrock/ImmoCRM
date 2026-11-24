@@ -145,6 +145,10 @@ describe('conditionsVue', () => {
       { colonne: 'etat', genre: 'egal', valeur: 'a_faire' },
       { colonne: 'echeance', genre: 'max', valeur: '2026-11-16' },
     ])
+    expect(conditionsVue('a_faire', AUJOURDHUI)).toEqual([
+      { colonne: 'etat', genre: 'egal', valeur: 'a_faire' },
+      { colonne: 'echeance', genre: 'max', valeur: AUJOURDHUI },
+    ])
     expect(conditionsVue('terminees', AUJOURDHUI)).toEqual([
       { colonne: 'etat', genre: 'parmi', valeur: ['faite', 'annulee'] },
     ])

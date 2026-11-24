@@ -21,6 +21,8 @@ type Props = {
    * Aujourd'hui) : il ne s'écrit pas sur la ligne.
    */
   jourMasque?: string | null
+  /** Un retard se dit en durée (« Depuis 6 j ») : onglet « À faire » de la page Tâches. */
+  retardEnDuree?: boolean
   /** Une action est en cours sur cette tâche : ses boutons sont inactifs. */
   occupee: boolean
   onCocher: () => void
@@ -50,7 +52,8 @@ type Props = {
 /**
  * Une tâche dans une liste (étape E.3) : la case ronde à gauche (faite en un geste, ou la
  * boucle de relance), le titre et une seule ligne de détail (`detailLigneTache` : le jour
- * s'il diffère de l'onglet, l'heure en gras, le contact, une seule adresse), le toucher
+ * s'il diffère de l'onglet, ou « Depuis 6 j » dans l'onglet « À faire », l'heure en gras,
+ * en tête quand le jour n'est pas écrit, le contact, une seule adresse), le toucher
  * ouvre la tâche ; à droite, un seul geste : Reporter. Une tâche close montre son état et
  * propose de la rouvrir.
  */
@@ -59,6 +62,7 @@ export default function LigneTache({
   aujourdhui,
   masquer,
   jourMasque = null,
+  retardEnDuree = false,
   occupee,
   onCocher,
   onReporter,
@@ -78,24 +82,34 @@ export default function LigneTache({
     masquer,
     // L'échéance à droite remplace le jour du détail.
     jourMasque: jourADroite ? tache.echeance : jourMasque,
+    retardEnDuree,
   })
   const rapide = aFaire && onReporterA !== undefined
   const seGlisse = aFaire && (glissable ?? onReporterA !== undefined)
   // La ligne de détail, morceau par morceau (priorité, jour, heure en gras, contact, adresse).
-  const morceaux = [
-    aFaire && tache.priorite === 1
-      ? { cle: 'priorite', texte: 'Priorité haute', classe: 'font-semibold text-danger' }
-      : null,
+  // Dans l'onglet « À faire », ce qui sert à décider l'ouvre : le retard (« Depuis 6 j »), ou
+  // l'heure quand le jour n'est pas écrit.
+  const heure =
+    detail.horaire !== '' && !jourADroite
+      ? { cle: 'horaire', texte: detail.horaire, classe: 'font-semibold text-encre' }
+      : null
+  const jour =
     detail.jour !== null
       ? {
           cle: 'jour',
           texte: detail.jour,
           classe: detail.enRetard ? 'font-semibold text-danger' : undefined,
+          annonce: detail.annonceJour ?? undefined,
         }
+      : null
+  const morceaux: { cle: string; texte: string; classe?: string; annonce?: string }[] = [
+    detail.heureEnTete ? heure : null,
+    detail.jourEnTete ? jour : null,
+    aFaire && tache.priorite === 1
+      ? { cle: 'priorite', texte: 'Priorité haute', classe: 'font-semibold text-danger' }
       : null,
-    detail.horaire !== '' && !jourADroite
-      ? { cle: 'horaire', texte: detail.horaire, classe: 'font-semibold text-encre' }
-      : null,
+    detail.jourEnTete ? null : jour,
+    detail.heureEnTete ? null : heure,
     ...detail.autres.map((texte, rang) => ({ cle: `autre-${rang}`, texte, classe: undefined })),
   ].filter((morceau) => morceau !== null)
 
@@ -134,7 +148,14 @@ export default function LigneTache({
             {morceaux.map((morceau, rang) => (
               <span key={morceau.cle} className={morceau.classe}>
                 {rang > 0 && <span className="font-normal text-encre-douce"> · </span>}
-                {morceau.texte}
+                {morceau.annonce === undefined ? (
+                  morceau.texte
+                ) : (
+                  <>
+                    <span aria-hidden="true">{morceau.texte}</span>
+                    <span className="sr-only">{morceau.annonce}</span>
+                  </>
+                )}
               </span>
             ))}
           </span>

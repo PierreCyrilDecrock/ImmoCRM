@@ -16,7 +16,7 @@ import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import { filtreLien, lireFichesLiees, type LienFiche } from '../liens/fiches-liees'
 import { colonnesProjet, lienProjetDe, type LienProjet } from '../liens/lien-projet'
-import { bornesVue, type Vue } from './echeances'
+import { bornesVue, type Tranche, type Vue } from './echeances'
 import { estRecurrence, occurrenceSuivante, type Recurrence } from './recurrence'
 
 /**
@@ -239,8 +239,8 @@ export function preparerTache(
 // Lecture
 // ---------------------------------------------------------------------------
 
-/** Conditions d'une vue de la page Tâches, à passer à la base. */
-export function conditionsVue(vue: Vue, aujourdhui: string): Filtre<'taches'>[] {
+/** Conditions d'une vue de la page Tâches, ou d'une tranche de dates, à passer à la base. */
+export function conditionsVue(vue: Vue | Tranche, aujourdhui: string): Filtre<'taches'>[] {
   if (vue === 'terminees') {
     return [{ colonne: 'etat', genre: 'parmi', valeur: ['faite', 'annulee'] }]
   }
@@ -251,7 +251,11 @@ export function conditionsVue(vue: Vue, aujourdhui: string): Filtre<'taches'>[] 
   return conditions
 }
 
-/** Ordre des tâches à faire : par jour, les rendez-vous par heure, puis par priorité. */
+/**
+ * Ordre des tâches à faire : par jour (la plus ancienne d'abord), les rendez-vous par heure
+ * avant les tâches sans heure (la base range les heures vides en dernier), puis par priorité.
+ * `ordreAFaire` (`a-faire.ts`) suit le même ordre.
+ */
 const TRI_A_FAIRE = [
   { colonne: 'echeance' },
   { colonne: 'heure' },
@@ -299,11 +303,14 @@ export async function lirePageTaches(
   return { ok: true, donnees: { lignes: lignes.donnees, total: page.donnees.total } }
 }
 
-/** Nombre de tâches à faire dans chaque vue (pour les onglets). `null` : nombre inconnu. */
+/**
+ * Nombre de tâches à faire dans chaque tranche (onglets et rubriques ; « À faire » additionne
+ * les deux premières, `compteurAFaire`). `null` : nombre inconnu.
+ */
 export async function compterVues(
   client: SupabaseClient,
   aujourdhui: string,
-): Promise<Record<Exclude<Vue, 'terminees'>, number | null>> {
+): Promise<Record<Tranche, number | null>> {
   const vues = ['en_retard', 'aujourdhui', 'semaine', 'plus_tard'] as const
   const comptes = await Promise.all(
     vues.map((vue) =>
