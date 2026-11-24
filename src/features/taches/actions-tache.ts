@@ -5,7 +5,7 @@ import { exigerSupabase } from '../../lib/supabase'
 import { libelleVue, vueDe } from './echeances'
 import { cloturerTache, reporterTache, rouvrirTache, type Tache } from './taches'
 
-/** Où retrouver une tâche à faire : « jeu. 19 nov., dans « Cette semaine » ». */
+/** Où retrouver une tâche à faire : « jeu. 19 nov., dans « Semaine » ». */
 function ouRetrouver(echeance: string, aujourdhui: string): string {
   return `${formaterJourCourt(echeance, aujourdhui)}, dans « ${libelleVue(vueDe(echeance, aujourdhui))} »`
 }

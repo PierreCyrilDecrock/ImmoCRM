@@ -108,7 +108,7 @@ function diagnostic(
  * allant reste sous les yeux ; le reste est rangé en onglets, gardés dans l'adresse.
  * - Ordinateur : à gauche le profil (photo principale et sa galerie, type, adresse avec
  *   Copier et Itinéraire, prix et surface, propriétaires à appeler d'un toucher, prochaine
- *   tâche), qui ne bouge pas ; à droite les onglets Activité, Projets et acquéreurs, Tâches,
+ *   tâche), qui ne bouge pas ; à droite les onglets Activité, Acquéreurs, Tâches,
  *   Détails (touches 1 à 4). Depuis la liste des biens, « 12 sur 48 » et deux flèches (K, J).
  * - Tablette et téléphone : un en-tête compact, la prochaine tâche, puis les mêmes onglets,
  *   les propriétaires en tête de Détails. Sur téléphone, Itinéraire, Appeler le propriétaire

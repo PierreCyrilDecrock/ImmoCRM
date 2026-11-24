@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { etatsEtapes, listeEnFrancais, phraseManque, phrasePassage } from './etapes'
+import {
+  etatsEtapes,
+  listeCriteres,
+  listeEnFrancais,
+  phraseManque,
+  phrasePassage,
+  titrePassage,
+} from './etapes'
 
 const ETAPES = [
   { valeur: 'a', libelle: 'Un' },
@@ -46,5 +53,37 @@ describe('phrases de passage', () => {
       'Il manque le motif de la vente et le délai souhaité.',
     )
     expect(phraseManque([])).toBe('')
+  })
+})
+
+describe('listeCriteres', () => {
+  it('garde les critères propres à l’étape et ceux d’avant qui manquent', () => {
+    expect(
+      listeCriteres([
+        { libelle: 'Source', acquis: true, propre: false },
+        { libelle: 'Budget', acquis: false, propre: false },
+        { libelle: 'Motif', acquis: true, propre: true },
+        { libelle: 'Délai', acquis: false, propre: true },
+      ]),
+    ).toEqual([
+      { libelle: 'Budget', acquis: false },
+      { libelle: 'Motif', acquis: true },
+      { libelle: 'Délai', acquis: false },
+    ])
+  })
+
+  it('réunit deux informations de même libellé, acquises seulement ensemble', () => {
+    const fourchette = (basse: boolean, haute: boolean) =>
+      listeCriteres([
+        { libelle: 'Estimation', acquis: basse, propre: true },
+        { libelle: 'Estimation', acquis: haute, propre: true },
+      ])
+    expect(fourchette(true, true)).toEqual([{ libelle: 'Estimation', acquis: true }])
+    expect(fourchette(true, false)).toEqual([{ libelle: 'Estimation', acquis: false }])
+    expect(fourchette(false, true)).toEqual([{ libelle: 'Estimation', acquis: false }])
+  })
+
+  it('titre la liste par l’étape d’arrivée', () => {
+    expect(titrePassage('Estimation')).toBe('Pour passer à Estimation')
   })
 })

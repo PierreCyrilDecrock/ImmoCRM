@@ -1,6 +1,7 @@
 import type { GenreEtiquette } from '../../components/Etiquette'
 import { ajouterJours, ajouterMois, ecartJours, estDateValide, formaterDate } from '../../lib/dates'
 import type { Ligne } from '../../lib/donnees'
+import { listeCriteres, type CritereSortie } from '../../lib/etapes'
 import { lireNombre } from '../../lib/nombres'
 
 /**
@@ -134,6 +135,30 @@ export function ancienneteEtape(etapeLe: string, aujourdhui: string): string {
   return `Depuis ${ans} an${ans > 1 ? 's' : ''}`
 }
 
+/**
+ * La même ancienneté, en court, collée au nom de l'étape dans la frise (« Découverte · 12 j ») :
+ * « 0 j », « 1 j », « 12 j », « 3 mois », « 2 ans ».
+ */
+export function ancienneteCourte(etapeLe: string, aujourdhui: string): string {
+  const jours = Math.max(0, ecartJours(etapeLe, aujourdhui))
+  if (jours < 60) return `${jours} j`
+  if (jours < 365) return `${Math.floor(jours / 30)} mois`
+  const ans = Math.floor(jours / 365)
+  return `${ans} an${ans > 1 ? 's' : ''}`
+}
+
+/** L'ancienneté pour la frise des étapes (`BarreEtapes`) : en court, en clair, et si elle traîne. */
+export function ancienneteFrise(
+  etapeLe: string,
+  aujourdhui: string,
+): { court: string; texte: string; alerte: boolean } {
+  return {
+    court: ancienneteCourte(etapeLe, aujourdhui),
+    texte: ancienneteEtape(etapeLe, aujourdhui),
+    alerte: etapeQuiTraine(etapeLe, aujourdhui),
+  }
+}
+
 /** Le projet stagne : plus de `JOURS_ETAPE_QUI_TRAINE` jours dans la même étape. */
 export function etapeQuiTraine(etapeLe: string, aujourdhui: string): boolean {
   return ecartJours(etapeLe, aujourdhui) > JOURS_ETAPE_QUI_TRAINE
@@ -177,6 +202,18 @@ export const SUJETS_PASSAGE: Record<InfoPassage, string> = {
   avis_remis_le: 'la remise de l’avis de valeur',
   mandat_type: 'le type de mandat',
   mandat_le: 'la date de signature',
+}
+
+/** Le nom de chaque information dans la liste « Pour passer à … » de la fiche du projet. */
+export const LIBELLES_CRITERES: Record<InfoPassage, string> = {
+  source: 'Source du contact',
+  motif_vente: 'Motif de la vente',
+  echeance_souhaitee: 'Délai souhaité',
+  estimation_basse: 'Estimation (fourchette de prix)',
+  estimation_haute: 'Estimation (fourchette de prix)',
+  avis_remis_le: 'Avis de valeur remis',
+  mandat_type: 'Type de mandat',
+  mandat_le: 'Date de signature du mandat',
 }
 
 /** Ce que demande l'arrivée à une étape : les critères de toutes les étapes d'avant. */
@@ -489,13 +526,19 @@ export function debutGagnesVisibles(aujourdhui: string): string {
   return ajouterJours(aujourdhui, -JOURS_GAGNES_VISIBLES)
 }
 
-/** Ce qu'il faut pour passer à l'étape suivante d'un projet en cours, pour la fiche Contact. */
+/** Ce qu'il faut pour passer à l'étape suivante d'un projet en cours. */
 export type AideEtape = {
   suivante: EtapeVendeur
   /** Le critère de sortie de l'étape en cours (« Avis de valeur remis »). */
   critere: string
   /** Ce qui manque encore, en mots (« l’estimation »), sans doublon. */
   manquantes: string[]
+  /**
+   * Les mêmes règles en liste, pour la fiche du projet : chaque information demandée par
+   * l'étape suivante, acquise ou non (« Motif de la vente », « Délai souhaité »). Celles des
+   * étapes d'avant n'y figurent que si elles manquent encore.
+   */
+  criteres: CritereSortie[]
 }
 
 /**
@@ -512,5 +555,13 @@ export function aideEtapeSuivante(
   const manquantes = informationsManquantes(projet, source, suivante).map(
     (info) => SUJETS_PASSAGE[info],
   )
-  return { suivante, critere, manquantes: [...new Set(manquantes)] }
+  const dejaDemandees = new Set(estEtapeVendeur(projet.etape) ? exigencesEtape(projet.etape) : [])
+  const criteres = listeCriteres(
+    exigencesEtape(suivante).map((info) => ({
+      libelle: LIBELLES_CRITERES[info],
+      acquis: estConnu(info, projet, source),
+      propre: !dejaDemandees.has(info),
+    })),
+  )
+  return { suivante, critere, manquantes: [...new Set(manquantes)], criteres }
 }

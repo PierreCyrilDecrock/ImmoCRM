@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   aideEtapeSuivanteAcquereur,
+  criteresOffre,
   ajouterSecteur,
   brouillonPassageAcquereur,
   brouillonRechercheDepuis,
@@ -344,6 +345,10 @@ describe('aideEtapeSuivanteAcquereur', () => {
       suivante: 'qualification',
       critere: 'Appel ou portail',
       manquantes: ['l’origine de la demande', 'le budget'],
+      criteres: [
+        { libelle: 'Origine de la demande', acquis: false },
+        { libelle: 'Budget', acquis: false },
+      ],
     })
     expect(aideEtapeSuivanteAcquereur(qualifie, 0)?.manquantes).toEqual([
       'les critères',
@@ -363,6 +368,34 @@ describe('aideEtapeSuivanteAcquereur', () => {
     expect(aideEtapeSuivanteAcquereur(enSelection, 0)?.manquantes).toEqual(['un bien proposé'])
     expect(aideEtapeSuivanteAcquereur(enSelection, 2)?.manquantes).toEqual([])
     expect(aideEtapeSuivanteAcquereur({ ...enSelection, etape: 'visites' }, 2)).toBeNull()
+    expect(aideEtapeSuivanteAcquereur(enSelection, 0)?.criteres).toEqual([
+      { libelle: 'Au moins un bien proposé', acquis: false },
+    ])
+    expect(aideEtapeSuivanteAcquereur(enSelection, 2)?.criteres).toEqual([
+      { libelle: 'Au moins un bien proposé', acquis: true },
+    ])
+  })
+
+  it('liste les critères de la qualification, et le budget s’il manque encore', () => {
+    expect(aideEtapeSuivanteAcquereur(qualifie, 0)?.criteres).toEqual([
+      { libelle: 'Types de biens recherchés', acquis: false },
+      { libelle: 'Secteurs', acquis: false },
+      { libelle: 'Financement', acquis: false },
+    ])
+    const sansBudget = { ...qualifie, budget_max: null, types_biens: ['maison' as const] }
+    expect(aideEtapeSuivanteAcquereur(sansBudget, 0)?.criteres).toEqual([
+      { libelle: 'Budget', acquis: false },
+      { libelle: 'Types de biens recherchés', acquis: true },
+      { libelle: 'Secteurs', acquis: false },
+      { libelle: 'Financement', acquis: false },
+    ])
+  })
+})
+
+describe('criteresOffre', () => {
+  it('demande au moins une visite consignée pour noter l’offre acceptée', () => {
+    expect(criteresOffre(0)).toEqual([{ libelle: 'Au moins une visite consignée', acquis: false }])
+    expect(criteresOffre(3)).toEqual([{ libelle: 'Au moins une visite consignée', acquis: true }])
   })
 })
 

@@ -18,13 +18,16 @@ import OngletsFiche from '../components/OngletsFiche'
 import Page from '../components/Page'
 import SectionJournal from '../features/activites/SectionJournal'
 import { cartesDeLAppareil } from '../features/aujourdhui/journee'
-import { libelleSource } from '../features/contacts/contacts'
+import { libelleSource, nomComplet } from '../features/contacts/contacts'
 import { estPortable, lienSms } from '../features/contacts/telephone'
 import { appelFiche } from '../features/liens/appel-fiche'
 import { lireCompteursFiche, type CompteursFiche } from '../features/liens/compteurs-fiche'
 import {
+  enTeteProjetVendeur,
   LIBELLES_ONGLETS_PROJET,
   ongletsProjet,
+  pastilleEtatProjet,
+  repliProchaineAction,
   type OngletProjet,
 } from '../features/liens/fiche-projet'
 import LiensProjet from '../features/liens/LiensProjet'
@@ -32,13 +35,10 @@ import { useChangementEtape } from '../features/projets/changement-etape'
 import FormulaireProjetVendeur from '../features/projets/FormulaireProjetVendeur'
 import {
   aideEtapeSuivante,
-  ancienneteEtape,
+  ancienneteFrise,
   estEtapeVendeur,
   ETAPES_VENDEUR,
-  etapeQuiTraine,
-  genreEtatProjet,
   libelleEtape,
-  libelleEtatProjet,
   libelleMotifPerte,
   libelleTypeMandat,
   resumeEtat,
@@ -59,7 +59,7 @@ import ProchaineTacheFiche from '../features/taches/ProchaineTacheFiche'
 import SectionTaches from '../features/taches/SectionTaches'
 import { dateDuJour, formaterDate, formaterJourCourt } from '../lib/dates'
 import { useTailleEcran } from '../lib/ecran'
-import { etatsEtapes, phraseManque, phrasePassage } from '../lib/etapes'
+import { etatsEtapes, titrePassage } from '../lib/etapes'
 import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
 import { formaterPrix } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
@@ -79,14 +79,15 @@ const ONGLETS = ongletsProjet('vendeur')
 const prix = (montant: number | null) => (montant === null ? null : formaterPrix(montant))
 
 /**
- * Fiche d'un projet de vente (étape D.7), organisée comme la fiche Contact.
- * - Ordinateur : à gauche le profil (état, étapes en barre avec « Pour passer à l'étape
- *   suivante : … » et « Étape suivante », sorties, vendeur et bien, prochaine action), qui
- *   ne bouge pas ; à droite les onglets Activité, Tâches, Détails (touches 1 à 3). Depuis le
- *   pipeline, « 2 sur 5 » et deux flèches (K, J) dans l'ordre de la colonne de l'étape.
- * - Tablette et téléphone : un en-tête compact, les étapes, la prochaine action, puis les
- *   onglets (vendeur et bien en tête de Détails). Sur téléphone, Appeler, SMS et Consigner
- *   sont en bas de l'écran.
+ * Fiche d'un projet de vente (étapes D.7 et E.7), pleine page sur tous les écrans. La
+ * question de la fiche est « qu'est-ce qui manque pour avancer ? » : en haut, le bien en
+ * titre (« Projet de vente · vendeur » au-dessus, Modifier et le menu « … »), puis la frise
+ * des étapes (l'étape en cours, écrite là seulement, avec son ancienneté), les critères pour
+ * passer à la suivante et le bouton « Passer à … ». « À recontacter » et « Perdu » sont dans
+ * le menu « … ». Dessous, vendeur et bien, la prochaine action, puis les onglets Activité,
+ * Tâches, Détails (touches 1 à 3). Sur ordinateur, depuis le pipeline, « 2 sur 5 » et deux
+ * flèches (K, J). Sur téléphone, vendeur et bien sont en tête de Détails, et Appeler, SMS et
+ * Consigner en bas de l'écran.
  */
 export default function FicheProjetVendeur() {
   const { id = '' } = useParams()
@@ -174,6 +175,16 @@ export default function FicheProjetVendeur() {
   const aide = actif ? aideEtapeSuivante(projet, contact?.source ?? null) : null
   const origine = { lien: { genre: 'vendeur' as const, id: projet.id }, contact, bien }
   const titre = bien === null ? 'Projet de vente' : `Vente — ${bien.adresse}`
+  const enTete = enTeteProjetVendeur(
+    bien?.adresse ?? null,
+    contact === null ? null : nomComplet(contact),
+  )
+  const pastille = pastilleEtatProjet({
+    etat: projet.etat,
+    archive,
+    recontacterLe: projet.recontacter_le,
+    gagne: resumeEtat(projet),
+  })
   const appel = appelFiche(contact === null ? [] : [contact], 'contact introuvable')
   const portable = contact?.telephones.find(estPortable) ?? contact?.telephones[0]
 
@@ -255,47 +266,52 @@ export default function FicheProjetVendeur() {
       <span className="max-md:sr-only">Modifier</span>
     </Bouton>
   )
+  // Les gestes rares : sortir du pipeline (projet en cours), archiver.
   const menu = archive ? null : (
     <MenuActions
       libelle="Autres actions sur le projet"
-      elements={[{ libelle: 'Archiver', icone: 'archiver', onChoisir: () => setArchivage(true) }]}
+      elements={[
+        ...(actif
+          ? [
+              {
+                libelle: 'À recontacter…',
+                icone: 'horloge' as const,
+                onChoisir: () => setSortie('a_recontacter'),
+              },
+              { libelle: 'Perdu…', icone: 'fermer' as const, onChoisir: () => setSortie('perdu') },
+            ]
+          : []),
+        { libelle: 'Archiver', icone: 'archiver', onChoisir: () => setArchivage(true) },
+      ]}
     />
   )
 
-  const identite = (grande: boolean) => (
+  // Le type de projet et le vendeur, avec l'état d'un projet hors du pipeline ; puis le bien.
+  const identite = (
     <div className="flex min-w-0 flex-col gap-1">
-      <p className="flex flex-wrap items-center gap-2">
-        <Etiquette genre={genreEtatProjet(projet.etat)}>{libelleEtatProjet(projet.etat)}</Etiquette>
-        <span className="text-sm text-encre-douce">Projet de vente</span>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-encre-douce">
+        {pastille !== null && <Etiquette genre={pastille.genre}>{pastille.texte}</Etiquette>}
+        <span>{enTete.surtitre}</span>
       </p>
-      <h1
-        className={`leading-tight font-bold tracking-tight break-words text-encre ${
-          grande ? 'text-2xl' : 'text-[1.375rem] md:text-[1.75rem]'
-        }`}
-      >
-        {titre}
+      <h1 className="text-[1.375rem] leading-tight font-bold tracking-tight break-words text-encre md:text-[1.75rem]">
+        {enTete.titre}
       </h1>
-      <p className="text-sm text-encre-douce">{resumeEtat(projet)}</p>
     </div>
   )
 
-  // L'étape en barre, ce qu'il faut pour la suivante, et les sorties du pipeline.
+  // La frise des étapes, ce qu'il faut pour la suivante et le bouton qui y fait passer.
   const etapes = dansLePipeline && (
-    <Carte titre="Étape">
+    <Carte>
       <BarreEtapes
         etapes={etatsEtapes(ETAPES_VENDEUR, projet.etape, projet.etat === 'gagne')}
         anciennete={
-          projet.etat === 'actif'
-            ? {
-                texte: ancienneteEtape(projet.etape_le, aujourdhui),
-                alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
-              }
-            : undefined
+          projet.etat === 'actif' ? ancienneteFrise(projet.etape_le, aujourdhui) : undefined
         }
-        critere={
-          aide === null ? undefined : phrasePassage(libelleEtape(aide.suivante), aide.critere)
+        passage={
+          aide === null
+            ? undefined
+            : { titre: titrePassage(libelleEtape(aide.suivante)), criteres: aide.criteres }
         }
-        manque={aide === null ? undefined : phraseManque(aide.manquantes)}
         suivante={
           aide === null
             ? undefined
@@ -303,6 +319,7 @@ export default function FicheProjetVendeur() {
                 libelle: libelleEtape(aide.suivante),
                 onPasser: () => changement.demander(affiche, aide.suivante),
                 desactive: changement.enCours !== null,
+                principal: true,
               }
         }
         choix={{
@@ -312,20 +329,6 @@ export default function FicheProjetVendeur() {
           desactive: changement.enCours !== null,
         }}
       />
-      <p className="mt-2 text-sm text-encre-douce">
-        Touchez une étape pour y passer. Pour avancer, le critère de sortie des étapes franchies est
-        demandé s'il manque.
-      </p>
-      {actif && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Bouton variante="secondaire" onClick={() => setSortie('a_recontacter')}>
-            À recontacter…
-          </Bouton>
-          <Bouton variante="secondaire" onClick={() => setSortie('perdu')}>
-            Perdu…
-          </Bouton>
-        </div>
-      )}
     </Carte>
   )
 
@@ -333,9 +336,6 @@ export default function FicheProjetVendeur() {
     <Carte titre="Hors du pipeline">
       <dl className="divide-y divide-bord">
         <Information nom="Étape atteinte">{libelleEtape(projet.etape)}</Information>
-        {projet.etat === 'a_recontacter' && (
-          <Information nom="À recontacter le">{formaterDate(projet.recontacter_le)}</Information>
-        )}
         {projet.etat === 'perdu' && (
           <Information nom="Motif">
             {libelleMotifPerte(projet.motif_perte)}
@@ -380,7 +380,10 @@ export default function FicheProjetVendeur() {
       repli={
         contact?.prochaine_action_le == null
           ? undefined
-          : `Prochaine action du vendeur, hors de ce projet : ${formaterJourCourt(contact.prochaine_action_le, aujourdhui)}.`
+          : repliProchaineAction(
+              'du vendeur',
+              formaterJourCourt(contact.prochaine_action_le, aujourdhui),
+            )
       }
       lectureSeule={archive}
     />
@@ -545,7 +548,7 @@ export default function FicheProjetVendeur() {
       }
       enTete={
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">{identite(false)}</div>
+          <div className="min-w-0 flex-1">{identite}</div>
           <div className="flex shrink-0 gap-2">
             {modifier}
             {menu}
@@ -568,9 +571,11 @@ export default function FicheProjetVendeur() {
       {telephone && (
         <BarreActionsFiche libelle={`Actions sur ${titre}`}>
           <div className="flex flex-[2]">
+            {/* Un seul bouton bleu : « Passer à … » l'est quand il est là. */}
             <LienAction
               libelle="Appeler"
               icone="telephone"
+              variante={aide === null ? 'principal' : 'secondaire'}
               href={appel.lien}
               annonce={appel.annonce}
             />

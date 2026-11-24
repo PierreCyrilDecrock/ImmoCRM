@@ -99,7 +99,7 @@ const CLASSES_MODIFIER =
  *   droite les onglets Activité, Projets, Tâches, Biens (touches 1 à 4). Depuis la liste des
  *   contacts, « 12 sur 48 » et deux flèches (touches K et J) passent au contact voisin.
  * - Tablette et téléphone : un en-tête compact (la température en puce à côté du rôle), la
- *   prochaine action, puis les onglets Activité, Projets, Tâches, Infos ; dans Activité,
+ *   prochaine action, puis les onglets Activité, Infos, Projets, Tâches, Biens ; dans Activité,
  *   « Consigner un échange » replié en un champ d'une ligne. Sur téléphone, Appeler, SMS et
  *   Consigner sont en bas de l'écran.
  */

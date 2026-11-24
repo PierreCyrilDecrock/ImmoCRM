@@ -21,12 +21,14 @@ export const LIBELLES_ONGLETS: Record<OngletContact, string> = {
  * Les onglets, dans l'ordre : les mêmes partout, Activité, Projets, Tâches, Biens. Quand le
  * profil n'a pas sa colonne (écran de moins de 1024 px : téléphone, tablette en hauteur), un
  * cinquième onglet, « Infos », porte ce que le profil montre sur grand écran (coordonnées,
- * origine, à savoir, consentement).
+ * origine, à savoir, consentement). Il vient juste après Activité (étape E.7) : au téléphone,
+ * les cinq onglets ne tiennent pas sur la largeur, et les coordonnées doivent se voir sans
+ * faire défiler les onglets ; c'est Biens, le moins consulté, qui passe sous le fondu.
  */
 export function ongletsContact(taille: TailleEcran): readonly OngletContact[] {
   return taille === 'ordinateur'
     ? ['activite', 'projets', 'taches', 'biens']
-    : ['activite', 'projets', 'taches', 'biens', 'infos']
+    : ['activite', 'infos', 'projets', 'taches', 'biens']
 }
 
 /**

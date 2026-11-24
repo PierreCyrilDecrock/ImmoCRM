@@ -1,6 +1,7 @@
 import type { GenreEtiquette } from '../../components/Etiquette'
 import { estDateValide, formaterDate } from '../../lib/dates'
 import type { Ligne, Modification } from '../../lib/donnees'
+import { listeCriteres, type CritereSortie } from '../../lib/etapes'
 import { formaterNombre, formaterPrix, lireNombre } from '../../lib/nombres'
 import {
   CATEGORIES_BIEN,
@@ -245,6 +246,16 @@ export const SUJETS_PASSAGE_ACQUEREUR: Record<InfoPassageAcquereur, string> = {
   secteurs: 'les critères',
   financement: 'le financement',
   biens_proposes: 'un bien proposé',
+}
+
+/** Le nom de chaque information dans la liste « Pour passer à … » de la fiche du projet. */
+export const LIBELLES_CRITERES_ACQUEREUR: Record<InfoPassageAcquereur, string> = {
+  origine: 'Origine de la demande',
+  budget_max: 'Budget',
+  types_biens: 'Types de biens recherchés',
+  secteurs: 'Secteurs',
+  financement: 'Financement',
+  biens_proposes: 'Au moins un bien proposé',
 }
 
 /** Ce que demande l'arrivée à une étape : les critères de toutes les étapes d'avant. */
@@ -683,13 +694,19 @@ export function grouperParEtapeAcquereur<
   }))
 }
 
-/** Ce qu'il faut pour passer à l'étape suivante d'un projet en cours, pour la fiche Contact. */
+/** Ce qu'il faut pour passer à l'étape suivante d'un projet en cours. */
 export type AideEtapeAcquereur = {
   suivante: EtapeAcquereur
   /** Le critère de sortie de l'étape en cours (« Budget, critères »). */
   critere: string
   /** Ce qui manque encore, en mots (« le budget »), sans doublon. */
   manquantes: string[]
+  /**
+   * Les mêmes règles en liste, pour la fiche du projet : chaque information demandée par
+   * l'étape suivante, acquise ou non. Celles des étapes d'avant n'y figurent que si elles
+   * manquent encore.
+   */
+  criteres: CritereSortie[]
 }
 
 /**
@@ -707,5 +724,23 @@ export function aideEtapeSuivanteAcquereur(
   const manquantes = informationsManquantesAcquereur(projet, nbProposes, suivante).map(
     (info) => SUJETS_PASSAGE_ACQUEREUR[info],
   )
-  return { suivante, critere, manquantes: [...new Set(manquantes)] }
+  const dejaDemandees = new Set(
+    estEtapeAcquereur(projet.etape) ? exigencesEtapeAcquereur(projet.etape) : [],
+  )
+  const criteres = listeCriteres(
+    exigencesEtapeAcquereur(suivante).map((info) => ({
+      libelle: LIBELLES_CRITERES_ACQUEREUR[info],
+      acquis: estConnu(info, projet, nbProposes),
+      propre: !dejaDemandees.has(info),
+    })),
+  )
+  return { suivante, critere, manquantes: [...new Set(manquantes)], criteres }
+}
+
+/**
+ * À la dernière étape (« Visites »), ce que demande l'offre acceptée : au moins une visite
+ * consignée (la règle de `preparerOffre`), en liste comme les critères de sortie.
+ */
+export function criteresOffre(nbVisites: number): CritereSortie[] {
+  return [{ libelle: 'Au moins une visite consignée', acquis: nbVisites > 0 }]
 }

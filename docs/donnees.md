@@ -209,7 +209,7 @@ Une tâche est toute action à venir, avec une date et un motif (table `taches`)
 
 **Dates.** Une échéance est un jour du calendrier, sans heure ni fuseau ; « aujourd'hui » est le jour à Paris (`dateDuJour`). Les calculs sur les jours (`src/lib/dates.ts` : `ajouterJours`, `ajouterMois`, `finDeSemaine`…) se font sur la date seule, en temps universel : un changement d'heure ne peut décaler aucun jour. L'heure d'un rendez-vous est l'heure affichée sur la montre : un rendez-vous hebdomadaire de 10 h reste à 10 h après le passage à l'heure d'été.
 
-**Vues** (`src/features/taches/echeances.ts`). En retard : avant aujourd'hui. Aujourd'hui. Cette semaine : de demain à dimanche (vide le dimanche). Plus tard : après dimanche. Terminées : faites et annulées, les plus récentes d'abord. Dans une journée, les rendez-vous viennent par heure, puis les tâches sans heure, par priorité.
+**Vues** (`src/features/taches/echeances.ts`). En retard : avant aujourd'hui. Aujourd'hui. Semaine (« Cette semaine » jusqu'à l'étape E.7) : de demain à dimanche (vide le dimanche). Plus tard : après dimanche. Terminées : faites et annulées, les plus récentes d'abord. Dans une journée, les rendez-vous viennent par heure, puis les tâches sans heure, par priorité.
 
 **Report** : demain, dans 3 jours, dans une semaine (toujours comptés depuis aujourd'hui), ou une date libre. Reporter ne déplace que cette occurrence, pas sa série.
 

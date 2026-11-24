@@ -195,7 +195,7 @@ export default function Taches() {
 
       {vue !== 'terminees' && (
         <p className="text-sm text-encre-douce">
-          Nous sommes le {formaterJourCourt(aujourdhui, aujourdhui)} : « Cette semaine » va jusqu'à
+          Nous sommes le {formaterJourCourt(aujourdhui, aujourdhui)} : « Semaine » va jusqu'à
           dimanche. Une tâche reportée change de vue toute seule.
         </p>
       )}

@@ -27,12 +27,11 @@ import FormulaireRecherche from '../features/acquereurs/FormulaireRecherche'
 import OffreAcceptee from '../features/acquereurs/OffreAcceptee'
 import {
   aideEtapeSuivanteAcquereur,
+  criteresOffre,
   estEtapeAcquereur,
   ETAPES_ACQUEREUR,
-  genreEtatAcquereur,
   libelleBudget,
   libelleEtapeAcquereur,
-  libelleEtatAcquereur,
   libelleFinancement,
   libelleMotifPerteAcquereur,
   libelleTypesRecherches,
@@ -57,12 +56,15 @@ import { estPortable, lienSms } from '../features/contacts/telephone'
 import { appelFiche } from '../features/liens/appel-fiche'
 import { lireCompteursFiche, type CompteursFiche } from '../features/liens/compteurs-fiche'
 import {
+  enTeteProjetAcquereur,
   LIBELLES_ONGLETS_PROJET,
   ongletsProjet,
+  pastilleEtatProjet,
+  repliProchaineAction,
   type OngletProjet,
 } from '../features/liens/fiche-projet'
 import LiensProjet from '../features/liens/LiensProjet'
-import { ancienneteEtape, etapeQuiTraine } from '../features/projets/pipeline-vendeur'
+import { ancienneteFrise } from '../features/projets/pipeline-vendeur'
 import ConsignerEchange from '../features/saisie/ConsignerEchange'
 import { champConsigner, placerCurseur } from '../features/saisie/curseur-consigner'
 import { ficheDeProjetAcquereur } from '../features/saisie/fiches-consultees'
@@ -77,7 +79,7 @@ import {
   heureDuMoment,
 } from '../lib/dates'
 import { useTailleEcran } from '../lib/ecran'
-import { etatsEtapes, phraseManque, phrasePassage } from '../lib/etapes'
+import { etatsEtapes, titrePassage } from '../lib/etapes'
 import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
 import { formaterNombre, formaterPrix } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
@@ -109,15 +111,16 @@ function momentReception(instant: string): string {
 }
 
 /**
- * Fiche d'un projet d'achat (étape D.7), organisée comme la fiche Contact.
- * - Ordinateur : à gauche le profil (état, étapes en barre avec « Pour passer à l'étape
- *   suivante : … » et « Étape suivante », sorties et offre acceptée, acquéreur et demande,
- *   prochaine action), qui ne bouge pas ; à droite les onglets Activité, Biens proposés,
- *   Tâches, Détails (touches 1 à 4). Depuis le pipeline, « 2 sur 5 » et deux flèches (K, J)
- *   dans l'ordre de la colonne de l'étape.
- * - Tablette et téléphone : un en-tête compact, les étapes, la prochaine action, puis les
- *   onglets (acquéreur et demande en tête de Détails). Sur téléphone, Appeler, SMS et
- *   Consigner sont en bas de l'écran.
+ * Fiche d'un projet d'achat (étapes D.7 et E.7), pleine page sur tous les écrans. La question
+ * de la fiche est « qu'est-ce qui manque pour avancer ? » : en haut, l'acquéreur en titre
+ * (« Projet d'achat » au-dessus, Modifier et le menu « … »), puis la frise des étapes
+ * (l'étape en cours, écrite là seulement, avec son ancienneté), les critères pour passer à la
+ * suivante et le bouton « Passer à … » ; aux visites, ce que demande l'offre acceptée et
+ * « Offre acceptée… ». « À recontacter » et « Perdu » sont dans le menu « … ». Dessous,
+ * acquéreur et demande, la prochaine action, puis les onglets Activité, Biens proposés,
+ * Tâches, Détails (touches 1 à 4). Sur ordinateur, depuis le pipeline, « 2 sur 5 » et deux
+ * flèches (K, J). Sur téléphone, acquéreur et demande sont en tête de Détails, et Appeler,
+ * SMS et Consigner en bas de l'écran.
  */
 export default function FicheProjetAcquereur() {
   const { id = '' } = useParams()
@@ -217,6 +220,16 @@ export default function FicheProjetAcquereur() {
   }
   const offreBien = proposes.find((p) => p.propose.bien_id === projet.offre_bien_id)?.bien ?? null
   const titre = contact === null ? "Projet d'achat" : `Achat — ${nomComplet(contact)}`
+  const enTete = enTeteProjetAcquereur(
+    contact === null ? null : nomComplet(contact),
+    affiche.coAcquereur === null ? null : nomComplet(affiche.coAcquereur),
+  )
+  const pastille = pastilleEtatProjet({
+    etat: projet.etat,
+    archive,
+    recontacterLe: projet.recontacter_le,
+    gagne: resumeEtatAcquereur(projet),
+  })
   const personnes = [contact, affiche.coAcquereur].filter(
     (personne): personne is Contact => personne !== null,
   )
@@ -301,51 +314,59 @@ export default function FicheProjetAcquereur() {
       <span className="max-md:sr-only">Modifier</span>
     </Bouton>
   )
+  // Les gestes rares : sortir du pipeline (projet en cours), archiver.
   const menu = archive ? null : (
     <MenuActions
       libelle="Autres actions sur le projet"
-      elements={[{ libelle: 'Archiver', icone: 'archiver', onChoisir: () => setArchivage(true) }]}
+      elements={[
+        ...(actif
+          ? [
+              {
+                libelle: 'À recontacter…',
+                icone: 'horloge' as const,
+                onChoisir: () => setSortie('a_recontacter'),
+              },
+              { libelle: 'Perdu…', icone: 'fermer' as const, onChoisir: () => setSortie('perdu') },
+            ]
+          : []),
+        { libelle: 'Archiver', icone: 'archiver', onChoisir: () => setArchivage(true) },
+      ]}
     />
   )
 
-  const identite = (grande: boolean) => (
+  // Le type de projet (et le co-acquéreur), avec l'état hors du pipeline ; puis l'acquéreur.
+  const identite = (
     <div className="flex min-w-0 flex-col gap-1">
-      <p className="flex flex-wrap items-center gap-2">
-        <Etiquette genre={genreEtatAcquereur(projet.etat)}>
-          {libelleEtatAcquereur(projet.etat)}
-        </Etiquette>
-        <span className="text-sm text-encre-douce">Projet d’achat</span>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-encre-douce">
+        {pastille !== null && <Etiquette genre={pastille.genre}>{pastille.texte}</Etiquette>}
+        <span>{enTete.surtitre}</span>
       </p>
-      <h1
-        className={`leading-tight font-bold tracking-tight break-words text-encre ${
-          grande ? 'text-2xl' : 'text-[1.375rem] md:text-[1.75rem]'
-        }`}
-      >
-        {titre}
+      <h1 className="text-[1.375rem] leading-tight font-bold tracking-tight break-words text-encre md:text-[1.75rem]">
+        {enTete.titre}
       </h1>
-      <p className="text-sm text-encre-douce">{resumeEtatAcquereur(projet)}</p>
     </div>
   )
 
-  // L'étape en barre, ce qu'il faut pour la suivante, les sorties et l'offre acceptée.
+  // La frise des étapes, ce qu'il faut pour la suivante et le bouton qui y fait passer ; aux
+  // visites, ce que demande l'offre acceptée ; l'offre acceptée une fois notée.
+  const offrePossible = actif && aide === null
   const etapes = dansLePipeline && (
-    <Carte titre="Étape">
+    <Carte>
       <BarreEtapes
         etapes={etatsEtapes(ETAPES_ACQUEREUR, projet.etape, projet.etat === 'gagne')}
         anciennete={
-          projet.etat === 'actif'
+          projet.etat === 'actif' ? ancienneteFrise(projet.etape_le, aujourdhui) : undefined
+        }
+        passage={
+          aide !== null
             ? {
-                texte: ancienneteEtape(projet.etape_le, aujourdhui),
-                alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
+                titre: titrePassage(libelleEtapeAcquereur(aide.suivante)),
+                criteres: aide.criteres,
               }
-            : undefined
+            : offrePossible
+              ? { titre: 'Pour noter une offre acceptée', criteres: criteresOffre(nbVisites) }
+              : undefined
         }
-        critere={
-          aide === null
-            ? undefined
-            : phrasePassage(libelleEtapeAcquereur(aide.suivante), aide.critere)
-        }
-        manque={aide === null ? undefined : phraseManque(aide.manquantes)}
         suivante={
           aide === null
             ? undefined
@@ -353,6 +374,7 @@ export default function FicheProjetAcquereur() {
                 libelle: libelleEtapeAcquereur(aide.suivante),
                 onPasser: () => changement.demander(affiche, aide.suivante),
                 desactive: changement.enCours !== null,
+                principal: true,
               }
         }
         choix={
@@ -366,12 +388,16 @@ export default function FicheProjetAcquereur() {
             : undefined
         }
       />
-      {projet.etat === 'gagne' ? (
+      {offrePossible && (
+        <div className="mt-3">
+          <Bouton onClick={() => setOffre(true)}>Offre acceptée…</Bouton>
+        </div>
+      )}
+      {projet.etat === 'gagne' && (
         <div className="mt-3 flex flex-col gap-3">
           <p className="text-base text-encre">
-            Offre acceptée le {formaterDate(projet.offre_le)}
-            {offreBien === null ? '' : ` pour ${adresseBien(offreBien)}`}. Le suivi du dossier
-            (compromis, financement, acte) viendra avec les transactions.
+            {offreBien === null ? '' : `Bien retenu : ${adresseBien(offreBien)}. `}Le suivi du
+            dossier (compromis, financement, acte) viendra avec les transactions.
           </p>
           <div>
             <Bouton variante="secondaire" disabled={envoi} onClick={reprendre}>
@@ -379,22 +405,6 @@ export default function FicheProjetAcquereur() {
             </Bouton>
           </div>
         </div>
-      ) : (
-        <>
-          <p className="mt-2 text-sm text-encre-douce">
-            Touchez une étape pour y passer. Pour avancer, ce qui manque (budget, critères, biens
-            proposés) est demandé.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {aide === null && <Bouton onClick={() => setOffre(true)}>Offre acceptée…</Bouton>}
-            <Bouton variante="secondaire" onClick={() => setSortie('a_recontacter')}>
-              À recontacter…
-            </Bouton>
-            <Bouton variante="secondaire" onClick={() => setSortie('perdu')}>
-              Perdu…
-            </Bouton>
-          </div>
-        </>
       )}
     </Carte>
   )
@@ -403,9 +413,6 @@ export default function FicheProjetAcquereur() {
     <Carte titre="Hors du pipeline">
       <dl className="divide-y divide-bord">
         <Information nom="Étape atteinte">{libelleEtapeAcquereur(projet.etape)}</Information>
-        {projet.etat === 'a_recontacter' && (
-          <Information nom="À recontacter le">{formaterDate(projet.recontacter_le)}</Information>
-        )}
         {projet.etat === 'perdu' && (
           <Information nom="Motif">
             {libelleMotifPerteAcquereur(projet.motif_perte)}
@@ -489,7 +496,10 @@ export default function FicheProjetAcquereur() {
       repli={
         contact?.prochaine_action_le == null
           ? undefined
-          : `Prochaine action de l’acquéreur, hors de ce projet : ${formaterJourCourt(contact.prochaine_action_le, aujourdhui)}.`
+          : repliProchaineAction(
+              'de l’acquéreur',
+              formaterJourCourt(contact.prochaine_action_le, aujourdhui),
+            )
       }
       lectureSeule={archive}
     />
@@ -675,7 +685,7 @@ export default function FicheProjetAcquereur() {
       }
       enTete={
         <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">{identite(false)}</div>
+          <div className="min-w-0 flex-1">{identite}</div>
           <div className="flex shrink-0 gap-2">
             {modifier}
             {menu}
@@ -698,9 +708,11 @@ export default function FicheProjetAcquereur() {
       {telephone && (
         <BarreActionsFiche libelle={`Actions sur ${titre}`}>
           <div className="flex flex-[2]">
+            {/* Un seul bouton bleu : « Passer à … » ou « Offre acceptée… » l'est quand il est là. */}
             <LienAction
               libelle="Appeler"
               icone="telephone"
+              variante={actif ? 'secondaire' : 'principal'}
               href={appel.lien}
               annonce={appel.annonce}
             />

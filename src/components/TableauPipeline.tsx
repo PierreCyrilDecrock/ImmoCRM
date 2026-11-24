@@ -6,7 +6,7 @@ import {
   type PointerEvent as EvenementPointeur,
   type ReactNode,
 } from 'react'
-import { useSuiteADroite } from './defilement'
+import { masqueFondu, useSuitesCachees } from './defilement'
 import { basculerCritere, separerEtapes } from './tableau-pipeline'
 
 /** Une colonne du tableau : une étape, son critère de sortie et ses projets. */
@@ -44,7 +44,7 @@ type Props<E extends string, P> = {
 /**
  * Téléphone : les étapes sans projet, repliées en une ligne de pastilles (« Estimation 0 »).
  * Toucher une pastille montre son critère, rien d'autre ; la toucher de nouveau le cache. Si
- * la ligne déborde, elle défile de côté et un fondu signale la suite.
+ * la ligne déborde, elle défile de côté et un fondu signale la suite, d'un côté ou des deux.
  */
 function EtapesVides<E extends string>({
   colonnes,
@@ -53,7 +53,7 @@ function EtapesVides<E extends string>({
 }) {
   const [montree, setMontree] = useState<E | null>(null)
   const rangee = useRef<HTMLDivElement>(null)
-  const suite = useSuiteADroite(rangee)
+  const masque = masqueFondu(useSuitesCachees(rangee))
   const id = useId()
   const choisie = colonnes.find((colonne) => colonne.etape === montree)
   return (
@@ -61,8 +61,12 @@ function EtapesVides<E extends string>({
       <h2 id={`${id}-titre`} className="text-sm font-medium text-encre-douce">
         Étapes sans projet
       </h2>
-      <div className="relative -mx-4">
-        <div ref={rangee} className="flex gap-1 overflow-x-auto px-4">
+      <div className="-mx-4">
+        <div
+          ref={rangee}
+          className="flex gap-1 overflow-x-auto px-4"
+          style={masque === undefined ? undefined : { maskImage: masque, WebkitMaskImage: masque }}
+        >
           {colonnes.map(({ etape, libelle }) => {
             const ouverte = etape === montree
             return (
@@ -88,12 +92,6 @@ function EtapesVides<E extends string>({
             )
           })}
         </div>
-        {suite && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-r from-transparent via-fond/70 to-fond"
-          />
-        )}
       </div>
       <p id={`${id}-critere`} aria-live="polite" className="text-sm text-encre-douce">
         {choisie !== undefined && `${choisie.libelle} : ${choisie.critere}`}

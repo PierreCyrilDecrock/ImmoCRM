@@ -11,7 +11,7 @@ import { horaireTache, libelleCategorie, type Tache } from './taches'
 
 /**
  * Le jour que dit déjà l'onglet affiché : celui d'« Aujourd'hui ». Les autres vues couvrent
- * plusieurs jours (« En retard », « Cette semaine »…) : chaque ligne garde le sien.
+ * plusieurs jours (« En retard », « Semaine »…) : chaque ligne garde le sien.
  */
 export function jourDeLaVue(vue: Vue | undefined, aujourdhui: string): string | null {
   return vue === 'aujourdhui' ? aujourdhui : null

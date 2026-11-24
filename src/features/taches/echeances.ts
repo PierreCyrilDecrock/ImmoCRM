@@ -17,7 +17,7 @@ export type Vue = 'en_retard' | 'aujourdhui' | 'semaine' | 'plus_tard' | 'termin
 export const VUES: readonly { valeur: Vue; libelle: string }[] = [
   { valeur: 'en_retard', libelle: 'En retard' },
   { valeur: 'aujourdhui', libelle: "Aujourd'hui" },
-  { valeur: 'semaine', libelle: 'Cette semaine' },
+  { valeur: 'semaine', libelle: 'Semaine' },
   { valeur: 'plus_tard', libelle: 'Plus tard' },
   { valeur: 'terminees', libelle: 'Terminées' },
 ]
@@ -28,7 +28,7 @@ export function libelleVue(vue: Vue): string {
 
 /**
  * Bornes des dates d'échéance d'une vue de tâches à faire, incluses (`AAAA-MM-JJ`).
- * « Cette semaine » va de demain à dimanche ; le dimanche, elle est donc vide.
+ * « Semaine » va de demain à dimanche ; le dimanche, elle est donc vide.
  */
 export function bornesVue(
   vue: Exclude<Vue, 'terminees'>,

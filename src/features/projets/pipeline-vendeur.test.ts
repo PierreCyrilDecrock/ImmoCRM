@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   aideEtapeSuivante,
+  ancienneteCourte,
   ancienneteEtape,
   brouillonPassage,
   brouillonSortie,
@@ -324,7 +325,63 @@ describe('aideEtapeSuivante', () => {
       suivante: 'estimation',
       critere: 'Projet, délai, motif',
       manquantes: ['le motif de la vente', 'le délai souhaité'],
+      criteres: [
+        { libelle: 'Motif de la vente', acquis: false },
+        { libelle: 'Délai souhaité', acquis: false },
+      ],
     })
+  })
+
+  it('liste les critères de l’étape, acquis ou non, et ceux d’avant seulement s’ils manquent', () => {
+    const decouverte = projet({ etape: 'decouverte', echeance_souhaitee: '2027-03-01' })
+    expect(aideEtapeSuivante(decouverte, 'pige')?.criteres).toEqual([
+      { libelle: 'Motif de la vente', acquis: false },
+      { libelle: 'Délai souhaité', acquis: true },
+    ])
+    // La source, critère du premier contact, revient en tête de liste si elle manque.
+    expect(aideEtapeSuivante(decouverte, null)?.criteres).toEqual([
+      { libelle: 'Source du contact', acquis: false },
+      { libelle: 'Motif de la vente', acquis: false },
+      { libelle: 'Délai souhaité', acquis: true },
+    ])
+    // Le suivi se quitte en signant le mandat : son type et sa date.
+    const suivi = projet({
+      etape: 'suivi',
+      motif_vente: 'Mutation',
+      echeance_souhaitee: '2027-03-01',
+      estimation_basse: 250000,
+      estimation_haute: 270000,
+      avis_remis_le: '2026-11-10',
+    })
+    expect(aideEtapeSuivante(suivi, 'pige')?.criteres).toEqual([
+      { libelle: 'Type de mandat', acquis: false },
+      { libelle: 'Date de signature du mandat', acquis: false },
+    ])
+  })
+
+  it('n’écrit l’estimation qu’une fois, acquise seulement avec ses deux bornes', () => {
+    const estimation = projet({
+      etape: 'estimation',
+      motif_vente: 'Mutation',
+      echeance_souhaitee: '2027-03-01',
+      estimation_basse: 250000,
+      estimation_haute: null,
+    })
+    expect(aideEtapeSuivante(estimation, 'pige')?.criteres).toEqual([
+      { libelle: 'Estimation (fourchette de prix)', acquis: false },
+      { libelle: 'Avis de valeur remis', acquis: false },
+    ])
+  })
+
+  it('a un critère manquant dans la liste exactement quand il manque quelque chose', () => {
+    for (const etape of ['premier_contact', 'decouverte', 'estimation', 'suivi'] as const) {
+      for (const source of ['pige', null]) {
+        for (const p of [projet({ etape }), projet({ etape, motif_vente: 'Mutation' })]) {
+          const aide = aideEtapeSuivante(p, source)
+          expect(aide?.criteres.some((c) => !c.acquis)).toBe((aide?.manquantes.length ?? 0) > 0)
+        }
+      }
+    }
   })
 
   it('ne cite qu’une fois l’estimation, même si ses deux bornes manquent', () => {
@@ -339,5 +396,18 @@ describe('aideEtapeSuivante', () => {
     expect(aideEtapeSuivante(projet(), 'pige')?.manquantes).toEqual([])
     expect(aideEtapeSuivante(projet(), null)?.manquantes).toEqual(['la source du contact'])
     expect(aideEtapeSuivante(projet({ etape: 'mandat_signe' }), 'pige')).toBeNull()
+  })
+})
+
+describe('ancienneteCourte', () => {
+  it('écrit l’ancienneté en court pour la frise', () => {
+    expect(ancienneteCourte('2026-11-24', '2026-11-24')).toBe('0 j')
+    expect(ancienneteCourte('2026-11-23', '2026-11-24')).toBe('1 j')
+    expect(ancienneteCourte('2026-11-12', '2026-11-24')).toBe('12 j')
+    expect(ancienneteCourte('2026-08-01', '2026-11-24')).toBe('3 mois')
+    expect(ancienneteCourte('2025-11-24', '2026-11-24')).toBe('1 an')
+    expect(ancienneteCourte('2023-11-01', '2026-11-24')).toBe('3 ans')
+    // Une date dans le futur (horloge décalée) ne donne pas d'ancienneté négative.
+    expect(ancienneteCourte('2026-11-30', '2026-11-24')).toBe('0 j')
   })
 })

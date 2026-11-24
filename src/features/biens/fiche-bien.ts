@@ -16,7 +16,7 @@ export const ONGLETS_BIEN: readonly OngletBien[] = ['activite', 'projets', 'tach
 
 export const LIBELLES_ONGLETS_BIEN: Record<OngletBien, string> = {
   activite: 'Activité',
-  projets: 'Projets et acquéreurs',
+  projets: 'Acquéreurs',
   taches: 'Tâches',
   details: 'Détails',
 }
