@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import Bouton from '../../components/Bouton'
 import EtatChargement from '../../components/EtatChargement'
 import EtatVide from '../../components/EtatVide'
 import Etiquette from '../../components/Etiquette'
@@ -35,7 +34,6 @@ type Props = {
   vue: EtatProjet
   onVue: (vue: EtatProjet) => void
   aujourdhui: string
-  onCreer: () => void
 }
 
 type Tableau =
@@ -109,7 +107,7 @@ function ListeHorsPipeline({
  * (glisser-déposer sur tablette et ordinateur, liste groupée sur téléphone), puis les
  * projets à recontacter, perdus et gagnés.
  */
-export default function OngletVendeurs({ vue, onVue, aujourdhui, onCreer }: Props) {
+export default function OngletVendeurs({ vue, onVue, aujourdhui }: Props) {
   const [tableau, setTableau] = useState<Tableau>({ phase: 'chargement' })
   const [comptes, setComptes] = useState<Record<EtatProjet, number | null> | null>(null)
   const [version, setVersion] = useState(0)
@@ -163,15 +161,7 @@ export default function OngletVendeurs({ vue, onVue, aujourdhui, onCreer }: Prop
       ) : tableau.phase === 'erreur' ? (
         <Message genre="erreur">Le pipeline n'a pas pu être lu. {tableau.message}</Message>
       ) : tableau.projets.length === 0 ? (
-        <EtatVide
-          icone="pipelines"
-          titre="Aucun projet vendeur en cours"
-          action={
-            <Bouton icone="ajouter" onClick={onCreer}>
-              Nouveau projet vendeur
-            </Bouton>
-          }
-        >
+        <EtatVide icone="pipelines" titre="Aucun projet vendeur en cours">
           Un projet vendeur est l'intention de vendre un bien. Il se crée ici ou depuis la fiche
           d'un contact, rubrique « Projets de vente ».
         </EtatVide>

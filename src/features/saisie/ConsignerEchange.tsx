@@ -28,6 +28,7 @@ import {
   type ErreursCompteRendu,
 } from './compte-rendu-express'
 import {
+  aEnregistrer,
   AUTRES_TYPES_ECHANGE,
   brouillonDepuisGarde,
   brouillonEchange,
@@ -455,8 +456,11 @@ export default function ConsignerEchange({
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="max-md:flex-1">
+            {/* Secondaire tant qu'il n'y a rien à enregistrer : au repos, « Appeler » est le
+                seul bleu de la fiche. Il passe au bleu dès la première lettre. */}
             <Bouton
               type="submit"
+              variante={activiteCreee || aEnregistrer(brouillon) ? 'principal' : 'secondaire'}
               pleineLargeur
               disabled={envoi || taches === null}
               aria-keyshortcuts="Meta+Enter Control+Enter"

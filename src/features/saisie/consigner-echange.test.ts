@@ -5,6 +5,7 @@ import { contactEssai } from '../contacts/contact-essai'
 import { DELAIS_PAR_DEFAUT } from '../relances/delais'
 import { tacheEssai } from '../taches/tache-essai'
 import {
+  aEnregistrer,
   aGarder,
   AUTRES_TYPES_ECHANGE,
   brouillonAGarder,
@@ -455,5 +456,31 @@ describe('échange consigné depuis une fiche Bien ou Projet (étape D.7)', () =
     })
     expect(preparation.envoi.valeurs.tache).toBeNull()
     expect(messageEchange(null, null, AUJOURDHUI)).toBe('Ajouté au journal.')
+  })
+})
+
+describe('aEnregistrer', () => {
+  const vide = brouillonEchange(contactEssai())
+
+  it('reste faux tant que rien n’est saisi', () => {
+    expect(aEnregistrer(vide)).toBe(false)
+    expect(aEnregistrer({ ...vide, compteRendu: '   ' })).toBe(false)
+    // Choisir le type ne suffit pas.
+    expect(aEnregistrer({ ...vide, type: 'visite' })).toBe(false)
+  })
+
+  it('devient vrai dès la première lettre', () => {
+    expect(aEnregistrer({ ...vide, compteRendu: 'R' })).toBe(true)
+  })
+
+  it('compte le résultat d’un appel, pas celui d’un autre type', () => {
+    expect(aEnregistrer({ ...vide, type: 'appel', resultat: 'messagerie' })).toBe(true)
+    expect(aEnregistrer({ ...vide, type: 'note', resultat: 'messagerie' })).toBe(false)
+  })
+
+  it('compte un compte rendu de visite commencé, seulement pour une visite', () => {
+    const visite = { ...vide.visite, interet: 'fort' as const }
+    expect(aEnregistrer({ ...vide, type: 'visite', visite })).toBe(true)
+    expect(aEnregistrer({ ...vide, type: 'appel', visite })).toBe(false)
   })
 })

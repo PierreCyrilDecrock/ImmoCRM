@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react'
 import Icone, { type NomIcone } from './Icone'
 
-export type VarianteBouton = 'principal' | 'secondaire' | 'discret' | 'danger' | 'inverse'
+export type VarianteBouton = 'principal' | 'secondaire' | 'discret' | 'sobre' | 'danger' | 'inverse'
 
 type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'> & {
   /** `principal` : l'action attendue de l'écran (une seule par écran). */
@@ -16,6 +16,8 @@ const COULEURS: Record<VarianteBouton, string> = {
   principal: 'bg-accent text-sur-plein shadow-sm shadow-accent/25 hover:bg-accent-fort',
   secondaire: 'bg-surface text-encre shadow-xs ring-1 ring-inset ring-bord-fort/40 hover:bg-creux',
   discret: 'text-accent hover:bg-accent-doux',
+  /** Gris, sans fond : une action annexe qui ne concurrence pas le bouton bleu. */
+  sobre: 'text-encre-douce hover:bg-creux hover:text-encre',
   danger: 'bg-danger text-sur-plein hover:opacity-90',
   /** Sur le fond encre de la carte « Maintenant ». */
   inverse:

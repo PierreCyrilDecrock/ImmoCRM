@@ -7,6 +7,7 @@ import OngletAcquereurs from '../features/acquereurs/OngletAcquereurs'
 import type { EtatProjetAcquereur } from '../features/acquereurs/pipeline-acquereur'
 import NouveauProjetVendeur from '../features/projets/NouveauProjetVendeur'
 import OngletVendeurs from '../features/projets/OngletVendeurs'
+import { useCreationDeLaPage } from '../features/saisie/creation-page'
 import type { EtatProjet } from '../features/projets/pipeline-vendeur'
 import { dateDuJour } from '../lib/dates'
 
@@ -52,6 +53,8 @@ export default function Pipelines() {
   const [memoire, setMemoire] = useState(lireMemoire)
   const [creation, setCreation] = useState<Pipeline | null>(null)
   const aujourdhui = dateDuJour()
+  // Sur téléphone et tablette, le « + » crée un projet de l'onglet affiché.
+  useCreationDeLaPage(memoire.pipeline === 'vendeurs' ? 'projetVendeur' : 'demande')
 
   function choisir(suivante: Memoire) {
     setMemoire(suivante)
@@ -65,9 +68,12 @@ export default function Pipelines() {
       titre="Pipelines"
       large
       actions={
-        <Bouton icone="ajouter" onClick={() => setCreation(memoire.pipeline)}>
-          {memoire.pipeline === 'vendeurs' ? 'Projet vendeur' : 'Demande entrante'}
-        </Bouton>
+        // Une seule façon de créer par écran : sous 1024 px, c'est le « + » flottant.
+        <div className="hidden lg:block">
+          <Bouton icone="ajouter" onClick={() => setCreation(memoire.pipeline)}>
+            {memoire.pipeline === 'vendeurs' ? 'Projet vendeur' : 'Demande entrante'}
+          </Bouton>
+        </div>
       }
     >
       <Onglets
@@ -81,18 +87,12 @@ export default function Pipelines() {
       />
 
       {memoire.pipeline === 'vendeurs' ? (
-        <OngletVendeurs
-          vue={memoire.vues.vendeurs}
-          onVue={choisirVue}
-          aujourdhui={aujourdhui}
-          onCreer={() => setCreation('vendeurs')}
-        />
+        <OngletVendeurs vue={memoire.vues.vendeurs} onVue={choisirVue} aujourdhui={aujourdhui} />
       ) : (
         <OngletAcquereurs
           vue={memoire.vues.acquereurs}
           onVue={choisirVue}
           aujourdhui={aujourdhui}
-          onCreer={() => setCreation('acquereurs')}
         />
       )}
 

@@ -40,7 +40,7 @@ export default function Navigation({
   return (
     <nav
       aria-label="Navigation principale"
-      className={`order-last ${cacheeSurTelephone ? 'max-md:hidden' : ''} border-t border-bord bg-surface/90 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] backdrop-blur-md md:order-none md:flex md:w-24 md:shrink-0 md:flex-col md:border-t-0 md:border-r md:bg-fond md:pr-0 md:backdrop-blur-none lg:w-60`}
+      className={`order-last ${cacheeSurTelephone ? 'max-md:hidden' : ''} border-t border-bord bg-surface/90 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] backdrop-blur-md md:order-none md:flex md:w-24 md:shrink-0 md:flex-col md:border-t-0 md:border-r md:bg-fond md:pr-0 md:backdrop-blur-none lg:w-64`}
     >
       <p className="hidden items-center justify-center gap-3 px-3 pt-5 pb-4 md:flex lg:justify-start lg:px-5">
         <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-8" />

@@ -10,6 +10,7 @@ import { useNotifications } from '../components/notifications-contexte'
 import Onglets from '../components/Onglets'
 import Page from '../components/Page'
 import SuiteListe from '../components/SuiteListe'
+import { useCreationDeLaPage } from '../features/saisie/creation-page'
 import { VUES, type Vue } from '../features/taches/echeances'
 import FormulaireTache from '../features/taches/FormulaireTache'
 import ListeTaches from '../features/taches/ListeTaches'
@@ -55,7 +56,10 @@ const MESSAGES_VIDES: Record<Vue, { titre: string; texte: string }> = {
 
 /**
  * Page Tâches : les tâches et rendez-vous, rangés en vues (en retard, aujourd'hui, cette
- * semaine, plus tard, terminées), avec la création rapide en tête.
+ * semaine, plus tard, terminées), avec la création rapide en tête : un titre, puis Entrée.
+ * « Ajouter » n'apparaît qu'une fois du texte saisi ; « Plus de détails » ouvre le formulaire
+ * complet. Il n'y a pas de bouton « Nouvelle tâche » : sur téléphone et tablette, le « + »
+ * flottant crée une tâche.
  */
 export default function Taches() {
   const { notifier } = useNotifications()
@@ -71,6 +75,8 @@ export default function Taches() {
   const [erreurRapide, setErreurRapide] = useState<string | undefined>(undefined)
   const [envoiRapide, setEnvoiRapide] = useState(false)
   const [formulaire, setFormulaire] = useState<{ titre: string } | null>(null)
+  const titreSaisi = titreRapide.trim() !== ''
+  useCreationDeLaPage('tache')
 
   const liste = useListePaginee(
     JSON.stringify([vue, aujourdhui, version]),
@@ -114,14 +120,7 @@ export default function Taches() {
   const vide = MESSAGES_VIDES[vue]
 
   return (
-    <Page
-      titre="Tâches"
-      actions={
-        <Bouton icone="ajouter" onClick={() => setFormulaire({ titre: '' })}>
-          Nouvelle tâche
-        </Bouton>
-      }
-    >
+    <Page titre="Tâches">
       <form
         noValidate
         onSubmit={(evenement) => void creerRapidement(evenement)}
@@ -139,13 +138,19 @@ export default function Taches() {
             erreur={erreurRapide}
           />
         </div>
-        <div className="flex gap-2 md:mt-6">
-          <Bouton type="submit" variante="secondaire" disabled={envoiRapide}>
-            {envoiRapide ? 'Ajout…' : 'Ajouter'}
-          </Bouton>
-          <Bouton variante="discret" onClick={() => setFormulaire({ titre: titreRapide })}>
-            Plus de détails
-          </Bouton>
+        <div className="flex items-center justify-between gap-2 md:mt-6">
+          {/* Le texte du bouton s'aligne sur le champ, au téléphone. */}
+          <div className="-ml-4 md:ml-0">
+            <Bouton variante="discret" onClick={() => setFormulaire({ titre: titreRapide })}>
+              Plus de détails
+            </Bouton>
+          </div>
+          {/* Entrée suffit ; le bouton n'apparaît qu'avec du texte, et c'est alors le bleu. */}
+          {(titreSaisi || envoiRapide) && (
+            <Bouton type="submit" disabled={envoiRapide}>
+              {envoiRapide ? 'Ajout…' : 'Ajouter'}
+            </Bouton>
+          )}
         </div>
       </form>
 

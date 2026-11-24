@@ -5,11 +5,19 @@ import FenetreModale from '../../components/FenetreModale'
 import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import { exigerSupabase } from '../../lib/supabase'
+import AutreCreation from '../saisie/AutreCreation'
 import { brouillonBienVide, creerBien, preparerBien, type ErreursBien } from './biens'
 import FormulaireBien from './FormulaireBien'
 
 /** Fenêtre de création : l'adresse et le type suffisent, le reste se complète sur la fiche. */
-export default function NouveauBien({ onFermer }: { onFermer: () => void }) {
+export default function NouveauBien({
+  onFermer,
+  onAutreChose,
+}: {
+  onFermer: () => void
+  /** Ouverte directement par le « + » : « Créer autre chose » ouvre le menu complet. */
+  onAutreChose?: () => void
+}) {
   const naviguer = useNavigate()
   const { notifier } = useNotifications()
   const [brouillon, setBrouillon] = useState(brouillonBienVide)
@@ -40,6 +48,7 @@ export default function NouveauBien({ onFermer }: { onFermer: () => void }) {
       ouverte
       titre="Nouveau bien"
       onFermer={onFermer}
+      actionEnTete={onAutreChose && <AutreCreation onClick={onAutreChose} />}
       pied={
         <>
           <Bouton type="submit" form="nouveau-bien" pleineLargeur disabled={envoi}>
