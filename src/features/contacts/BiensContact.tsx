@@ -1,7 +1,7 @@
 import Carte from '../../components/Carte'
-import Etiquette from '../../components/Etiquette'
 import LigneListe from '../../components/LigneListe'
-import { genreStatut, libelleStatut, resumeBien } from '../biens/biens'
+import { resumeBien } from '../biens/biens'
+import PastilleStatut from '../biens/PastilleStatut'
 import { formaterQuotePart, type BienDuContact } from '../biens/proprietaires'
 
 /** Rubrique « Biens » de la fiche Contact : les biens dont il est propriétaire. */
@@ -27,9 +27,7 @@ export default function BiensContact({ biens }: { biens: readonly BienDuContact[
               ]
                 .filter(Boolean)
                 .join(' · ')}
-              fin={
-                <Etiquette genre={genreStatut(bien.statut)}>{libelleStatut(bien.statut)}</Etiquette>
-              }
+              fin={<PastilleStatut statut={bien.statut} />}
               vers={`/biens/${bien.id}`}
             />
           ))}

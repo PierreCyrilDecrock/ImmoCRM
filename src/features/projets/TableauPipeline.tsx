@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import TableauPipeline from '../../components/TableauPipeline'
 import { memoriserParcours } from '../../lib/parcours'
-import { nomComplet } from '../contacts/contacts'
+import { titresCarteVendeur } from './carte-pipeline'
 import CarteProjet from './CarteProjet'
 import {
   estEtapeVendeur,
@@ -45,7 +45,7 @@ export default function TableauPipelineVendeur({ projets, aujourdhui, onDeposer,
       cle={(affiche) => affiche.id}
       etapeDe={(affiche) => affiche.projet.etape as EtapeVendeur}
       estEtape={estEtapeVendeur}
-      nomGlisse={(affiche) => (affiche.contact === null ? 'Projet' : nomComplet(affiche.contact))}
+      nomGlisse={(affiche) => titresCarteVendeur(affiche.contact, affiche.bien).titre}
       carte={(affiche, options) => (
         <CarteProjet affiche={affiche} aujourdhui={aujourdhui} {...options} />
       )}

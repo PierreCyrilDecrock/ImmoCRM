@@ -34,20 +34,22 @@ describe('noms', () => {
     const fiche = contact({ civilite: 'mme' })
     expect(nomComplet(fiche)).toBe('Camille Fictif')
     expect(nomAvecCivilite(fiche)).toBe('Mme Camille Fictif')
-    expect(nomDeListe(fiche)).toBe('Fictif Camille')
+    // Dans la liste aussi, le prénom puis le nom (en gras) : « Camille **Fictif** ».
+    expect(nomDeListe(fiche)).toEqual({ debut: 'Camille', nom: 'Fictif' })
     expect(interlocuteur(fiche)).toBe('')
   })
 
   it('se contente du nom quand le prénom manque', () => {
     expect(nomComplet(contact({ prenom: '' }))).toBe('Fictif')
-    expect(nomDeListe(contact({ prenom: '' }))).toBe('Fictif')
+    expect(nomDeListe(contact({ prenom: '' }))).toEqual({ debut: '', nom: 'Fictif' })
+    expect(nomDeListe(contact({ nom: '' }))).toEqual({ debut: '', nom: 'Camille' })
   })
 
   it('utilise la raison sociale pour une société, et garde la personne à joindre à part', () => {
     const societe = contact({ type: 'societe', raison_sociale: 'Étude Spécimen', civilite: 'm' })
     expect(nomComplet(societe)).toBe('Étude Spécimen')
     expect(nomAvecCivilite(societe)).toBe('Étude Spécimen')
-    expect(nomDeListe(societe)).toBe('Étude Spécimen')
+    expect(nomDeListe(societe)).toEqual({ debut: '', nom: 'Étude Spécimen' })
     expect(interlocuteur(societe)).toBe('M. Camille Fictif')
   })
 })

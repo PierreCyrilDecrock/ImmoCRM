@@ -1,15 +1,14 @@
 import type { PointerEvent } from 'react'
 import CartePipeline from '../../components/CartePipeline'
 import { formaterJourCourt } from '../../lib/dates'
-import { communeBien } from '../biens/biens'
-import { nomComplet } from '../contacts/contacts'
+import { actionPipeline, titresCarteVendeur } from './carte-pipeline'
 import {
   ancienneteEtape,
   etapeQuiTraine,
   libelleTypeMandat,
   type ProjetVendeur,
 } from './pipeline-vendeur'
-import { prochaineActionProjet, type ProjetVendeurAffiche } from './projets-vendeurs'
+import type { ProjetVendeurAffiche } from './projets-vendeurs'
 
 type Props = {
   affiche: ProjetVendeurAffiche
@@ -33,21 +32,22 @@ function ligneEtape(projet: ProjetVendeur, aujourdhui: string) {
   }
 }
 
-/** Carte d'un projet vendeur : le vendeur, le bien, l'ancienneté dans l'étape, la suite. */
+/**
+ * Carte d'un projet vendeur : le bien (adresse courte) en titre, le vendeur dessous,
+ * l'ancienneté dans l'étape et la suite. Deux projets du même vendeur se distinguent par
+ * leur adresse.
+ */
 export default function CarteProjet({ affiche, aujourdhui, onSaisir, estompee = false }: Props) {
   const { projet, contact, bien } = affiche
-  const commune = bien === null ? '' : communeBien(bien)
+  const { titre, sousTitre } = titresCarteVendeur(contact, bien)
   return (
     <CartePipeline
       vers={`/pipelines/vendeurs/${projet.id}`}
-      titre={contact === null ? 'Contact introuvable' : nomComplet(contact)}
-      details={[
-        bien === null
-          ? 'Bien introuvable'
-          : `${bien.adresse}${commune === '' ? '' : `, ${commune}`}`,
-      ]}
+      titre={titre}
+      sousTitre={sousTitre}
+      details={[]}
       etape={ligneEtape(projet, aujourdhui)}
-      action={prochaineActionProjet(affiche, aujourdhui)}
+      action={actionPipeline(affiche, aujourdhui)}
       onSaisir={onSaisir}
       estompee={estompee}
       // La colonne de l'étape : la fiche passe au projet voisin de cette colonne.

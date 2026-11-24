@@ -1,6 +1,6 @@
 import { depuisQuand, ecartJours, formaterHeure } from '../../lib/dates'
 import { libelleTypeActivite, libelleResultatAppel, type Activite } from '../activites/activites'
-import { libelleRole, type Contact } from '../contacts/contacts'
+import type { Contact } from '../contacts/contacts'
 import { libelleJour } from '../taches/echeances'
 import type { Tache } from '../taches/taches'
 
@@ -141,30 +141,6 @@ export function memoriserFiltreRappels(filtre: FiltreRappels): void {
 // À rappeler : ce que dit une ligne
 // ---------------------------------------------------------------------------
 
-/**
- * Les rôles du contact, pour la ligne : « Vendeur », « Vendeur · Acquéreur ». Un contact
- * sans rôle est encore un prospect.
- */
-export function rolesDuContact(contact: Pick<Contact, 'roles'>): string {
-  return contact.roles.length === 0 ? 'Prospect' : contact.roles.map(libelleRole).join(' · ')
-}
-
-/**
- * La pastille de retard, courte : « 2 j », et ce qu'entend un lecteur d'écran (« En retard
- * de 2 jours »). `null` pour une relance du jour : pas de pastille.
- */
-export function pastilleRetard(
-  echeance: string,
-  aujourdhui: string,
-): { texte: string; annonce: string } | null {
-  const jours = ecartJours(echeance, aujourdhui)
-  if (jours <= 0) return null
-  return {
-    texte: `${jours} j`,
-    annonce: jours === 1 ? "En retard d'un jour" : `En retard de ${jours} jours`,
-  }
-}
-
 /** « rendez-vous », « SMS », « appel, messagerie » : le type en minuscules, sigles gardés. */
 function typeEnMinuscules(activite: Pick<Activite, 'type' | 'resultat'>): string {
   const type = libelleTypeActivite(activite.type)
@@ -185,21 +161,6 @@ export function dernierEchange(
   if (activite === null) return 'Jamais contacté'
   const jours = ecartJours(activite.date_activite, aujourdhui)
   return `Dernier échange ${depuisQuand(jours)} · ${typeEnMinuscules(activite)}`
-}
-
-/** La teinte des initiales d'une relance, d'après le rôle du contact. */
-export type TeinteRole = 'vendeur' | 'acquereur' | 'prospect'
-
-/**
- * La teinte des initiales : vendeur (bleu doux), sinon acquéreur (vert doux), sinon gris
- * (prospect, notaire, prescripteur, autre, ou relance sans contact). Un contact à la fois
- * vendeur et acquéreur prend la teinte vendeur : c'est le mandat qui se gagne.
- */
-export function teinteRole(contact: Pick<Contact, 'roles'> | null): TeinteRole {
-  if (contact === null) return 'prospect'
-  if (contact.roles.includes('vendeur')) return 'vendeur'
-  if (contact.roles.includes('acquereur')) return 'acquereur'
-  return 'prospect'
 }
 
 /**

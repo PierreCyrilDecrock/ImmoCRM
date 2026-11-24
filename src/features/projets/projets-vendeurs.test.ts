@@ -4,12 +4,9 @@ import {
   brouillonProjetDepuis,
   creerProjetVendeur,
   preparerProjet,
-  prochaineActionProjet,
   type BrouillonProjet,
 } from './projets-vendeurs'
 import type { ProjetVendeur } from './pipeline-vendeur'
-import type { Contact } from '../contacts/contacts'
-import type { Tache } from '../taches/taches'
 
 const AUJOURDHUI = '2026-11-17'
 
@@ -143,35 +140,5 @@ describe('creerProjetVendeur', () => {
     const { client, appels } = fauxClient({ data: { id: 'p' }, error: null })
     await creerProjetVendeur(client, { contactId: 'c', bienId: 'b' })
     expect(appels).toContainEqual(['insert', { contact_id: 'c', bien_id: 'b' }])
-  })
-})
-
-describe('prochaineActionProjet', () => {
-  const projet = { etat: 'actif' } as ProjetVendeur
-  const base = { id: 'p', projet, contact: null, bien: null, prochaine: null }
-
-  it('annonce la tâche la plus proche du projet, en alerte si elle est en retard', () => {
-    const prochaine = { echeance: '2026-11-16', titre: 'Rappeler' } as Tache
-    expect(prochaineActionProjet({ ...base, prochaine }, AUJOURDHUI)).toEqual({
-      texte: 'lun. 16 nov. · Rappeler',
-      alerte: true,
-    })
-  })
-
-  it('se rabat sur la prochaine action du contact, sinon le signale', () => {
-    const contact = { prochaine_action_le: '2026-11-20' } as Contact
-    expect(prochaineActionProjet({ ...base, contact }, AUJOURDHUI)).toEqual({
-      texte: 'Contact : ven. 20 nov.',
-      alerte: false,
-    })
-    expect(prochaineActionProjet(base, AUJOURDHUI)).toEqual({
-      texte: 'Aucune action prévue',
-      alerte: true,
-    })
-  })
-
-  it('ne réclame rien pour un mandat signé', () => {
-    const gagne = { ...base, projet: { etat: 'gagne' } as ProjetVendeur }
-    expect(prochaineActionProjet(gagne, AUJOURDHUI).texte).toBe('')
   })
 })

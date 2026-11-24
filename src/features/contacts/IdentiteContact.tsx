@@ -1,5 +1,5 @@
 import Etiquette from '../../components/Etiquette'
-import { rolesDuContact } from '../aujourdhui/ordre-journee'
+import { rolesDuContact } from './ligne-contact'
 import { initialesDe } from '../saisie/recents'
 import { nomAvecCivilite, nomComplet, type Contact } from './contacts'
 

@@ -11,7 +11,7 @@ import {
   type PageLignes,
   type Resultat,
 } from '../../lib/donnees'
-import { estDateValide, formaterJourCourt } from '../../lib/dates'
+import { estDateValide } from '../../lib/dates'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import { lireFichesLiees } from '../liens/fiches-liees'
@@ -41,29 +41,6 @@ export type ProjetVendeurAffiche = {
   bien: Bien | null
   /** La plus proche des tâches à faire liées au projet, s'il y en a. */
   prochaine: Tache | null
-}
-
-/** La prochaine action d'un projet, sur une ligne, et si elle est en retard. */
-export function prochaineActionProjet(
-  affiche: ProjetVendeurAffiche,
-  aujourdhui: string,
-): { texte: string; alerte: boolean } {
-  const { prochaine, contact, projet } = affiche
-  if (prochaine !== null) {
-    return {
-      texte: `${formaterJourCourt(prochaine.echeance, aujourdhui)} · ${prochaine.titre}`,
-      alerte: prochaine.echeance < aujourdhui,
-    }
-  }
-  if (projet.etat === 'gagne') return { texte: '', alerte: false }
-  // Pas de tâche liée au projet : la prochaine action du contact, s'il en a une.
-  if (contact?.prochaine_action_le !== null && contact?.prochaine_action_le !== undefined) {
-    return {
-      texte: `Contact : ${formaterJourCourt(contact.prochaine_action_le, aujourdhui)}`,
-      alerte: contact.prochaine_action_le < aujourdhui,
-    }
-  }
-  return { texte: 'Aucune action prévue', alerte: true }
 }
 
 // ---------------------------------------------------------------------------

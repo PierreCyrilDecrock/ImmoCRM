@@ -170,6 +170,32 @@ export function resumeRecherche(
   return morceaux.filter((morceau) => morceau !== '').join(' · ')
 }
 
+/**
+ * Carte d'un projet d'achat : l'acquéreur en titre (et son co-acquéreur), le budget dessous
+ * (« Jusqu’à 280 000 € », ou « Budget à préciser »), puis le reste de la recherche sans le
+ * budget, pour ne pas l'écrire deux fois.
+ */
+export function lignesCarteAcquereur(
+  noms: { acquereur: string | null; coAcquereur: string | null },
+  projet: Parameters<typeof resumeRecherche>[0],
+): { titre: string; sousTitre: string; criteres: string } {
+  const titre =
+    noms.acquereur === null
+      ? 'Contact introuvable'
+      : noms.coAcquereur === null
+        ? noms.acquereur
+        : `${noms.acquereur} et ${noms.coAcquereur}`
+  const budget = libelleBudget(projet.budget_min, projet.budget_max)
+  return {
+    titre,
+    sousTitre:
+      budget === ''
+        ? 'Budget à préciser'
+        : budget.charAt(0).toLocaleUpperCase('fr') + budget.slice(1),
+    criteres: resumeRecherche({ ...projet, budget_min: null, budget_max: null }),
+  }
+}
+
 /** Résumé de l'état, pour une ligne : « À recontacter le 17 mai 2027 », « Perdu : … ». */
 export function resumeEtatAcquereur(
   projet: Pick<ProjetAcquereur, 'etat' | 'etape' | 'recontacter_le' | 'motif_perte' | 'offre_le'>,

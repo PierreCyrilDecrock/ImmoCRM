@@ -32,6 +32,7 @@ import { progression } from '../features/aujourdhui/maintenant'
 import { videAutresTaches } from '../features/aujourdhui/ordre-journee'
 import { libelleJour } from '../features/taches/echeances'
 import ExemplesTaches from '../features/taches/ExemplesTaches'
+import ExemplesListes from '../features/projets/ExemplesListes'
 import ReportsRapides from '../features/taches/ReportsRapides'
 import { dateDuJour } from '../lib/dates'
 import { etatsEtapes } from '../lib/etapes'
@@ -164,6 +165,7 @@ export default function Composants() {
           <Etiquette genre="succes">Succès</Etiquette>
           <Etiquette genre="alerte">Alerte</Etiquette>
           <Etiquette genre="danger">Danger</Etiquette>
+          <Etiquette genre="fort">Fort</Etiquette>
         </div>
       </Carte>
 
@@ -351,6 +353,10 @@ export default function Composants() {
 
       <Carte titre="Tâches et prochaine action">
         <ExemplesTaches aujourdhui={aujourdhui} />
+      </Carte>
+
+      <Carte titre="Listes et pipelines">
+        <ExemplesListes aujourdhui={aujourdhui} />
       </Carte>
 
       <Carte titre="Fiches">

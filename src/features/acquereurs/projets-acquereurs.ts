@@ -10,7 +10,7 @@ import {
   type PageLignes,
   type Resultat,
 } from '../../lib/donnees'
-import { ajouterJours, formaterJourCourt } from '../../lib/dates'
+import { ajouterJours } from '../../lib/dates'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import type { Tache } from '../taches/taches'
@@ -46,28 +46,6 @@ export const MAX_PROJETS_ACQUEREURS_PIPELINE = 200
 export const TAILLE_PAGE_PROJETS_ACQUEREURS = 50
 /** Une offre acceptée reste visible dans la colonne « Visites » pendant ces jours. */
 export const JOURS_OFFRES_VISIBLES = 30
-
-/** La prochaine action d'un projet, sur une ligne, et si elle est en retard. */
-export function prochaineActionAcquereur(
-  affiche: Pick<ProjetAcquereurAffiche, 'prochaine' | 'contact' | 'projet'>,
-  aujourdhui: string,
-): { texte: string; alerte: boolean } {
-  const { prochaine, contact, projet } = affiche
-  if (prochaine !== null) {
-    return {
-      texte: `${formaterJourCourt(prochaine.echeance, aujourdhui)} · ${prochaine.titre}`,
-      alerte: prochaine.echeance < aujourdhui,
-    }
-  }
-  if (projet.etat === 'gagne') return { texte: '', alerte: false }
-  if (contact?.prochaine_action_le !== null && contact?.prochaine_action_le !== undefined) {
-    return {
-      texte: `Contact : ${formaterJourCourt(contact.prochaine_action_le, aujourdhui)}`,
-      alerte: contact.prochaine_action_le < aujourdhui,
-    }
-  }
-  return { texte: 'Aucune action prévue', alerte: true }
-}
 
 // ---------------------------------------------------------------------------
 // Lecture

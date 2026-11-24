@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { appeler, type Resultat } from '../../lib/donnees'
-import { nomDeListe, type Contact, type ValeursContact } from './contacts'
+import type { Contact, ValeursContact } from './contacts'
 
 /**
  * Doublons : avant de créer une fiche, on cherche celles qui lui ressemblent (même
@@ -40,13 +40,8 @@ export function libelleMotifs(motifs: readonly MotifDoublon[]): string {
 
 /** Nom sous lequel la fiche qu'on enregistre serait classée (sert à comparer les noms). */
 function nomCompare(valeurs: ValeursContact): string {
-  return nomDeListe({
-    type: valeurs.type ?? 'personne',
-    civilite: null,
-    prenom: valeurs.prenom ?? '',
-    nom: valeurs.nom ?? '',
-    raison_sociale: valeurs.raison_sociale ?? '',
-  })
+  if (valeurs.type === 'societe') return valeurs.raison_sociale ?? ''
+  return [valeurs.nom ?? '', valeurs.prenom ?? ''].filter((morceau) => morceau !== '').join(' ')
 }
 
 /**

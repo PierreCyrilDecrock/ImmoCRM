@@ -13,13 +13,10 @@ import {
   grouperTaches,
   lireFiltreRappels,
   parUrgence,
-  pastilleRetard,
   premieresRelances,
   RELANCES_D_EMBLEE,
   basculerRelance,
   relanceDeplieeAffichee,
-  rolesDuContact,
-  teinteRole,
   videAutresTaches,
   videRappels,
 } from './ordre-journee'
@@ -131,24 +128,6 @@ describe('filtre des relances', () => {
 })
 
 describe('ligne d’une relance', () => {
-  it('dit les rôles, ou « Prospect » sans rôle', () => {
-    expect(rolesDuContact({ roles: ['vendeur'] })).toBe('Vendeur')
-    expect(rolesDuContact({ roles: ['vendeur', 'acquereur'] })).toBe('Vendeur · Acquéreur')
-    expect(rolesDuContact({ roles: [] })).toBe('Prospect')
-  })
-
-  it('met le retard en pastille, rien pour une relance du jour', () => {
-    expect(pastilleRetard(AUJOURDHUI, AUJOURDHUI)).toBeNull()
-    expect(pastilleRetard('2026-11-16', AUJOURDHUI)).toEqual({
-      texte: '1 j',
-      annonce: "En retard d'un jour",
-    })
-    expect(pastilleRetard('2026-11-15', AUJOURDHUI)).toEqual({
-      texte: '2 j',
-      annonce: 'En retard de 2 jours',
-    })
-  })
-
   it('dit le dernier échange : quand, et de quel type', () => {
     const echange = (valeurs: Parameters<typeof activiteEssai>[0]) =>
       dernierEchange(activiteEssai(valeurs), AUJOURDHUI)
@@ -171,7 +150,7 @@ describe('ligne d’une relance', () => {
   })
 })
 
-describe('relance dépliée et teinte des initiales', () => {
+describe('relance dépliée', () => {
   it('ne déplie qu’une relance à la fois ; la toucher de nouveau la replie', () => {
     expect(basculerRelance(null, 'a')).toBe('a')
     expect(basculerRelance('a', 'b')).toBe('b')
@@ -184,15 +163,6 @@ describe('relance dépliée et teinte des initiales', () => {
     // Faite, reportée ou cachée par le filtre : rien ne reste déplié.
     expect(relanceDeplieeAffichee('c', lignes)).toBeNull()
     expect(relanceDeplieeAffichee(null, lignes)).toBeNull()
-  })
-
-  it('colore les initiales selon le rôle : vendeur, acquéreur, sinon gris', () => {
-    expect(teinteRole({ roles: ['vendeur'] })).toBe('vendeur')
-    expect(teinteRole({ roles: ['acquereur'] })).toBe('acquereur')
-    expect(teinteRole({ roles: ['acquereur', 'vendeur'] })).toBe('vendeur')
-    expect(teinteRole({ roles: [] })).toBe('prospect')
-    expect(teinteRole({ roles: ['notaire'] })).toBe('prospect')
-    expect(teinteRole(null)).toBe('prospect')
   })
 })
 

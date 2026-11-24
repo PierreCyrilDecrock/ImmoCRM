@@ -152,9 +152,13 @@ export default function OngletAcquereurs({ vue, onVue, aujourdhui }: Props) {
 
   return (
     <>
-      <div className="border-t border-bord pt-4">
-        <Onglets libelle="Projets acquéreurs" options={vues} valeur={vue} onChange={onVue} />
-      </div>
+      <Onglets
+        forme="pastilles"
+        libelle="Projets acquéreurs"
+        options={vues}
+        valeur={vue}
+        onChange={onVue}
+      />
 
       {vue !== 'actif' ? (
         <ListeHorsPipeline etat={vue} version={version} />

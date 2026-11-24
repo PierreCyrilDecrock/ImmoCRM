@@ -1,6 +1,6 @@
 import LigneListe from '../../components/LigneListe'
 import Liste from '../../components/Liste'
-import { nomDeListe, resumeContact, type Contact, type ValeursContact } from './contacts'
+import { nomComplet, resumeContact, type Contact, type ValeursContact } from './contacts'
 import { libelleMotifs, motifsDoublon } from './doublons'
 
 type Props = {
@@ -26,7 +26,7 @@ export default function AlerteDoublons({ doublons, valeurs }: Props) {
         {doublons.map((doublon) => (
           <LigneListe
             key={doublon.id}
-            titre={nomDeListe(doublon)}
+            titre={nomComplet(doublon)}
             detail={[
               valeurs !== null ? libelleMotifs(motifsDoublon(valeurs, doublon)) : null,
               resumeContact(doublon),

@@ -18,6 +18,7 @@ import {
   listerPrixBien,
   preparerBien,
   resumeBien,
+  statutAffiche,
   TYPES_BIEN,
   type BrouillonBien,
   type ChampSelonType,
@@ -323,5 +324,24 @@ describe('accès aux données', () => {
     expect(appels).toContainEqual(['from', 'biens_prix'])
     expect(appels).toContainEqual(['eq', 'bien_id', 'b1'])
     expect(appels).toContainEqual(['order', 'created_at', { ascending: false }])
+  })
+})
+
+describe('statutAffiche', () => {
+  it('écrit le statut avec sa majuscule, une couleur par phase', () => {
+    expect(statutAffiche('en_estimation')).toEqual({ libelle: 'En estimation', genre: 'info' })
+    expect(statutAffiche('en_mandat')).toEqual({ libelle: 'En mandat', genre: 'succes' })
+    expect(statutAffiche('sous_offre')).toEqual({ libelle: 'Sous offre', genre: 'alerte' })
+    expect(statutAffiche('vendu')).toEqual({ libelle: 'Vendu', genre: 'fort' })
+  })
+
+  it('met les autres statuts en gris', () => {
+    expect(statutAffiche('repere')).toEqual({ libelle: 'Repéré', genre: 'neutre' })
+    expect(statutAffiche('en_veille')).toEqual({ libelle: 'En veille', genre: 'neutre' })
+    expect(statutAffiche('retire')).toEqual({ libelle: 'Retiré', genre: 'neutre' })
+  })
+
+  it('garde lisible un statut inconnu', () => {
+    expect(statutAffiche('a_l_etude')).toEqual({ libelle: 'A l etude', genre: 'neutre' })
   })
 })

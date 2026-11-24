@@ -6,6 +6,7 @@ import BoutonCopier from '../components/BoutonCopier'
 import Carte from '../components/Carte'
 import EtatChargement from '../components/EtatChargement'
 import Etiquette from '../components/Etiquette'
+import PastilleStatut from '../features/biens/PastilleStatut'
 import FenetreModale from '../components/FenetreModale'
 import Icone from '../components/Icone'
 import Information from '../components/Information'
@@ -26,12 +27,10 @@ import {
   champUtilise,
   communeBien,
   evolutionPrix,
-  genreStatut,
   libelleEtage,
   libelleEtat,
   libelleNatureCommerce,
   libelleOccupation,
-  libelleStatut,
   libelleTypes,
   lireBien,
   listerPrixBien,
@@ -368,11 +367,12 @@ export default function FicheBien() {
     />
   )
 
-  // Qui c'est, d'un coup d'œil : le type, le statut, l'adresse (titre), la commune, le prix.
+  // Qui c'est, d'un coup d'œil : le statut, le type, l'adresse (titre), la commune, le prix.
   const etiquettes = (
     <p className="flex flex-wrap items-center gap-2">
-      <Etiquette genre="info">{libelleTypes(bien)}</Etiquette>
-      <Etiquette genre={genreStatut(bien.statut)}>{libelleStatut(bien.statut)}</Etiquette>
+      <PastilleStatut statut={bien.statut} />
+      {/* Le type, moins décisif que le statut, en texte simple. */}
+      <span className="text-sm text-encre-douce">{libelleTypes(bien)}</span>
       {archive && <Etiquette genre="alerte">Archivé</Etiquette>}
     </p>
   )
