@@ -6,7 +6,7 @@ import LienBouton from '../../components/LienBouton'
 import { libelleRole, nomComplet, type Contact } from '../contacts/contacts'
 import { horaireTache, libelleCategorie, type TacheAffichee } from '../taches/taches'
 import BoutonAppel from './BoutonAppel'
-import CaseTache from './CaseTache'
+import CaseTache from '../taches/CaseTache'
 import {
   adresseRendezVous,
   enUneLigne,

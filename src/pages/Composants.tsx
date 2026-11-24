@@ -31,6 +31,7 @@ import ExemplesJournee from '../features/aujourdhui/ExemplesJournee'
 import { progression } from '../features/aujourdhui/maintenant'
 import { videAutresTaches } from '../features/aujourdhui/ordre-journee'
 import { libelleJour } from '../features/taches/echeances'
+import ExemplesTaches from '../features/taches/ExemplesTaches'
 import ReportsRapides from '../features/taches/ReportsRapides'
 import { dateDuJour } from '../lib/dates'
 import { etatsEtapes } from '../lib/etapes'
@@ -233,6 +234,19 @@ export default function Composants() {
               onReporter={reporterExemple}
               onAutreDate={() => notifier('succes', 'Ici s’ouvre la fenêtre « Reporter à… ».')}
             />
+            <p className="text-sm text-encre-douce">
+              Forme repliée (lignes de tâches, prochaine action) : une feuille sur téléphone, un
+              petit menu ailleurs.
+            </p>
+            <div className="flex">
+              <ReportsRapides
+                replie
+                aujourdhui={aujourdhui}
+                titre="Rappeler Camille Fictif"
+                onReporter={reporterExemple}
+                onAutreDate={() => notifier('succes', 'Ici s’ouvre la fenêtre « Reporter à… ».')}
+              />
+            </div>
           </div>
 
           <dl className="divide-y divide-bord">
@@ -332,6 +346,10 @@ export default function Composants() {
           </div>
           <ExemplesJournee aujourdhui={aujourdhui} />
         </div>
+      </Carte>
+
+      <Carte titre="Tâches et prochaine action">
+        <ExemplesTaches aujourdhui={aujourdhui} />
       </Carte>
 
       <Carte titre="Fiches">

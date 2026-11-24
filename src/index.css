@@ -105,6 +105,17 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
   --radius-3xl: 1.75rem;
+
+  /* Une feuille qui monte du bas de l'écran (reports d'une tâche sur téléphone). */
+  --animate-monter: monter 160ms ease-out;
+  @keyframes monter {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 }
 
 /* L'application occupe exactement l'écran : seule la zone de contenu défile. */
