@@ -4,7 +4,11 @@ import { LARGEUR_FONDU, masqueFondu, positionPourMontrer, useSuitesCachees } fro
 type Props<V extends string> = {
   /** Nom de l'ensemble, lu par les lecteurs d'écran. */
   libelle: string
-  options: readonly { valeur: V; libelle: string; compteur?: number | null }[]
+  /**
+   * `precision` : ce que le libellé ne dit pas (« jusqu'à dimanche ») ; lue avec le nom de
+   * l'onglet, et montrée en info-bulle au survol (ordinateur).
+   */
+  options: readonly { valeur: V; libelle: string; compteur?: number | null; precision?: string }[]
   valeur: V
   onChange: (valeur: V) => void
   /**
@@ -135,6 +139,11 @@ export default function Onglets<V extends string>({
               aria-controls={panneau}
               aria-selected={actif}
               onClick={() => onChange(option.valeur)}
+              title={
+                option.precision === undefined
+                  ? undefined
+                  : `${option.libelle}, ${option.precision}`
+              }
               className={classesOnglet(forme, actif)}
             >
               {forme === 'pastilles' ? (
@@ -146,11 +155,17 @@ export default function Onglets<V extends string>({
                   }`}
                 >
                   {option.libelle}
+                  {option.precision !== undefined && (
+                    <span className="sr-only">, {option.precision}</span>
+                  )}
                   {compteur(option.compteur, actif, true)}
                 </span>
               ) : (
                 <>
                   {option.libelle}
+                  {option.precision !== undefined && (
+                    <span className="sr-only">, {option.precision}</span>
+                  )}
                   {compteur(option.compteur, actif, false)}
                 </>
               )}

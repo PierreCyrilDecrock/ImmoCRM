@@ -5,7 +5,10 @@ import {
   libelleJour,
   prochainLundi,
   reportsRapides,
+  trancheDe,
+  VUES,
   vueDe,
+  vueDepuisAdresse,
 } from './echeances'
 
 // Mardi 17 novembre 2026 : la semaine se termine le dimanche 22.
@@ -34,15 +37,33 @@ describe('dateReport', () => {
 })
 
 describe('vues', () => {
-  it('range une tâche dans la bonne vue', () => {
-    expect(vueDe('2026-11-16', MARDI)).toBe('en_retard')
-    expect(vueDe(MARDI, MARDI)).toBe('aujourdhui')
+  it('range une tâche dans la bonne tranche', () => {
+    expect(trancheDe('2026-11-16', MARDI)).toBe('en_retard')
+    expect(trancheDe(MARDI, MARDI)).toBe('aujourdhui')
+    expect(trancheDe('2026-11-18', MARDI)).toBe('semaine')
+    expect(trancheDe('2026-11-22', MARDI)).toBe('semaine')
+    expect(trancheDe('2026-11-23', MARDI)).toBe('plus_tard')
+  })
+
+  it('range les retards et les tâches du jour dans « À faire »', () => {
+    expect(vueDe('2026-11-16', MARDI)).toBe('a_faire')
+    expect(vueDe(MARDI, MARDI)).toBe('a_faire')
     expect(vueDe('2026-11-18', MARDI)).toBe('semaine')
-    expect(vueDe('2026-11-22', MARDI)).toBe('semaine')
     expect(vueDe('2026-11-23', MARDI)).toBe('plus_tard')
   })
 
+  it('ouvre sur « À faire », puis Semaine, Plus tard et Terminées', () => {
+    expect(VUES.map((option) => option.libelle)).toEqual([
+      'À faire',
+      'Semaine',
+      'Plus tard',
+      'Terminées',
+    ])
+    expect(VUES.find((option) => option.valeur === 'semaine')?.precision).toBe("jusqu'à dimanche")
+  })
+
   it('retrouve une tâche reportée dans la vue attendue', () => {
+    // Une tâche du jour reportée à demain quitte « À faire ».
     expect(vueDe(dateReport('demain', MARDI), MARDI)).toBe('semaine')
     expect(vueDe(dateReport('semaine', MARDI), MARDI)).toBe('plus_tard')
     // Le samedi, « demain » est encore dans la semaine ; « dans 3 jours » n'y est plus.
@@ -51,6 +72,7 @@ describe('vues', () => {
   })
 
   it('donne des bornes cohérentes avec vueDe', () => {
+    expect(bornesVue('a_faire', MARDI)).toEqual({ max: MARDI })
     expect(bornesVue('en_retard', MARDI)).toEqual({ max: '2026-11-16' })
     expect(bornesVue('aujourdhui', MARDI)).toEqual({ min: MARDI, max: MARDI })
     expect(bornesVue('semaine', MARDI)).toEqual({ min: '2026-11-18', max: '2026-11-22' })
@@ -62,6 +84,26 @@ describe('vues', () => {
     const { min = '', max = '' } = bornesVue('semaine', dimanche)
     expect(min > max).toBe(true)
     expect(vueDe('2026-11-23', dimanche)).toBe('plus_tard')
+  })
+})
+
+describe('vueDepuisAdresse', () => {
+  it('ouvre « À faire » sans adresse ou avec une valeur inconnue', () => {
+    expect(vueDepuisAdresse(null)).toEqual({ vue: 'a_faire', rubrique: null })
+    expect(vueDepuisAdresse('')).toEqual({ vue: 'a_faire', rubrique: null })
+    expect(vueDepuisAdresse('nimporte')).toEqual({ vue: 'a_faire', rubrique: null })
+    expect(vueDepuisAdresse('a_faire')).toEqual({ vue: 'a_faire', rubrique: null })
+  })
+
+  it('mène les anciennes vues à « À faire », à leur rubrique', () => {
+    expect(vueDepuisAdresse('en_retard')).toEqual({ vue: 'a_faire', rubrique: 'en_retard' })
+    expect(vueDepuisAdresse('aujourdhui')).toEqual({ vue: 'a_faire', rubrique: 'aujourdhui' })
+  })
+
+  it('garde les vues qui n’ont pas changé', () => {
+    expect(vueDepuisAdresse('semaine')).toEqual({ vue: 'semaine', rubrique: null })
+    expect(vueDepuisAdresse('plus_tard')).toEqual({ vue: 'plus_tard', rubrique: null })
+    expect(vueDepuisAdresse('terminees')).toEqual({ vue: 'terminees', rubrique: null })
   })
 })
 

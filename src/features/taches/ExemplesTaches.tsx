@@ -5,12 +5,17 @@ import { bienEssai } from '../biens/bien-essai'
 import { contactEssai } from '../contacts/contact-essai'
 import CarteProchaineTache from './CarteProchaineTache'
 import { libelleJour } from './echeances'
+import { rubriquesAFaire } from './a-faire'
 import { jourDeLaVue } from './ligne-tache'
 import LigneTache from './LigneTache'
 import { tacheEssai } from './tache-essai'
 import type { TacheAffichee } from './taches'
 
-/** Des tâches inventées pour l'onglet Aujourd'hui : un rendez-vous avec un lieu et un bien, une relance, une tâche seule. */
+/**
+ * Des tâches inventées pour l'onglet « À faire » : deux retards (dont un de six jours), puis,
+ * pour aujourd'hui, une tâche sans heure, deux rendez-vous donnés dans le désordre, une tâche
+ * répétée ; les rubriques les remettent dans l'ordre.
+ */
 function tachesExemple(aujourdhui: string): TacheAffichee[] {
   const contact = contactEssai({ id: 'exemple-c1', prenom: 'Camille', nom: 'Fictif' })
   const bien = bienEssai({
@@ -20,6 +25,37 @@ function tachesExemple(aujourdhui: string): TacheAffichee[] {
     ville: 'Fictiveville',
   })
   return [
+    {
+      id: 'exemple-r1',
+      tache: tacheEssai({
+        id: 'exemple-r1',
+        titre: 'Rappeler le notaire Fictif',
+        echeance: ajouterJours(aujourdhui, -1),
+      }),
+      contact,
+      bien: null,
+    },
+    {
+      id: 'exemple-r2',
+      tache: tacheEssai({
+        id: 'exemple-r2',
+        titre: 'Envoyer l’avis de valeur',
+        echeance: ajouterJours(aujourdhui, -6),
+      }),
+      contact,
+      bien,
+    },
+    {
+      id: 'exemple-t2',
+      tache: tacheEssai({
+        id: 'exemple-t2',
+        titre: 'Relancer pour l’estimation',
+        echeance: aujourdhui,
+        priorite: 1,
+      }),
+      contact,
+      bien: null,
+    },
     {
       id: 'exemple-t1',
       tache: tacheEssai({
@@ -35,12 +71,14 @@ function tachesExemple(aujourdhui: string): TacheAffichee[] {
       bien,
     },
     {
-      id: 'exemple-t2',
+      id: 'exemple-t4',
       tache: tacheEssai({
-        id: 'exemple-t2',
-        titre: 'Relancer pour l’estimation',
+        id: 'exemple-t4',
+        titre: 'Estimation chez Camille',
+        categorie: 'rendez_vous',
         echeance: aujourdhui,
-        priorite: 1,
+        heure: '09:00:00',
+        duree: 60,
       }),
       contact,
       bien: null,
@@ -61,8 +99,10 @@ function tachesExemple(aujourdhui: string): TacheAffichee[] {
 }
 
 /**
- * Vitrine des tâches (étape E.3) pour la page « Composants de l'interface » : des lignes de
- * l'onglet Aujourd'hui (le jour ne s'y répète pas, une seule adresse) et la carte « Prochaine
+ * Vitrine des tâches (étapes E.3 et F.1) pour la page « Composants de l'interface » : l'onglet
+ * « À faire » et ses deux rubriques (« En retard », « Depuis 6 j » en rouge, puis
+ * « Aujourd'hui », les rendez-vous par heure, l'heure en tête, puis les tâches sans heure ;
+ * une seule adresse) et la carte « Prochaine
  * action » des fiches, avec la case ronde et le bouton Reporter replié. Rien n'est enregistré.
  */
 export default function ExemplesTaches({ aujourdhui }: { aujourdhui: string }) {
@@ -72,6 +112,11 @@ export default function ExemplesTaches({ aujourdhui }: { aujourdhui: string }) {
     ...affichee,
     tache: { ...affichee.tache, echeance: echeances[affichee.id] ?? affichee.tache.echeance },
   }))
+  // Comme sur la page : une tâche reportée au-delà d'aujourd'hui quitte « À faire ».
+  const rubriques = rubriquesAFaire(
+    taches.filter(({ tache }) => tache.echeance <= aujourdhui),
+    aujourdhui,
+  )
   const prochaine = tacheEssai({
     id: 'exemple-p1',
     titre: 'Relancer Camille Fictif',
@@ -91,28 +136,41 @@ export default function ExemplesTaches({ aujourdhui }: { aujourdhui: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-encre-douce">
-          Lignes de l'onglet Aujourd'hui : le jour ne s'y écrit pas, l'heure reste en gras ; le lieu
-          passe avant l'adresse du bien.
-        </p>
-        <ul className="divide-y divide-bord overflow-hidden rounded-xl ring-1 ring-bord">
-          {taches.map((affichee) => (
-            <LigneTache
-              key={affichee.id}
-              affichee={affichee}
-              aujourdhui={aujourdhui}
-              jourMasque={jourDeLaVue('aujourdhui', aujourdhui)}
-              occupee={false}
-              onCocher={exemple('Ici s’ouvre la boucle de relance, ou la tâche est close')}
-              onReporter={exemple('Ici s’ouvre la fenêtre « Reporter à… »')}
-              onOuvrir={exemple('Ici s’ouvre la tâche')}
-              onRouvrir={exemple('Rouvrir')}
-              onReporterA={(date) => reporter(affichee.id, affichee.tache.echeance, date)}
-            />
-          ))}
-        </ul>
-      </div>
+      <p className="text-sm text-encre-douce">
+        L'onglet « À faire » : les retards en tête, la plus ancienne d'abord ; puis aujourd'hui, les
+        rendez-vous par heure avant les tâches sans heure. Une tâche reportée à demain quitte
+        l'onglet.
+      </p>
+      {rubriques.map((rubrique) => (
+        <div key={rubrique.cle} className="flex flex-col gap-2">
+          <p
+            className={`text-base font-semibold ${rubrique.cle === 'en_retard' ? 'text-danger' : 'text-encre'}`}
+          >
+            {rubrique.titre}
+            <span className="font-normal text-encre-douce tabular-nums">
+              {' · '}
+              {rubrique.nombre}
+            </span>
+          </p>
+          <ul className="divide-y divide-bord overflow-hidden rounded-xl ring-1 ring-bord">
+            {rubrique.taches.map((affichee) => (
+              <LigneTache
+                key={affichee.id}
+                affichee={affichee}
+                aujourdhui={aujourdhui}
+                jourMasque={jourDeLaVue('a_faire', aujourdhui)}
+                retardEnDuree
+                occupee={false}
+                onCocher={exemple('Ici s’ouvre la boucle de relance, ou la tâche est close')}
+                onReporter={exemple('Ici s’ouvre la fenêtre « Reporter à… »')}
+                onOuvrir={exemple('Ici s’ouvre la tâche')}
+                onRouvrir={exemple('Rouvrir')}
+                onReporterA={(date) => reporter(affichee.id, affichee.tache.echeance, date)}
+              />
+            ))}
+          </ul>
+        </div>
+      ))}
       <CarteProchaineTache
         tache={prochaine}
         aujourdhui={aujourdhui}

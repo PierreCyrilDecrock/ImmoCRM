@@ -46,7 +46,7 @@ export default function Composants() {
   const [modaleOuverte, setModaleOuverte] = useState(false)
   const [roles, setRoles] = useState<string[]>(['vendeur'])
   const [etiquettes, setEtiquettes] = useState(['investisseur'])
-  const [onglet, setOnglet] = useState('aujourdhui')
+  const [onglet, setOnglet] = useState('a_faire')
   const [ongletFiche, setOngletFiche] = useState('activite')
   const [temperature, setTemperature] = useState<'froid' | 'tiede' | 'chaud'>('tiede')
   const aujourdhui = dateDuJour()
@@ -196,8 +196,8 @@ export default function Composants() {
         <Onglets
           libelle="Exemple d'onglets"
           options={[
-            { valeur: 'en_retard', libelle: 'En retard', compteur: 2 },
-            { valeur: 'aujourdhui', libelle: "Aujourd'hui", compteur: 5 },
+            { valeur: 'a_faire', libelle: 'À faire', compteur: 8 },
+            { valeur: 'semaine', libelle: 'Semaine', compteur: 4, precision: "jusqu'à dimanche" },
             { valeur: 'terminees', libelle: 'Terminées' },
           ]}
           valeur={onglet}

@@ -22,7 +22,7 @@ export function pastilleRetards(nombre: number | null): { texte: string; annonce
   }
 }
 
-/** Compte les tâches à faire dont l'échéance est passée (même règle que la vue « En retard »). */
+/** Compte les tâches à faire dont l'échéance est passée (même règle que la rubrique « En retard » de l'onglet « À faire »). */
 export function compterTachesEnRetard(
   client: SupabaseClient,
   aujourdhui: string,

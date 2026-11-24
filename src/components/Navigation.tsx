@@ -24,8 +24,9 @@ type Props = {
  * repérée par une capsule autour de son dessin. Sur tablette : colonne étroite à gauche.
  * Sur ordinateur : colonne large, point de départ de tous les gestes — le nom de
  * l'application, la recherche, les entrées, les fiches récentes, puis en bas « Créer » et
- * l'état des enregistrements. Une pastille (les tâches en retard) est un nombre rouge sur
- * tablette et ordinateur, un point rouge sur téléphone ; le nombre exact est lu avec l'entrée.
+ * l'état des enregistrements. Une pastille (les tâches en retard) est un nombre rouge,
+ * plafonné à « 9+ », sur les trois tailles d'écran (étape F.1) ; le nombre exact est lu avec
+ * l'entrée.
  */
 export default function Navigation({
   recherche,
@@ -79,20 +80,14 @@ export default function Navigation({
                   >
                     <Icone nom={entree.icone} className="size-[1.375rem]" />
                     {pastille !== undefined && (
-                      <>
-                        {/* Téléphone : un point rouge, la barre du bas ne change pas de taille. */}
-                        <span
-                          aria-hidden="true"
-                          className="absolute top-0.5 right-2.5 size-2.5 rounded-full bg-danger ring-2 ring-surface md:hidden"
-                        />
-                        {/* Tablette : le nombre sur le coin du dessin. */}
-                        <span
-                          aria-hidden="true"
-                          className="absolute -top-2 -right-3 hidden h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[0.6875rem] font-semibold text-sur-plein tabular-nums ring-2 ring-fond md:flex lg:hidden"
-                        >
-                          {pastille.texte}
-                        </span>
-                      </>
+                      // Téléphone et tablette : le nombre (« 3 », « 9+ ») sur le coin du
+                      // dessin, posé en absolu : la barre du bas garde sa hauteur.
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-1.5 -right-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-danger px-1 text-[0.6875rem] leading-none font-semibold text-sur-plein tabular-nums ring-2 ring-surface md:-top-2 md:-right-3 md:h-5 md:min-w-5 md:ring-fond lg:hidden"
+                      >
+                        {pastille.texte}
+                      </span>
                     )}
                   </span>
                   <span className="max-w-full truncate lg:min-w-0 lg:flex-1">

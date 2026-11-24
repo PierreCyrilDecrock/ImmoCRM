@@ -9,7 +9,10 @@ type Props = {
   aujourdhui: string
   /** Lien à ne pas répéter sur chaque ligne, et à ne pas changer (fiche Contact ou Bien). */
   masquer?: 'contact' | 'bien'
-  /** L'onglet affiché (page Tâches) : son jour ne se répète pas sur chaque ligne. */
+  /**
+   * L'onglet affiché (page Tâches) : son jour ne se répète pas sur chaque ligne ; dans « À
+   * faire », un retard se dit en durée (« Depuis 6 j »).
+   */
   vue?: Vue
   /** Appelé après chaque geste : la liste doit se relire. */
   onChangement: () => void
@@ -36,6 +39,7 @@ export default function ListeTaches({ taches, aujourdhui, masquer, vue, onChange
             aujourdhui={aujourdhui}
             masquer={masquer}
             jourMasque={jourMasque}
+            retardEnDuree={vue === 'a_faire'}
             occupee={gestes.occupee === affichee.id}
             onCocher={() => gestes.cocher(affichee)}
             onReporter={() => gestes.reporter(affichee)}

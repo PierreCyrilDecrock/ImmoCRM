@@ -12,7 +12,8 @@ Une seule question chaque matin : **qui dois-je contacter aujourd'hui, et pourqu
    - **Autres tâches** : le reste (envoyer un document, commander un diagnostic…). On coche ou on reporte. Vide, il rappelle ce qui reste ailleurs (« Rien d'autre que vos 8 relances et 3 rendez-vous. ») ; le message vert « place au terrain » n'apparaît que lorsque tout est fait.
    - **Alertes** : projets sans nouvelles depuis 15 jours, contacts sans prochaine action, export à refaire.
    - **Nouveautés** : demandes entrantes à qualifier, en rouge au-delà d'une heure.
-4. Écrire **les trois actions qui comptent** aujourd'hui (à côté de la carte sur ordinateur, dessous sur téléphone). Les champs vides montrent des exemples (« Ex. : rappeler le notaire »). Une action écrite s'affiche en simple texte avec sa case ronde, à cocher une fois faite ; pour la corriger, touchez-la. Elles restent jusqu'au soir, sur tous les appareils.
+4. S'il y a des retards, l'entrée **Tâches** de la navigation porte leur nombre en rouge (« 3 », « 9+ » au-delà de neuf), sur téléphone comme sur ordinateur. La toucher ouvre l'onglet **« À faire »** : d'abord **« En retard · 3 »**, en rouge, la plus ancienne en tête (« Depuis 6 j »), puis **« Aujourd'hui · 5 »** : les rendez-vous dans l'ordre des heures (l'heure en gras en début de ligne), puis les tâches sans heure. Cocher, ou reporter avec l'horloge : une tâche reportée à demain quitte « À faire », « Annuler » la ramène. Les autres onglets : **Semaine** (jusqu'à dimanche), **Plus tard**, **Terminées**.
+5. Écrire **les trois actions qui comptent** aujourd'hui (à côté de la carte sur ordinateur, dessous sur téléphone). Les champs vides montrent des exemples (« Ex. : rappeler le notaire »). Une action écrite s'affiche en simple texte avec sa case ronde, à cocher une fois faite ; pour la corriger, touchez-la. Elles restent jusqu'au soir, sur tous les appareils.
 
 ## Après chaque échange — 30 secondes
 
@@ -50,7 +51,7 @@ Avant d'appeler quelqu'un pour la première fois, noter son **accord pour être 
 ## Le vendredi — 20 minutes
 
 1. **Pipelines → Vendeurs, puis Acquéreurs.** Pour chaque projet : l'étape est-elle juste ? Une prochaine action est-elle prévue ? Faire avancer, mettre « À recontacter » (avec une date) ou « Perdu » (avec le motif). Rien ne se supprime. Sur ordinateur, ouvrir le premier projet d'une colonne, puis passer au suivant avec **J** (ou la flèche en haut à droite) : la revue se fait sans revenir au tableau.
-2. **Tâches → En retard** : faire, reporter ou annuler. La liste doit être vide : la pastille rouge de l'entrée Tâches disparaît alors.
+2. **Tâches → À faire**, rubrique **En retard** : faire, reporter ou annuler. La rubrique doit disparaître : la pastille rouge de l'entrée Tâches disparaît avec elle.
 3. **Contacts → Sans prochaine action** : planifier une relance pour chacun, ou confirmer qu'il n'y en aura pas. Le compteur doit tendre vers zéro.
 4. **La semaine suivante** : bloquer les créneaux de prospection comme des rendez-vous (« + » → Nouvelle tâche, catégorie Prospection, avec une heure).
 5. **Plus → Réglages → « Exporter toutes mes données »**, et ranger le fichier hors de l'appareil.
@@ -73,7 +74,7 @@ Les objectifs et le tableau de bord de la revue arriveront avec la version 3.
 - **Ajout rapide d'une tâche** (page Tâches) : écrire le titre puis **Entrée** ; elle est prévue pour aujourd'hui. « Ajouter » apparaît dès qu'on écrit ; **« Plus de détails »** ouvre le formulaire complet (date, heure, contact, bien…) avec le titre déjà tapé.
 - **Retrouver quelqu'un** : le champ **« Rechercher un contact »** (en haut de chaque page ; sur ordinateur, en haut de la colonne de gauche) cherche par nom, téléphone (sous toutes ses formes), courriel ou adresse. Au clavier, « / » ou ⌘K (Ctrl K sur PC) y mène directement, et « N » ouvre le menu de création.
 - **La colonne de gauche, sur ordinateur** : sous les entrées, **« Consultés récemment »** rouvre d'un clic les trois dernières fiches vues. En bas, « Créer », puis l'état : « Tout est enregistré », « Enregistrement… » pendant un envoi, « Connexion perdue » sans réseau (attendre « Tout est enregistré » avant de fermer).
-- **Tâches en retard** : leur nombre s'affiche en rouge sur l'entrée Tâches (« 9+ » au-delà de neuf ; un point rouge sur téléphone). Il se met à jour dès qu'une tâche est faite ou reportée.
+- **Tâches en retard** : leur nombre s'affiche en rouge sur l'entrée Tâches, sur téléphone comme sur ordinateur (« 9+ » au-delà de neuf). Il se met à jour dès qu'une tâche est faite ou reportée. La toucher ouvre la page Tâches sur « À faire », les retards en tête.
 - **Reporter en un toucher** : sur la prochaine action d'un contact, la prochaine tâche d'un bien ou d'un projet, dans la page Tâches et sur les relances d'Aujourd'hui (sur ordinateur), « Demain », « Dans 3 jours », « Lundi », ou le calendrier pour une autre date. Une erreur ? « Annuler » dans le message qui confirme (ou Ctrl Z sur ordinateur) remet l'ancienne date.
 - **Sur téléphone, page Tâches et écran Aujourd'hui** (relances et tâches) : glisser une ligne vers la gauche découvre « Reporter » et « Fait ». Sur une relance, « Fait » ouvre l'écran de compte rendu. Les boutons de la ligne font la même chose.
 - **Sur ordinateur, écran Aujourd'hui** : en passant la souris sur une relance (ou en y arrivant au clavier), « Demain », « Dans 3 jours », « Lundi », le calendrier et « Fait » apparaissent à côté d'« Appeler ». Une relance reportée quitte la liste ; « Annuler » dans le message la fait revenir.
