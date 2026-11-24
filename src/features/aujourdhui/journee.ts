@@ -23,12 +23,18 @@ export type CleBloc = 'agenda' | 'relances' | 'taches' | 'alertes' | 'nouveautes
 
 export const BLOCS: readonly CleBloc[] = ['agenda', 'relances', 'taches', 'alertes', 'nouveautes']
 
+/** L'identifiant d'un bloc (`journee-agenda`…), pour y descendre depuis l'en-tête. */
+export function idDuBloc(cle: string): string {
+  return `journee-${cle}`
+}
+
 /** Nombre de lignes lues au plus pour chaque bloc : l'écran reste rapide. */
 export const LIMITES = {
   agenda: 30,
   relances: 30,
   taches: 30,
-  contactsSansAction: 5,
+  // Rangés ensuite par rôle et température (`ordreSansAction`) : on en lit plus qu'on n'en montre.
+  contactsSansAction: 30,
   projetsSansActivite: 10,
   nouveautes: 10,
 } as const

@@ -5,6 +5,7 @@ import {
   changerPriorite,
   enregistrerPriorites,
   LONGUEUR_MAX_PRIORITE,
+  formeTroisActions,
   lirePriorites,
   PRIORITES_VIDES,
   prioritesDepuis,
@@ -59,12 +60,38 @@ describe('trois actions qui comptent', () => {
     expect(bilanPriorites(PRIORITES_VIDES)).toEqual({ choisies: 0, faites: 0 })
   })
 
-  it('lit la ligne du jour demandé', async () => {
-    const { client, appels } = fauxClient({ data: [LIGNE], error: null })
+  it('lit la ligne la plus récente jusqu’au jour demandé', async () => {
+    const { client, appels } = fauxClient({ data: [{ ...LIGNE, jour: '2026-11-17' }], error: null })
     const resultat = await lirePriorites(client, '2026-11-17')
     expect(appels).toContainEqual(['from', 'priorites_du_jour'])
-    expect(appels).toContainEqual(['eq', 'jour', '2026-11-17'])
-    expect(resultat.ok && resultat.donnees[0].texte).toBe('Rappeler Camille Fictif')
+    expect(appels).toContainEqual(['lte', 'jour', '2026-11-17'])
+    expect(resultat.ok && resultat.donnees.priorites[0].texte).toBe('Rappeler Camille Fictif')
+    expect(resultat.ok && resultat.donnees.dejaUtilisees).toBe(true)
+  })
+
+  it('d’un jour précédent, ne garde que le fait que l’outil a servi', async () => {
+    const { client } = fauxClient({ data: [{ ...LIGNE, jour: '2026-11-16' }], error: null })
+    const resultat = await lirePriorites(client, '2026-11-17')
+    expect(resultat.ok && resultat.donnees).toEqual({
+      priorites: PRIORITES_VIDES,
+      dejaUtilisees: true,
+    })
+  })
+
+  it('sans aucune ligne, l’outil n’a jamais servi', async () => {
+    const { client } = fauxClient({ data: [], error: null })
+    const resultat = await lirePriorites(client, '2026-11-17')
+    expect(resultat.ok && resultat.donnees.dejaUtilisees).toBe(false)
+  })
+
+  it('tient en une ligne tant qu’aucune action n’a jamais été écrite (étape F.2)', () => {
+    const base = { erreur: false, choisies: 0, dejaUtilisees: false, deplie: false }
+    expect(formeTroisActions(base)).toBe('ligne')
+    expect(formeTroisActions({ ...base, deplie: true })).toBe('complete')
+    expect(formeTroisActions({ ...base, choisies: 1 })).toBe('complete')
+    // Les jours suivants aussi.
+    expect(formeTroisActions({ ...base, dejaUtilisees: true })).toBe('complete')
+    expect(formeTroisActions({ ...base, erreur: true })).toBe('complete')
   })
 
   it('enregistre une ligne par jour', async () => {

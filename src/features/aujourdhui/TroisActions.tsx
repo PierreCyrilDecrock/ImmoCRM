@@ -8,11 +8,14 @@ import {
   changerPriorite,
   enregistrerPriorites,
   EXEMPLES_PRIORITES,
+  formeTroisActions,
   lirePriorites,
+  memoriserUtilisees,
   LONGUEUR_MAX_PRIORITE,
   NOMS_PRIORITES,
   PRIORITES_VIDES,
   type Priorites,
+  utiliseesMemorisees,
 } from './priorites'
 
 /** `jour` ne change pas pendant la vie du composant : l'écran le recrée avec `key={jour}`. */
@@ -26,7 +29,10 @@ type Rang = (typeof RANGS)[number]
 
 /**
  * « Trois actions qui comptent » : choisies chaque matin, écrites librement, cochées au fil
- * de la journée. Un champ vide montre un exemple. Chaque action s'enregistre quand on quitte
+ * de la journée. Tant qu'aucune action n'a jamais été écrite, le bloc tient en une ligne
+ * « Choisir mes trois actions du jour » qui déplie les champs (`formeTroisActions`) ; dès la
+ * première action écrite, il garde ses trois champs, les jours suivants aussi. Un champ vide
+ * montre un exemple. Chaque action s'enregistre quand on quitte
  * son champ (ou par « Entrée ») ; elle s'affiche alors en texte, sans bordure, avec sa case
  * ronde ; la toucher (ou « Entrée » au clavier) la rend de nouveau modifiable, « Échap »
  * abandonne la correction. La case s'enregistre aussitôt. Elles se retrouvent sur tous les
@@ -39,6 +45,10 @@ export default function TroisActions({ jour }: Props) {
   const [enregistrees, setEnregistrees] = useState<Priorites>(PRIORITES_VIDES)
   const [saisies, setSaisies] = useState<Priorites>(PRIORITES_VIDES)
   const [envoi, setEnvoi] = useState(false)
+  // Les actions ont déjà servi (ce jour-ci ou avant) : le bloc garde ses trois champs.
+  const [dejaUtilisees, setDejaUtilisees] = useState(utiliseesMemorisees)
+  // La ligne « Choisir mes trois actions du jour » a été touchée.
+  const [deplie, setDeplie] = useState(false)
   // Les enregistrements partent l'un après l'autre, dans l'ordre des gestes.
   const file = useRef<Promise<unknown>>(Promise.resolve())
   // L'action en cours de saisie : elle garde son champ, même une fois écrite.
@@ -74,8 +84,10 @@ export default function TroisActions({ jour }: Props) {
         setEtat('erreur')
         return
       }
-      setEnregistrees(resultat.donnees)
-      setSaisies(resultat.donnees)
+      setEnregistrees(resultat.donnees.priorites)
+      setSaisies(resultat.donnees.priorites)
+      setDejaUtilisees(resultat.donnees.dejaUtilisees)
+      if (resultat.donnees.dejaUtilisees) memoriserUtilisees()
       setEtat('pret')
     })
     return () => {
@@ -97,6 +109,8 @@ export default function TroisActions({ jour }: Props) {
         return
       }
       setEnregistrees(resultat.donnees)
+      setDejaUtilisees(true)
+      memoriserUtilisees()
     })
   }
 
@@ -143,6 +157,35 @@ export default function TroisActions({ jour }: Props) {
   }
 
   const bilan = bilanPriorites(enregistrees)
+  const forme = formeTroisActions({
+    erreur: etat === 'erreur',
+    choisies: bilan.choisies,
+    dejaUtilisees,
+    deplie,
+  })
+
+  if (forme === 'ligne') {
+    return (
+      <section aria-label="Trois actions qui comptent">
+        <button
+          type="button"
+          aria-expanded={false}
+          disabled={etat !== 'pret'}
+          onClick={() => {
+            setDeplie(true)
+            setEdition(0)
+          }}
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl bg-surface px-4 py-2 text-left ring-1 ring-bord hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait"
+        >
+          <Icone nom="ajouter" className="size-6 text-accent" />
+          <span className="min-w-0 flex-1 text-base font-semibold text-encre">
+            Choisir mes trois actions du jour
+          </span>
+          <Icone nom="chevron" className="size-5 text-encre-douce" />
+        </button>
+      </section>
+    )
+  }
 
   return (
     <section

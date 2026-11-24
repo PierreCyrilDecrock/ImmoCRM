@@ -6,9 +6,11 @@ import Page from '../components/Page'
 import AnneauProgression from '../features/aujourdhui/AnneauProgression'
 import BlocJournee from '../features/aujourdhui/BlocJournee'
 import CarteMaintenant from '../features/aujourdhui/CarteMaintenant'
+import CompteursJournee from '../features/aujourdhui/CompteursJournee'
 import {
   basculerRepli,
   cartesDeLAppareil,
+  idDuBloc,
   memoriserReplis,
   replisMemorises,
   type CleBloc,
@@ -21,14 +23,19 @@ import LigneRendezVous from '../features/aujourdhui/LigneRendezVous'
 import {
   aPreparer,
   choisirMaintenant,
+  compteursJournee,
   etatRendezVous,
+  finDeJournee,
   finDuDernierRendezVous,
+  nomDuRendezVous,
   placeDuTrait,
   progression,
   rendezVousCiDessus,
   rendezVousRestants,
   resumeJournee,
   salutation,
+  sansAPreparer,
+  type BlocCompte,
 } from '../features/aujourdhui/maintenant'
 import {
   basculerRelance,
@@ -103,12 +110,14 @@ function VoirTout({
 
 /**
  * Écran « Aujourd'hui », page d'accueil : qui contacter aujourd'hui, et pourquoi. En tête, la
- * date, la salutation (l'anneau de progression à sa droite, dès le premier geste) et la
- * journée résumée en une phrase, qui finit par ce qui reste à faire ; puis la carte
- * « Maintenant » (le rendez-vous en cours ou le prochain) à côté des trois actions qui
- * comptent ; enfin cinq blocs dans l'ordre où la journée se vit : agenda, relances, autres
- * tâches, alertes, nouveautés. Chaque bloc a son compteur et se replie. L'écran suit l'heure
- * à la minute (temps restant, trait « maintenant ») sans relire la base.
+ * date, la salutation (l'anneau de progression à sa droite, dès le premier geste), puis la
+ * journée en compteurs qu'on touche pour descendre au bloc (« 3 rendez-vous », « 4 à
+ * rappeler », « 1 tâche ») et une ligne courte (la fin du dernier rendez-vous, l'avancement
+ * dès le premier geste) ; puis la carte « Maintenant » (le rendez-vous en cours ou le
+ * prochain) à côté des trois actions qui comptent ; enfin cinq blocs dans l'ordre où la
+ * journée se vit : agenda, relances, autres tâches, alertes, nouveautés. Chaque bloc a son
+ * compteur et se replie. L'écran suit l'heure à la minute (temps restant, trait
+ * « maintenant ») sans relire la base.
  */
 export default function Aujourdhui() {
   const maintenant = useMaintenant()
@@ -124,6 +133,8 @@ export default function Aujourdhui() {
   const [toutesRelances, setToutesRelances] = useState(false)
   // Sur écran tactile, une seule relance dépliée à la fois.
   const [relanceTouchee, setRelanceTouchee] = useState<string | null>(null)
+  // De même, un seul rendez-vous de l'agenda déplié à la fois.
+  const [rendezVousTouche, setRendezVousTouche] = useState<string | null>(null)
   const survol = useSurvolPossible()
   const derniereLecture = useRef(0)
   const [cartes] = useState(() => cartesDeLAppareil(navigator.userAgent))
@@ -172,6 +183,20 @@ export default function Aujourdhui() {
     memoriserReplis(suivants)
   }
 
+  /** Un compteur de l'en-tête : déplie son bloc s'il est replié, et y descend. */
+  function allerAuBloc(bloc: BlocCompte) {
+    if (replies.includes(bloc)) basculer(bloc)
+    // Après l'affichage du bloc déplié.
+    requestAnimationFrame(() => {
+      const section = document.getElementById(idDuBloc(bloc))
+      if (section === null) return
+      const doux = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      section.scrollIntoView({ block: 'start', behavior: doux ? 'smooth' : 'auto' })
+      // Le clavier suit : il se pose sur le titre du bloc.
+      section.querySelector('button')?.focus({ preventScroll: true })
+    })
+  }
+
   const proprietesBloc = (bloc: CleBloc) => ({
     cle: bloc,
     replie: replies.includes(bloc),
@@ -193,15 +218,28 @@ export default function Aujourdhui() {
   const lignesRelances = relances?.ok ? relances.donnees.lignes : []
   const lignesTaches = taches?.ok ? taches.donnees.lignes : []
   const choix = agenda?.ok ? choisirMaintenant(lignesAgenda, lignesRelances, minutes) : null
+  const fin = finDuDernierRendezVous(lignesAgenda.map((affichee) => affichee.tache))
+  // Lu par les lecteurs d'écran : la journée en une phrase.
   const resume =
     agenda?.ok && relances?.ok
       ? resumeJournee({
           rendezVous: agenda.donnees.total,
           rappels: relances.donnees.total,
-          fin: finDuDernierRendezVous(lignesAgenda.map((affichee) => affichee.tache)),
+          fin,
           minutes,
         })
       : null
+  const compteurs =
+    agenda?.ok && relances?.ok && taches?.ok
+      ? compteursJournee({
+          rendezVous: agenda.donnees.total,
+          rappels: relances.donnees.total,
+          rappelsEnRetard: lignesRelances.some((relance) => relance.tache.echeance < aujourdhui),
+          taches: taches.donnees.total,
+          tachesEnRetard: lignesTaches.some((affichee) => affichee.tache.echeance < aujourdhui),
+        })
+      : null
+  const ligneFin = agenda?.ok ? finDeJournee(fin, agenda.donnees.total, minutes) : null
   const avancement =
     agenda?.ok && relances?.ok && taches?.ok && journee?.faitesDuJour.ok
       ? progression(
@@ -224,12 +262,25 @@ export default function Aujourdhui() {
     toutesRelances,
   )
   const relanceDepliee = relanceDeplieeAffichee(relanceTouchee, relancesMontrees)
+  const rendezVousDeplie = relanceDeplieeAffichee(rendezVousTouche, lignesAgenda)
   const ciDessus = rendezVousCiDessus(choix)
-  const groupesTaches = grouperTaches(lignesTaches, aujourdhui)
+  const preparees =
+    choix !== null && choix.genre === 'rendez_vous'
+      ? aPreparer(choix.affichee, [...lignesTaches, ...lignesRelances])
+      : []
+  // Règle 12 : une tâche « À préparer » dans la carte n'est pas répétée dans « Autres tâches ».
+  const autresTaches = sansAPreparer(lignesTaches, preparees)
+  const tachesMasquees = lignesTaches.length - autresTaches.length
+  const compteurTaches = taches?.ok ? taches.donnees.total - tachesMasquees : null
+  const groupesTaches = grouperTaches(autresTaches, aujourdhui)
   // Vide, « Autres tâches » situe ce qui reste ailleurs ; le vert attend une journée finie.
   const videTaches = videAutresTaches({
     relances: relances?.ok ? relances.donnees.total : 0,
     rendezVous: rendezVousRestants(lignesAgenda, minutes),
+    aPreparer:
+      choix !== null && choix.genre === 'rendez_vous'
+        ? { nombre: tachesMasquees, pour: nomDuRendezVous(choix.affichee.tache) }
+        : undefined,
   })
   const titre = salutation(journee?.nomAffiche ?? '')
 
@@ -251,13 +302,25 @@ export default function Aujourdhui() {
         </div>
       }
     >
-      {resume !== null && (
-        <div className="-mt-3">
-          <p className="text-base text-encre">
-            {resume}
-            {avancement !== null && <span aria-hidden="true"> {avancement.phrase}</span>}
-          </p>
-          {/* Lu à la place de la fin de phrase, et annoncé quand elle change. */}
+      {resume !== null && compteurs !== null && (
+        <div className="-mt-3 flex flex-col gap-1.5">
+          {/* Les lecteurs d'écran entendent la journée en une phrase, comme avant les compteurs. */}
+          <p className="sr-only">{resume}</p>
+          {compteurs.length > 0 ? (
+            <CompteursJournee compteurs={compteurs} onAller={allerAuBloc} />
+          ) : (
+            <p aria-hidden="true" className="text-base text-encre">
+              {resume}
+            </p>
+          )}
+          {(ligneFin !== null || avancement?.anneau === true) && (
+            <p aria-hidden="true" className="text-sm text-encre-douce">
+              {[ligneFin, avancement?.anneau === true ? avancement.phrase : null]
+                .filter((morceau) => morceau !== null)
+                .join(' ')}
+            </p>
+          )}
+          {/* L'avancement, annoncé quand il change. */}
           <p className="sr-only" aria-live="polite">
             {avancement?.annonce ?? ''}
           </p>
@@ -272,11 +335,7 @@ export default function Aujourdhui() {
             choix={choix}
             minutes={minutes}
             aujourdhui={aujourdhui}
-            aPreparer={
-              choix.genre === 'rendez_vous'
-                ? aPreparer(choix.affichee, [...lignesTaches, ...lignesRelances])
-                : []
-            }
+            aPreparer={preparees}
             cartes={cartes}
             occupee={gestes.occupee}
             onCocher={gestes.cocher}
@@ -302,7 +361,8 @@ export default function Aujourdhui() {
             }}
           >
             {agenda?.ok && (
-              <ul className="divide-y divide-bord">
+              // La frise déborde sur la marge du bloc : le titre gagne une trentaine de lettres.
+              <ul className="-mx-2 divide-y divide-bord">
                 {lignesAgenda.map((affichee, rang) => (
                   <Fragment key={affichee.id}>
                     {rang === placeTrait && <TraitMaintenant heure={heure} />}
@@ -312,6 +372,11 @@ export default function Aujourdhui() {
                       occupee={gestes.occupee === affichee.id}
                       onCocher={() => gestes.cocher(affichee)}
                       onOuvrir={() => gestes.ouvrir(affichee)}
+                      survol={survol}
+                      depliee={affichee.id === rendezVousDeplie}
+                      onBasculer={() =>
+                        setRendezVousTouche(basculerRelance(rendezVousDeplie, affichee.id))
+                      }
                       passe={etatRendezVous(affichee.tache, minutes) === 'passe'}
                       ciDessus={affichee.id === ciDessus}
                     />
@@ -396,18 +461,15 @@ export default function Aujourdhui() {
             {...proprietesBloc('taches')}
             titre="Autres tâches"
             icone="taches"
-            compteur={compteur(taches)}
-            compteurAlerte={
-              taches?.ok === true &&
-              taches.donnees.lignes.some((affichee) => affichee.tache.echeance < aujourdhui)
-            }
+            compteur={compteurTaches}
+            compteurAlerte={autresTaches.some((affichee) => affichee.tache.echeance < aujourdhui)}
             erreur={erreurDe(taches)}
             vide={videTaches}
             pied={
-              taches?.ok && (
+              compteurTaches !== null && (
                 <VoirTout
-                  affiches={taches.donnees.lignes.length}
-                  total={taches.donnees.total}
+                  affiches={autresTaches.length}
+                  total={compteurTaches}
                   vers="/taches?vue=en_retard"
                   libelle="Voir les tâches en retard"
                 />
@@ -465,7 +527,9 @@ export default function Aujourdhui() {
                     <h3 className="text-sm font-semibold text-encre-douce">
                       {groupe.titre} ({groupe.total})
                     </h3>
-                    <ul className="divide-y divide-bord">
+                    <ul
+                      className={`divide-y divide-bord ${groupe.cle === 'contact_sans_action' ? '-mx-2' : ''}`}
+                    >
                       {groupe.alertes.map((alerte) => (
                         <LigneAlerte
                           key={alerte.cle}
@@ -475,15 +539,18 @@ export default function Aujourdhui() {
                         />
                       ))}
                     </ul>
-                    {groupe.cle === 'contact_sans_action' && (
-                      <VoirTout
-                        affiches={groupe.alertes.length}
-                        total={groupe.total}
-                        vers="/contacts"
-                        libelle="Voir la liste"
-                        onClick={() => memoriserFiltres({ ...FILTRES_VIDES, sansAction: true })}
-                      />
-                    )}
+                    {groupe.cle === 'contact_sans_action' &&
+                      groupe.total > groupe.alertes.length && (
+                        // La suite, dans Contacts, sur l'onglet « Sans prochaine action ».
+                        <Link
+                          to="/contacts"
+                          onClick={() => memoriserFiltres({ ...FILTRES_VIDES, sansAction: true })}
+                          className={`${CLASSES_LIEN} mt-1`}
+                        >
+                          Voir les {groupe.total}
+                          <span className="sr-only"> contacts sans prochaine action</span>
+                        </Link>
+                      )}
                     {groupe.cle === 'projet_sans_activite' && (
                       <VoirTout
                         affiches={groupe.alertes.length}

@@ -1,9 +1,13 @@
 import type { ReactNode } from 'react'
 import Icone, { type NomIcone } from '../../components/Icone'
 import Message from '../../components/Message'
+import { idDuBloc } from './journee'
 
 type Props = {
-  /** Sert à l'identifiant du contenu (`bloc-agenda`…). */
+  /**
+   * Sert aux identifiants du bloc (`journee-agenda`, où mènent les compteurs de l'en-tête)
+   * et de son contenu (`bloc-agenda`).
+   */
   cle: string
   titre: string
   /** Petite mention sous le titre (« la plus urgente en premier »). */
@@ -65,7 +69,7 @@ export default function BlocJournee({
         : 'bg-accent-doux text-accent-fort'
 
   return (
-    <section className="rounded-2xl bg-surface ring-1 ring-bord">
+    <section id={idDuBloc(cle)} className="scroll-mt-4 rounded-2xl bg-surface ring-1 ring-bord">
       <h2>
         <button
           type="button"
