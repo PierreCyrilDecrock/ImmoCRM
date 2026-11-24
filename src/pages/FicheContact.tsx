@@ -56,7 +56,13 @@ import { useConsultation } from '../features/saisie/recents'
 import SectionTaches from '../features/taches/SectionTaches'
 import { dateDuJour, formaterDate } from '../lib/dates'
 import { useTailleEcran } from '../lib/ecran'
-import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
+import {
+  GRILLE_FICHE,
+  ligneDatesFiche,
+  useOngletFiche,
+  useParcoursFiche,
+  useRaccourcisFiche,
+} from '../lib/fiche'
 import { exigerSupabase } from '../lib/supabase'
 
 type Etat =
@@ -75,8 +81,12 @@ type Etat =
 
 const RETOUR = { vers: '/contacts', libelle: 'Contacts' }
 
-/** Nombre de tâches à venir montrées dans l'onglet Activité (les autres sont dans Tâches). */
-const TACHES_DANS_ACTIVITE = 3
+/**
+ * Nombre de tâches à venir montrées dans l'onglet Activité, après la prochaine action (les
+ * autres sont dans Tâches) : deux sur téléphone et tablette, pour que l'historique commence
+ * dans le premier écran (étape E.6), trois sur ordinateur.
+ */
+const TACHES_DANS_ACTIVITE = { petit: 2, ordinateur: 3 }
 
 const CLASSES_MODIFIER =
   'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-surface px-3 text-base font-semibold text-encre shadow-xs ring-1 ring-bord-fort/40 ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -88,8 +98,10 @@ const CLASSES_MODIFIER =
  *   Itinéraire, prochaine action, coordonnées, accord pour être appelé), qui ne bouge pas ; à
  *   droite les onglets Activité, Projets, Tâches, Biens (touches 1 à 4). Depuis la liste des
  *   contacts, « 12 sur 48 » et deux flèches (touches K et J) passent au contact voisin.
- * - Tablette et téléphone : un en-tête compact, la prochaine action, puis les onglets Activité,
- *   Projets, Tâches, Infos. Sur téléphone, Appeler, SMS et Consigner sont en bas de l'écran.
+ * - Tablette et téléphone : un en-tête compact (la température en puce à côté du rôle), la
+ *   prochaine action, puis les onglets Activité, Projets, Tâches, Infos ; dans Activité,
+ *   « Consigner un échange » replié en un champ d'une ligne. Sur téléphone, Appeler, SMS et
+ *   Consigner sont en bas de l'écran.
  */
 export default function FicheContact() {
   const { id = '' } = useParams()
@@ -166,14 +178,14 @@ export default function FicheContact() {
 
   if (etat.phase === 'chargement') {
     return (
-      <Page titre="Contact" retour={RETOUR}>
+      <Page fiche titre="Contact" retour={RETOUR}>
         <EtatChargement />
       </Page>
     )
   }
   if (etat.phase === 'erreur') {
     return (
-      <Page titre="Contact" retour={RETOUR}>
+      <Page fiche titre="Contact" retour={RETOUR}>
         <Message genre="erreur">La fiche n'a pas pu être ouverte. {etat.message}</Message>
       </Page>
     )
@@ -271,8 +283,15 @@ export default function FicheContact() {
     </Link>
   )
   const menu = <MenuContact contact={contact} onChange={remplacerContact} />
+  // Ordinateur : la commande segmentée dans le profil. Téléphone et tablette : une puce à côté
+  // du rôle, dans l'en-tête (étape E.6), qui libère une rangée.
   const temperature = (
-    <TemperatureContact contact={contact} desactive={lectureSeule} onChange={remplacerContact} />
+    <TemperatureContact
+      contact={contact}
+      desactive={lectureSeule}
+      onChange={remplacerContact}
+      forme={ordinateur ? 'segmentee' : 'puce'}
+    />
   )
   const prochaineAction = lectureSeule ? null : (
     <ProchaineAction
@@ -324,6 +343,7 @@ export default function FicheContact() {
                 onEnregistre={toutRelire}
                 demandeFocus={focusConsigner}
                 onFocusDonne={() => setFocusConsigner(false)}
+                repliable={!ordinateur}
               />
             )}
             <SectionTaches
@@ -331,7 +351,10 @@ export default function FicheContact() {
               version={version}
               onChangement={toutRelire}
               titre="À venir"
-              limite={TACHES_DANS_ACTIVITE}
+              limite={ordinateur ? TACHES_DANS_ACTIVITE.ordinateur : TACHES_DANS_ACTIVITE.petit}
+              // La prochaine action est déjà montrée (profil ou en-tête) ; pas sur une fiche
+              // archivée, qui ne la montre pas.
+              sansLaPremiere={!lectureSeule}
               onVoirTout={() => choisirOnglet('taches')}
             />
             <SectionJournal
@@ -394,6 +417,7 @@ export default function FicheContact() {
   if (ordinateur) {
     return (
       <Page
+        fiche
         titre={nomAvecCivilite(contact)}
         retour={RETOUR}
         enTete={null}
@@ -410,7 +434,7 @@ export default function FicheContact() {
         }
       >
         {messages}
-        <div className="grid items-start gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
+        <div className={GRILLE_FICHE}>
           <ProfilFiche libelle={`Profil de ${nomComplet(contact)}`}>
             <IdentiteContact contact={contact} taille="grande" sousTitre={ligneDernier} />
             {temperature}
@@ -464,20 +488,23 @@ export default function FicheContact() {
 
   return (
     <Page
+      fiche
       titre={nomAvecCivilite(contact)}
       retour={RETOUR}
       enTete={
-        <div className="flex flex-col gap-3">
-          <div className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              <IdentiteContact contact={contact} taille="compacte" sousTitre={ligneDernier} />
-            </div>
-            <div className="flex shrink-0 gap-2">
-              {modifier}
-              {menu}
-            </div>
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <IdentiteContact
+              contact={contact}
+              taille="compacte"
+              sousTitre={ligneDernier}
+              apresRoles={temperature}
+            />
           </div>
-          {temperature}
+          <div className="flex shrink-0 gap-2">
+            {modifier}
+            {menu}
+          </div>
         </div>
       }
     >

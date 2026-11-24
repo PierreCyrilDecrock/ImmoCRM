@@ -1,7 +1,7 @@
 import { formaterDate } from '../../lib/dates'
 import type { TailleEcran } from '../../lib/ecran'
 import { ongletDemande } from '../../lib/fiche'
-import type { Contact } from './contacts'
+import { libelleTemperature, type Contact, type Temperature } from './contacts'
 
 /**
  * Fiche Contact (étape D.5) : les onglets et les petites phrases du profil. Règles pures, testées ; l'affichage est dans `src/pages/FicheContact.tsx`.
@@ -49,3 +49,33 @@ export const TEMPERATURES_FICHE = [
   { valeur: 'tiede', libelle: 'Tiède' },
   { valeur: 'chaud', libelle: 'Chaud' },
 ] as const
+
+/** Une couleur par température : chaud en rouge, tiède en ambre, froid en bleu, veille en gris. */
+export const COULEURS_TEMPERATURE: Record<Temperature, string> = {
+  chaud: 'bg-danger',
+  tiede: 'bg-alerte',
+  froid: 'bg-accent',
+  veille: 'bg-bord-fort',
+}
+
+/**
+ * La puce de température de l'en-tête de la fiche, sur téléphone et tablette (étape E.6) :
+ * « ● Chaud », « ● En veille », ou « ○ Température » quand rien n'est renseigné (un rond
+ * vide, `couleur` à `null`). Le texte est toujours écrit : la couleur ne le dit jamais seule.
+ */
+export function puceTemperatureFiche(temperature: Temperature | null): {
+  texte: string
+  couleur: string | null
+  /** Ce que lit un lecteur d'écran sur le bouton. */
+  annonce: string
+} {
+  if (temperature === null) {
+    return { texte: 'Température', couleur: null, annonce: 'Température non renseignée, choisir' }
+  }
+  const texte = temperature === 'veille' ? 'En veille' : (libelleTemperature(temperature) ?? '')
+  return {
+    texte,
+    couleur: COULEURS_TEMPERATURE[temperature],
+    annonce: `Température : ${texte.toLowerCase()}, changer`,
+  }
+}

@@ -14,6 +14,7 @@ import {
 } from '../liens/fiche-origine'
 import FormulaireTache from './FormulaireTache'
 import ListeTaches from './ListeTaches'
+import { choisirAVenir } from './a-venir'
 import { listerTachesLiees, type TacheAffichee } from './taches'
 
 type Props = FicheOrigine & {
@@ -32,6 +33,11 @@ type Props = FicheOrigine & {
    */
   limite?: number
   onVoirTout?: () => void
+  /**
+   * Avec `limite` : la plus proche des tâches est laissée de côté, parce que la carte
+   * « Prochaine action » de la fiche la montre déjà (même tri, mêmes tâches).
+   */
+  sansLaPremiere?: boolean
 }
 
 type Etat =
@@ -69,11 +75,13 @@ export default function SectionTaches(props: Props) {
 
   const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
   const masquer = masqueDeFiche(props)
-  const { titre = 'Tâches', limite, onVoirTout } = props
-  const montrees =
-    etat.phase === 'pret' && limite !== undefined ? etat.taches.slice(0, limite) : null
-  const cachees =
-    etat.phase === 'pret' && montrees !== null ? etat.taches.length - montrees.length : 0
+  const { titre = 'Tâches', limite, onVoirTout, sansLaPremiere = false } = props
+  const choix =
+    etat.phase === 'pret' && limite !== undefined
+      ? choisirAVenir(etat.taches, { limite, sansLaPremiere })
+      : null
+  const montrees = choix?.montrees ?? null
+  const cachees = choix?.cachees ?? 0
 
   return (
     <Carte titre={titre}>
@@ -86,7 +94,10 @@ export default function SectionTaches(props: Props) {
           Aucune tâche à faire. Les relances et les rendez-vous à venir s'afficheront ici.
         </p>
       )}
-      {etat.phase === 'pret' && etat.taches.length > 0 && (
+      {choix?.seulementLaProchaine === true && (
+        <p className="text-sm text-encre-douce">Rien d’autre de prévu après la prochaine action.</p>
+      )}
+      {etat.phase === 'pret' && (montrees ?? etat.taches).length > 0 && (
         <div className="-mx-4">
           <ListeTaches
             taches={montrees ?? etat.taches}
@@ -104,7 +115,9 @@ export default function SectionTaches(props: Props) {
           <Bouton variante="discret" onClick={onVoirTout}>
             {cachees === 1 ? 'Voir l’autre tâche' : `Voir les ${cachees} autres`}
           </Bouton>
-        ) : (
+        ) : onVoirTout !== undefined ? null : (
+          // Dans l'onglet Activité d'une fiche (`onVoirTout`), l'onglet Tâches est à côté : pas
+          // de lien vers la page Tâches, qui pousserait l'historique hors du premier écran.
           <Link
             to="/taches"
             className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-accent underline-offset-2 hover:underline"

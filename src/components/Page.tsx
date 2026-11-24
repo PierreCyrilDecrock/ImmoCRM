@@ -10,6 +10,11 @@ type Props = {
   actions?: ReactNode
   /** Page qui a besoin de toute la largeur de l'écran (le tableau des pipelines). */
   large?: boolean
+  /**
+   * Les quatre fiches (Contact, Bien, projet de vente, projet d'achat) : plus larges que les
+   * listes sur ordinateur, environ 1150 px (étape E.6), pour que le profil tienne sur une ligne.
+   */
+  fiche?: boolean
   /** Ligne au-dessus du titre (la date sur l'écran Aujourd'hui). */
   surtitre?: ReactNode
   /** Titre de l'onglet du navigateur, s'il diffère du titre affiché. */
@@ -30,6 +35,7 @@ export default function Page({
   retour,
   actions,
   large = false,
+  fiche = false,
   surtitre,
   titreOnglet,
   finRetour,
@@ -44,11 +50,10 @@ export default function Page({
       document.title = 'ImmoCRM'
     }
   }, [onglet])
+  const largeur = large ? 'max-w-[100rem]' : fiche ? 'max-w-6xl' : 'max-w-5xl'
 
   return (
-    <div
-      className={`mx-auto flex w-full ${large ? 'max-w-[100rem]' : 'max-w-5xl'} flex-col gap-5 px-4 pt-4 pb-8 md:px-8 md:pt-8`}
-    >
+    <div className={`mx-auto flex w-full ${largeur} flex-col gap-5 px-4 pt-4 pb-8 md:px-8 md:pt-8`}>
       <header>
         {(retour !== undefined || finRetour !== undefined) && (
           <div className="flex min-h-11 items-center justify-between gap-2">

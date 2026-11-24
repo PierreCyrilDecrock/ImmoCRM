@@ -191,14 +191,14 @@ export default function FicheProjetAcquereur() {
 
   if (etat.phase === 'chargement') {
     return (
-      <Page titre="Projet d'achat" retour={RETOUR}>
+      <Page fiche titre="Projet d'achat" retour={RETOUR}>
         <EtatChargement />
       </Page>
     )
   }
   if (etat.phase === 'erreur') {
     return (
-      <Page titre="Projet d'achat" retour={RETOUR}>
+      <Page fiche titre="Projet d'achat" retour={RETOUR}>
         <Message genre="erreur">Le projet n'a pas pu être ouvert. {etat.message}</Message>
       </Page>
     )
@@ -512,6 +512,7 @@ export default function FicheProjetAcquereur() {
                 onEnregistre={toutRelire}
                 demandeFocus={focusConsigner}
                 onFocusDonne={() => setFocusConsigner(false)}
+                repliable={!ordinateur}
               />
             )}
             <SectionTaches
@@ -658,6 +659,7 @@ export default function FicheProjetAcquereur() {
   // et les onglets dessous. Pas de colonne de profil : la frise a toute la largeur.
   return (
     <Page
+      fiche
       titre={titre}
       retour={RETOUR}
       finRetour={

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Etiquette from '../../components/Etiquette'
 import { rolesDuContact } from './ligne-contact'
 import { initialesDe } from '../saisie/recents'
@@ -9,13 +10,16 @@ type Props = {
   taille: 'grande' | 'compacte'
   /** Une ligne sous les rôles (« Dernier échange il y a 8 jours · appel »). */
   sousTitre?: string
+  /** À droite des rôles : la puce de température, sur téléphone et tablette (étape E.6). */
+  apresRoles?: ReactNode
 }
 
 /**
  * Qui est ce contact, d'un coup d'œil : ses initiales dans une pastille ronde, son nom (le
- * titre de la page) et ses rôles (« Prospect » sans rôle), « Archivé » s'il l'est.
+ * titre de la page) et ses rôles (« Prospect » sans rôle), « Archivé » s'il l'est ; sur
+ * téléphone et tablette, la température à côté des rôles.
  */
-export default function IdentiteContact({ contact, taille, sousTitre }: Props) {
+export default function IdentiteContact({ contact, taille, sousTitre, apresRoles }: Props) {
   const grande = taille === 'grande'
   return (
     <div className={`flex min-w-0 items-center ${grande ? 'gap-4' : 'gap-3'}`}>
@@ -37,6 +41,7 @@ export default function IdentiteContact({ contact, taille, sousTitre }: Props) {
         </h1>
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-encre-douce">
           <span>{rolesDuContact(contact)}</span>
+          {apresRoles}
           {contact.archived_at !== null && <Etiquette genre="alerte">Archivé</Etiquette>}
         </p>
         {sousTitre !== undefined && sousTitre !== '' && (

@@ -68,6 +68,14 @@ type Props = {
   demandeFocus?: boolean
   /** Appelé quand le curseur a été placé : la demande est servie. */
   onFocusDonne?: () => void
+  /**
+   * Téléphone et tablette (étape E.6) : au repos, le bloc n'est qu'un champ d'une ligne
+   * (« Consigner un échange avec Camille… »), pour que « À venir » et l'historique tiennent
+   * dans le premier écran. Le toucher, ou y mettre le curseur (« Consigner » de la barre du
+   * bas), le déplie ; l'enregistrement le replie. Un brouillon gardé le fait s'ouvrir déplié.
+   * Sur ordinateur (`false`, par défaut), il reste déplié.
+   */
+  repliable?: boolean
 }
 
 /** Moment d'un brouillon gardé, en clair : « mar. 22 nov. à 14 h 30 ». */
@@ -99,6 +107,7 @@ export default function ConsignerEchange({
   onEnregistre,
   demandeFocus = false,
   onFocusDonne,
+  repliable = false,
 }: Props) {
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
@@ -131,6 +140,9 @@ export default function ConsignerEchange({
   const [lues, setLues] = useState<{ pour: string; taches: Tache[] } | null>(null)
   /** La tâche que l'utilisateur a choisi de ne pas cocher. */
   const [refusee, setRefusee] = useState<string | null>(null)
+  // Replié au repos (téléphone, tablette), sauf si un brouillon attend.
+  const [deplie, setDeplie] = useState(() => repris !== null)
+  const ouvert = !repliable || deplie
   const [autresTypes, setAutresTypes] = useState(() =>
     AUTRES_TYPES_ECHANGE.some((option) => option.valeur === brouillon.type),
   )
@@ -174,6 +186,32 @@ export default function ConsignerEchange({
     if (champ !== null && champ !== undefined) placerCurseur(champ)
     onFocusDonne?.()
   }, [demandeFocus, onFocusDonne])
+
+  // Le bloc vient de se déplier sous le curseur : les types apparaissent au-dessus du texte,
+  // qui descend ; on le ramène au milieu de l'écran.
+  // Après l'enregistrement, il se replie : on remonte jusqu'à lui, l'échange noté en tête de
+  // l'historique juste dessous.
+  const suivreTexte = useRef(false)
+  const remonter = useRef(false)
+  const bloc = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (ouvert && suivreTexte.current) {
+      suivreTexte.current = false
+      zoneTexte.current
+        ?.querySelector('textarea')
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    } else if (!ouvert && remonter.current) {
+      remonter.current = false
+      bloc.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [ouvert])
+
+  /** Le curseur arrive dans le champ replié : le bloc se déplie autour de lui. */
+  function deplier() {
+    if (ouvert) return
+    suivreTexte.current = true
+    setDeplie(true)
+  }
 
   function changer<C extends keyof BrouillonCompteRendu>(
     champ: C,
@@ -227,6 +265,10 @@ export default function ConsignerEchange({
     setRefusee(null)
     setActiviteCreee(false)
     setAutresTypes(false)
+    setRecherche(false)
+    // Enregistré : le bloc se replie (téléphone, tablette), l'historique remonte.
+    remonter.current = repliable
+    setDeplie(false)
     onEnregistre()
   }
 
@@ -264,6 +306,9 @@ export default function ConsignerEchange({
         : prenom === null
           ? 'Qu’avez-vous échangé ?'
           : `Qu’avez-vous échangé avec ${prenom} ?`
+  // Le champ replié dit avec qui : « Consigner un échange avec Camille… ».
+  const invitationRepliee =
+    prenom === null ? 'Consigner un échange' : `Consigner un échange avec ${prenom}`
   // Une personne cherchée hors des propositions reste proposée tant qu'elle est choisie.
   const autre =
     choix.genre === 'contact' && !proposes.some((propose) => propose.id === choix.contact.id)
@@ -271,14 +316,17 @@ export default function ConsignerEchange({
       : null
 
   return (
+    // Replié, le bloc n'est que le champ : ni carte ni titre visibles (le titre reste lu).
+    // L'arbre ne change pas d'un état à l'autre : le champ garde le curseur en se dépliant.
     <section
+      ref={bloc}
       id={ID_CONSIGNER_ECHANGE}
       aria-labelledby="consigner-echange-titre"
-      className="rounded-2xl bg-surface p-4 ring-1 ring-bord md:p-5"
+      className={ouvert ? 'rounded-2xl bg-surface p-4 ring-1 ring-bord md:p-5' : undefined}
     >
       <h2
         id="consigner-echange-titre"
-        className="mb-3 text-lg font-semibold tracking-tight text-encre"
+        className={ouvert ? 'mb-3 text-lg font-semibold tracking-tight text-encre' : 'sr-only'}
       >
         Consigner un échange
       </h2>
@@ -300,10 +348,22 @@ export default function ConsignerEchange({
           </div>
         )}
 
-        <fieldset disabled={activiteCreee || envoi} className="flex min-w-0 flex-col gap-4">
-          {!ficheContact && (
+        {/* Plus d'espace entre deux groupes (24 px) qu'entre deux pastilles d'un groupe (8 px). */}
+        <fieldset disabled={activiteCreee || envoi} className="flex min-w-0 flex-col gap-6">
+          {ouvert && !ficheContact && (
             <div className="flex flex-col gap-2">
-              <GroupePastilles legende="Avec">
+              <GroupePastilles
+                legende="Avec"
+                complement={
+                  recherche && (
+                    <SelecteurContact
+                      libelle="Chercher le contact"
+                      autoFocus
+                      onChoisir={(trouve) => choisir({ genre: 'contact', contact: trouve })}
+                    />
+                  )
+                }
+              >
                 {[...proposes, ...(autre === null ? [] : [autre])].map((personne) => (
                   <Pastille
                     key={personne.id}
@@ -318,28 +378,34 @@ export default function ConsignerEchange({
                     Sans contact
                   </Pastille>
                 )}
-                <button
-                  type="button"
-                  aria-expanded={recherche}
-                  onClick={() => setRecherche(!recherche)}
-                  className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-medium text-accent ring-1 ring-bord-fort/40 ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
+                <Pastille deplie={recherche} onClick={() => setRecherche(!recherche)}>
                   <Icone nom="recherche" className="size-4" />
                   Autre contact
-                </button>
+                </Pastille>
               </GroupePastilles>
-              {recherche && (
-                <SelecteurContact
-                  libelle="Chercher le contact"
-                  autoFocus
-                  onChoisir={(trouve) => choisir({ genre: 'contact', contact: trouve })}
-                />
-              )}
               {erreurs.contact !== undefined && <Message genre="erreur">{erreurs.contact}</Message>}
             </div>
           )}
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Type d’échange">
+          {ouvert && (
+            <GroupePastilles
+              legende="Type d’échange"
+              complement={
+                autresTypes && (
+                  <div className="flex flex-wrap gap-2" role="group" aria-label="Autres types">
+                    {AUTRES_TYPES_ECHANGE.map((option) => (
+                      <Pastille
+                        key={option.valeur}
+                        choisie={brouillon.type === option.valeur}
+                        onClick={() => changer('type', option.valeur)}
+                      >
+                        <Icone nom={option.icone} className="size-4" />
+                        {option.libelle}
+                      </Pastille>
+                    ))}
+                  </div>
+                )
+              }
+            >
               {TYPES_ECHANGE.map((option) => (
                 <Pastille
                   key={option.valeur}
@@ -350,36 +416,17 @@ export default function ConsignerEchange({
                   {option.libelle}
                 </Pastille>
               ))}
-              <button
-                type="button"
-                aria-expanded={autresTypes}
-                onClick={() => setAutresTypes(!autresTypes)}
-                className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-medium text-accent ring-1 ring-bord-fort/40 ring-inset hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
+              <Pastille deplie={autresTypes} onClick={() => setAutresTypes(!autresTypes)}>
                 Autre
                 <Icone
                   nom="chevron"
                   className={`size-4 transition-transform ${autresTypes ? 'rotate-90' : ''}`}
                 />
-              </button>
-            </div>
-            {autresTypes && (
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Autres types">
-                {AUTRES_TYPES_ECHANGE.map((option) => (
-                  <Pastille
-                    key={option.valeur}
-                    choisie={brouillon.type === option.valeur}
-                    onClick={() => changer('type', option.valeur)}
-                  >
-                    <Icone nom={option.icone} className="size-4" />
-                    {option.libelle}
-                  </Pastille>
-                ))}
-              </div>
-            )}
-          </div>
+              </Pastille>
+            </GroupePastilles>
+          )}
 
-          {brouillon.type === 'visite' && (
+          {ouvert && brouillon.type === 'visite' && (
             <ChampsCompteRenduVisite
               valeur={brouillon.visite}
               onChange={(visite) => changer('visite', visite)}
@@ -388,17 +435,24 @@ export default function ConsignerEchange({
 
           <div ref={zoneTexte}>
             <ChampTexteLong
-              libelle={libelleTexte}
-              rows={3}
+              libelle={ouvert ? libelleTexte : invitationRepliee}
+              libelleMasque={!ouvert}
+              rows={ouvert ? 3 : 1}
+              classesEnPlus={ouvert ? '' : 'resize-none'}
               maxLength={LONGUEUR_MAX_COMPTE_RENDU}
-              placeholder={inviteCompteRendu(brouillon.type)}
+              placeholder={ouvert ? inviteCompteRendu(brouillon.type) : `${invitationRepliee}…`}
               value={brouillon.compteRendu}
-              onChange={(evenement) => changer('compteRendu', evenement.target.value)}
+              onChange={(evenement) => {
+                deplier()
+                changer('compteRendu', evenement.target.value)
+              }}
+              onFocus={deplier}
+              onClick={deplier}
               erreur={erreurs.compteRendu}
             />
           </div>
 
-          {brouillon.type === 'appel' && (
+          {ouvert && brouillon.type === 'appel' && (
             <GroupePastilles legende="Résultat de l’appel">
               {RESULTATS_APPEL.map((option) => (
                 <Pastille
@@ -415,7 +469,7 @@ export default function ConsignerEchange({
           )}
         </fieldset>
 
-        {candidate !== null && !activiteCreee && (
+        {ouvert && candidate !== null && !activiteCreee && (
           <label className="flex min-h-11 items-start gap-3 rounded-xl bg-creux px-3 py-2.5">
             <input
               type="checkbox"
@@ -430,48 +484,58 @@ export default function ConsignerEchange({
           </label>
         )}
 
-        <section className="flex flex-col gap-3" aria-labelledby="consigner-echange-ensuite">
-          <h3 id="consigner-echange-ensuite" className="text-base font-semibold text-encre">
-            Ensuite
-          </h3>
-          {contact === null ? (
-            <p className="text-sm text-encre-douce">
-              Sans contact, rien n’est prévu ensuite. Une tâche s’ajoute depuis l’onglet Tâches.
-            </p>
-          ) : taches === null ? (
-            <p className="text-sm text-encre-douce">Lecture des tâches du contact…</p>
-          ) : (
-            <ChampsProchaineAction
-              compacte
-              brouillon={prochaine}
-              proposee={prochaineProposeeCompteRendu(saisie, aujourdhui, delais)}
-              onChange={(suivante) => changer('prochaine', suivante)}
-              aujourdhui={aujourdhui}
-              erreurs={erreurs}
-              origineDate={origineDate}
-              dejaPrevu={suite === null ? undefined : texteDejaPrevu(suite, aujourdhui)}
-            />
-          )}
-        </section>
+        {ouvert && (
+          <section className="flex flex-col gap-3" aria-labelledby="consigner-echange-ensuite">
+            <h3 id="consigner-echange-ensuite" className="text-base font-semibold text-encre">
+              Ensuite
+            </h3>
+            {contact === null ? (
+              <p className="text-sm text-encre-douce">
+                Sans contact, rien n’est prévu ensuite. Une tâche s’ajoute depuis l’onglet Tâches.
+              </p>
+            ) : taches === null ? (
+              <p className="text-sm text-encre-douce">Lecture des tâches du contact…</p>
+            ) : (
+              <ChampsProchaineAction
+                compacte
+                brouillon={prochaine}
+                proposee={prochaineProposeeCompteRendu(saisie, aujourdhui, delais)}
+                onChange={(suivante) => changer('prochaine', suivante)}
+                aujourdhui={aujourdhui}
+                erreurs={erreurs}
+                origineDate={origineDate}
+                dejaPrevu={suite === null ? undefined : texteDejaPrevu(suite, aujourdhui)}
+              />
+            )}
+          </section>
+        )}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="max-md:flex-1">
-            {/* Secondaire tant qu'il n'y a rien à enregistrer : au repos, « Appeler » est le
+        {ouvert && (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="max-md:flex-1">
+              {/* Secondaire tant qu'il n'y a rien à enregistrer : au repos, « Appeler » est le
                 seul bleu de la fiche. Il passe au bleu dès la première lettre. */}
-            <Bouton
-              type="submit"
-              variante={activiteCreee || aEnregistrer(brouillon) ? 'principal' : 'secondaire'}
-              pleineLargeur
-              disabled={envoi || taches === null}
-              aria-keyshortcuts="Meta+Enter Control+Enter"
-            >
-              {envoi ? 'Enregistrement…' : activiteCreee ? 'Réessayer' : 'Enregistrer'}
-            </Bouton>
+              <Bouton
+                type="submit"
+                variante={activiteCreee || aEnregistrer(brouillon) ? 'principal' : 'secondaire'}
+                pleineLargeur
+                disabled={envoi || taches === null}
+                aria-keyshortcuts="Meta+Enter Control+Enter"
+              >
+                {envoi ? 'Enregistrement…' : activiteCreee ? 'Réessayer' : 'Enregistrer'}
+              </Bouton>
+            </div>
+            <span className="text-sm text-encre-douce [@media(hover:none)]:hidden" aria-hidden>
+              {rappelEnregistrer()}
+            </span>
+            {repliable && (
+              // Replier sans enregistrer : un texte commencé reste gardé sur l'appareil.
+              <Bouton variante="discret" onClick={() => setDeplie(false)} disabled={envoi}>
+                Replier
+              </Bouton>
+            )}
           </div>
-          <span className="text-sm text-encre-douce [@media(hover:none)]:hidden" aria-hidden>
-            {rappelEnregistrer()}
-          </span>
-        </div>
+        )}
       </form>
     </section>
   )

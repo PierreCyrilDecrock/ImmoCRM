@@ -22,6 +22,14 @@ import {
  * pures et testées ; les crochets les branchent sur le navigateur.
  */
 
+/**
+ * Les deux colonnes des fiches Contact et Bien sur ordinateur : le profil, puis les onglets.
+ * Le profil fait 280 px de 1024 à 1279 px, et 360 px au-delà (étape E.6) : l'adresse et le
+ * dernier échange tiennent sur une ligne.
+ */
+export const GRILLE_FICHE =
+  'grid items-start gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:grid-cols-[22.5rem_minmax(0,1fr)]'
+
 // ---------------------------------------------------------------------------
 // Règles pures
 // ---------------------------------------------------------------------------
