@@ -205,11 +205,31 @@ function vosRendezVous(nombre: number, apresVos: boolean): string {
  * sont dans leurs propres blocs : tant qu'il en reste, le bloc les situe, en gris (« Rien
  * d'autre que vos 8 relances et 3 rendez-vous. »), pour ne pas contredire le reste de
  * l'écran. Le vert et « place au terrain » sont réservés à une journée vraiment finie.
- * `rendezVous` : ceux qui restent à venir (ou en cours), pas ceux déjà passés.
+ * `rendezVous` : ceux qui restent à venir (ou en cours), pas ceux déjà passés. Si le bloc
+ * n'est vide que parce que ses tâches sont « À préparer » dans la carte du prochain
+ * rendez-vous, il le dit (« Rien d'autre aujourd'hui. Une tâche est à préparer pour
+ * l'estimation de 11 h, dans la carte ci-dessus. »).
  */
-export function videAutresTaches(reste: { relances: number; rendezVous: number }): MessageVide {
+export function videAutresTaches(reste: {
+  relances: number
+  rendezVous: number
+  /**
+   * Les tâches du bloc déjà montrées sous « À préparer » dans la carte « Maintenant » (règle
+   * 12), et le rendez-vous qu'elles préparent (`nomDuRendezVous` : « l'estimation de 11 h »).
+   */
+  aPreparer?: { nombre: number; pour: string }
+}): MessageVide {
   const relances = Math.max(0, reste.relances)
   const rendezVous = Math.max(0, reste.rendezVous)
+  const preparees = reste.aPreparer
+  if (preparees !== undefined && preparees.nombre > 0) {
+    const sujet = preparees.nombre === 1 ? 'Une tâche est' : `${preparees.nombre} tâches sont`
+    return {
+      titre: 'Rien d’autre aujourd’hui.',
+      texte: `${sujet} à préparer pour ${preparees.pour}, dans la carte ci-dessus.`,
+      ton: 'neutre',
+    }
+  }
   if (relances === 0 && rendezVous === 0) {
     return {
       titre: 'Aucune tâche en attente.',

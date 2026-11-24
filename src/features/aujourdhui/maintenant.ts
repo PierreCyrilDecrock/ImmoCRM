@@ -123,9 +123,9 @@ export function rendezVousRestants(
 // ---------------------------------------------------------------------------
 
 /**
- * Le rendez-vous déjà montré par la carte « Maintenant » : dans l'agenda, il porte la marque
- * « Ci-dessus » et aucun geste (ils sont dans la carte). `null` si la carte montre une
- * relance ou n'est pas affichée.
+ * Le rendez-vous déjà montré par la carte « Maintenant » : dans l'agenda, il est simplement
+ * estompé (étape F.2 ; il garde sa case ronde, pour être clos). `null` si la carte montre
+ * une relance ou n'est pas affichée.
  */
 export function rendezVousCiDessus<R>(choix: ChoixMaintenant<R> | null): string | null {
   return choix !== null && choix.genre === 'rendez_vous' ? choix.affichee.id : null
@@ -145,9 +145,39 @@ export function ficheDuRendezVous(affichee: {
 }
 
 /**
- * La seconde ligne d'un rendez-vous de la frise : la durée, puis le lieu, ou à défaut le
- * contact (« 1 h 30 · 12 rue des Essais, Lyon », « 45 min · Camille Fictif »). Ce qui manque
- * est omis ; rien du tout : une chaîne vide.
+ * La rue seule d'une adresse écrite d'un bloc, sans code postal ni commune : « 12 rue des
+ * Essais » pour « 12 rue des Essais, 69003 Lyon » ou « 12 rue des Essais 69003 Lyon ».
+ * Une adresse sans rue reconnaissable est rendue telle quelle (espaces nettoyés).
+ */
+export function rueSeule(adresse: string): string {
+  const nette = adresse.replace(/\s+/g, ' ').trim()
+  const avantVirgule = nette.split(',')[0]?.trim() ?? ''
+  // Sans virgule : on retire un code postal (cinq chiffres) et ce qui le suit.
+  const sansCommune = avantVirgule.replace(/\s+\d{5}(\s.*)?$/, '').trim()
+  return sansCommune === '' ? nette : sansCommune
+}
+
+/**
+ * L'adresse courte d'un rendez-vous, sous son titre dans l'agenda : la rue seule du lieu
+ * indiqué, sinon celle du bien, sinon celle du contact. `null` : aucune adresse connue.
+ * L'itinéraire, lui, garde l'adresse complète (`adresseRendezVous`).
+ */
+export function adresseCourte(
+  tache: Pick<Tache, 'lieu'>,
+  bien: { adresse: string } | null,
+  contact: { adresse: string } | null,
+): string | null {
+  const lieu = tache.lieu.trim()
+  if (lieu !== '') return rueSeule(lieu)
+  if (bien !== null && bien.adresse.trim() !== '') return rueSeule(bien.adresse)
+  if (contact !== null && contact.adresse.trim() !== '') return rueSeule(contact.adresse)
+  return null
+}
+
+/**
+ * La seconde ligne d'un rendez-vous de la frise : la durée, puis le lieu (la rue seule,
+ * `adresseCourte`), ou à défaut le contact (« 1 h 30 · 12 rue des Essais », « 45 min ·
+ * Camille Fictif »). Ce qui manque est omis ; rien du tout : une chaîne vide.
  */
 export function detailRendezVous(
   duree: number | null,
@@ -181,6 +211,33 @@ export function aPreparer(
     if (retenues.length === LIMITE_A_PREPARER) break
   }
   return retenues
+}
+
+/**
+ * Les tâches qui ne sont pas déjà montrées sous « À préparer » dans la carte « Maintenant »
+ * (règle 12 : une tâche n'apparaît qu'une fois par écran). L'ordre est gardé.
+ */
+export function sansAPreparer<L extends { id: string }>(
+  lignes: readonly L[],
+  preparees: readonly { id: string }[],
+): L[] {
+  const montrees = new Set(preparees.map((preparee) => preparee.id))
+  return lignes.filter((ligne) => !montrees.has(ligne.id))
+}
+
+const ARTICLES_RENDEZ_VOUS: Partial<Record<string, string>> = {
+  estimation: 'l’estimation',
+  visite: 'la visite',
+}
+
+/**
+ * Le rendez-vous désigné en quelques mots, pour une phrase : « l'estimation de 11 h », « la
+ * visite de 14 h 30 », « le rendez-vous de 9 h » (les autres catégories), sans l'heure
+ * si elle manque.
+ */
+export function nomDuRendezVous(tache: Pick<Tache, 'categorie' | 'heure'>): string {
+  const nom = ARTICLES_RENDEZ_VOUS[tache.categorie] ?? 'le rendez-vous'
+  return tache.heure === null ? nom : `${nom} de ${formaterHeure(tache.heure)}`
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +287,8 @@ function comptePersonnes(nombre: number): string {
 /**
  * La journée en une ou deux phrases : « 4 rendez-vous et 4 personnes à rappeler. Votre
  * dernier rendez-vous finit vers 18 h 15. » Zéro et un ont leur propre tournure. La seconde
- * phrase disparaît quand ce moment est passé.
+ * phrase disparaît quand ce moment est passé. Depuis l'étape F.2, elle n'est plus qu'entendue
+ * (lecteurs d'écran) : l'écran montre les compteurs et `finDeJournee`.
  */
 export function resumeJournee(journee: {
   rendezVous: number
@@ -254,6 +312,78 @@ export function resumeJournee(journee: {
   return `${premiere} ${sujet} ${quand}.`
 }
 
+/** Les blocs auxquels mène un compteur de l'en-tête. */
+export type BlocCompte = 'agenda' | 'relances' | 'taches'
+
+/** Un compteur de l'en-tête : une pastille qu'on touche pour descendre à son bloc. */
+export type CompteurJournee = {
+  bloc: BlocCompte
+  nombre: number
+  /** Ce qui suit le nombre : « rendez-vous », « à rappeler », « tâches ». */
+  libelle: string
+  /** Le nombre s'écrit en rouge : il y a du retard dans le bloc. */
+  alerte: boolean
+  /** Le nom du bloc, pour les lecteurs d'écran (« Aller à « À rappeler » »). */
+  destination: string
+}
+
+/**
+ * Les compteurs de l'en-tête (étape F.2, proposition 3 de la revue n° 2) : « 3 rendez-vous »,
+ * « 4 à rappeler », « 1 tâche ». Un compteur à zéro ne s'affiche pas ; le nombre est rouge
+ * quand le bloc a du retard. Leur somme est le total de la progression tant que rien n'est
+ * fait (les tâches comptent aussi celles montrées sous « À préparer »).
+ */
+export function compteursJournee(journee: {
+  rendezVous: number
+  rappels: number
+  rappelsEnRetard: boolean
+  taches: number
+  tachesEnRetard: boolean
+}): CompteurJournee[] {
+  const compteurs: CompteurJournee[] = [
+    {
+      bloc: 'agenda',
+      nombre: journee.rendezVous,
+      libelle: 'rendez-vous',
+      alerte: false,
+      destination: 'l’agenda du jour',
+    },
+    {
+      bloc: 'relances',
+      nombre: journee.rappels,
+      libelle: 'à rappeler',
+      alerte: journee.rappelsEnRetard,
+      destination: '« À rappeler »',
+    },
+    {
+      bloc: 'taches',
+      nombre: journee.taches,
+      libelle: journee.taches > 1 ? 'tâches' : 'tâche',
+      alerte: journee.tachesEnRetard,
+      destination: '« Autres tâches »',
+    },
+  ]
+  return compteurs.filter((compteur) => compteur.nombre > 0)
+}
+
+/**
+ * La ligne courte sous les compteurs : « Fin du dernier rendez-vous vers 17 h 30. »
+ * (« Fin du rendez-vous vers 11 h 45. » s'il n'y en a qu'un ; « Dernier rendez-vous à
+ * 17 h. » quand sa durée n'est pas connue). `null` : aucun rendez-vous, ou ce moment est passé.
+ */
+export function finDeJournee(
+  fin: FinDeJournee | null,
+  rendezVous: number,
+  minutes: number,
+): string | null {
+  if (rendezVous === 0 || fin === null || fin.minutes <= minutes) return null
+  const heure = formaterHeure(fin.heure)
+  if (fin.avecDuree) {
+    return `Fin du ${rendezVous === 1 ? 'rendez-vous' : 'dernier rendez-vous'} vers ${heure}.`
+  }
+  return `${rendezVous === 1 ? 'Rendez-vous' : 'Dernier rendez-vous'} à ${heure}.`
+}
+
 /** L'avancement de la journée : la fin de la phrase de résumé, et l'anneau. */
 export type Progression = {
   faites: number
@@ -261,11 +391,15 @@ export type Progression = {
   /** De 0 à 1. */
   part: number
   /**
-   * La fin de la phrase de résumé : « 11 à faire aujourd'hui. » tant que rien n'est fait,
-   * puis « 3 sur 11 faits. », et « Tout est fait : 11 sur 11. » à la fin.
+   * L'avancement écrit : « 3 sur 11 faits. », et « Tout est fait : 11 sur 11. » à la fin.
+   * Tant que rien n'est fait, « 11 à faire aujourd'hui. », qui n'est plus affiché (étape
+   * F.2 : la somme se lit dans les compteurs de l'en-tête).
    */
   phrase: string
-  /** L'anneau ne s'affiche qu'au premier geste : vide, il ressemblerait à un chargement. */
+  /**
+   * L'anneau, et la phrase, ne s'affichent qu'au premier geste : vide, l'anneau ressemblerait
+   * à un chargement.
+   */
   anneau: boolean
   /**
    * Lu par les lecteurs d'écran à la place de `phrase` : « 11 tâches à faire aujourd'hui. »,

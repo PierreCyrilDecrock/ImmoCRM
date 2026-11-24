@@ -243,3 +243,32 @@ describe('videAutresTaches', () => {
     })
   })
 })
+
+describe('« Autres tâches » vide parce que tout est « À préparer » (étape F.2)', () => {
+  it('le dit en gris, en situant la carte', () => {
+    expect(
+      videAutresTaches({
+        relances: 4,
+        rendezVous: 3,
+        aPreparer: { nombre: 1, pour: 'l’estimation de 11 h' },
+      }),
+    ).toEqual({
+      titre: 'Rien d’autre aujourd’hui.',
+      texte: 'Une tâche est à préparer pour l’estimation de 11 h, dans la carte ci-dessus.',
+      ton: 'neutre',
+    })
+    expect(
+      videAutresTaches({
+        relances: 0,
+        rendezVous: 1,
+        aPreparer: { nombre: 2, pour: 'la visite de 14 h' },
+      }).texte,
+    ).toBe('2 tâches sont à préparer pour la visite de 14 h, dans la carte ci-dessus.')
+  })
+
+  it('sans tâche à préparer, garde les phrases habituelles', () => {
+    expect(
+      videAutresTaches({ relances: 0, rendezVous: 0, aPreparer: { nombre: 0, pour: 'x' } }).ton,
+    ).toBe('succes')
+  })
+})

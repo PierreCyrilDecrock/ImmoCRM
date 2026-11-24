@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { tacheEssai } from '../taches/tache-essai'
 import type { Tache, TacheAffichee } from '../taches/taches'
 import {
+  adresseCourte,
   aPreparer,
   bornesRendezVous,
   choisirMaintenant,
+  compteursJournee,
   detailRendezVous,
+  finDeJournee,
+  nomDuRendezVous,
+  rueSeule,
+  sansAPreparer,
   DUREE_SANS_FIN,
   etatRendezVous,
   ficheDuRendezVous,
@@ -340,5 +346,102 @@ describe('agenda en frise', () => {
     expect(detailRendezVous(45, null, 'Camille Fictif')).toBe('45 min · Camille Fictif')
     expect(detailRendezVous(null, '12 rue des Essais, Lyon', null)).toBe('12 rue des Essais, Lyon')
     expect(detailRendezVous(null, null, null)).toBe('')
+  })
+})
+
+describe('adresse courte de l’agenda (étape F.2)', () => {
+  it('garde la rue seule, sans code postal ni commune', () => {
+    expect(rueSeule('12 rue des Essais, 69003 Lyon')).toBe('12 rue des Essais')
+    expect(rueSeule('12 rue des Essais 69003 Lyon')).toBe('12 rue des Essais')
+    expect(rueSeule('  3  place de l’Exemple ')).toBe('3 place de l’Exemple')
+    expect(rueSeule('Étude de Maître Exemple, Villefictive')).toBe('Étude de Maître Exemple')
+  })
+
+  it('rend telle quelle une adresse sans rue reconnaissable', () => {
+    expect(rueSeule('69003 Lyon')).toBe('69003 Lyon')
+    expect(rueSeule('')).toBe('')
+  })
+
+  it('prend le lieu, sinon le bien, sinon le contact', () => {
+    const bien = { adresse: '5 allée des Tests' }
+    const contact = { adresse: '8 rue du Faux' }
+    expect(adresseCourte({ lieu: 'Café de la Gare, 00000 Villefictive' }, bien, contact)).toBe(
+      'Café de la Gare',
+    )
+    expect(adresseCourte({ lieu: ' ' }, bien, contact)).toBe('5 allée des Tests')
+    expect(adresseCourte({ lieu: '' }, { adresse: '' }, contact)).toBe('8 rue du Faux')
+    expect(adresseCourte({ lieu: '' }, null, null)).toBeNull()
+  })
+})
+
+describe('« Autres tâches » sans ce qui est « À préparer » (règle 12)', () => {
+  it('écarte les tâches montrées dans la carte, dans l’ordre reçu', () => {
+    const a = affichee('a')
+    const b = affichee('b')
+    const c = affichee('c')
+    expect(sansAPreparer([a, b, c], [b])).toEqual([a, c])
+    expect(sansAPreparer([a, b], [])).toEqual([a, b])
+  })
+
+  it('désigne le rendez-vous préparé en quelques mots', () => {
+    expect(nomDuRendezVous({ categorie: 'estimation', heure: '11:00:00' })).toBe(
+      'l’estimation de 11 h',
+    )
+    expect(nomDuRendezVous({ categorie: 'visite', heure: '14:30:00' })).toBe('la visite de 14 h 30')
+    expect(nomDuRendezVous({ categorie: 'rendez_vous', heure: '09:00:00' })).toBe(
+      'le rendez-vous de 9 h',
+    )
+    expect(nomDuRendezVous({ categorie: 'autre', heure: null })).toBe('le rendez-vous')
+  })
+})
+
+describe('compteurs de l’en-tête (étape F.2)', () => {
+  it('donne un compteur par bloc, avec le singulier et le pluriel', () => {
+    const compteurs = compteursJournee({
+      rendezVous: 3,
+      rappels: 4,
+      rappelsEnRetard: true,
+      taches: 1,
+      tachesEnRetard: false,
+    })
+    expect(compteurs.map((c) => `${c.nombre} ${c.libelle}`)).toEqual([
+      '3 rendez-vous',
+      '4 à rappeler',
+      '1 tâche',
+    ])
+    expect(compteurs.map((c) => c.bloc)).toEqual(['agenda', 'relances', 'taches'])
+    expect(compteurs.map((c) => c.alerte)).toEqual([false, true, false])
+  })
+
+  it('n’affiche pas un compteur à zéro', () => {
+    const compteurs = compteursJournee({
+      rendezVous: 0,
+      rappels: 1,
+      rappelsEnRetard: false,
+      taches: 2,
+      tachesEnRetard: true,
+    })
+    expect(compteurs.map((c) => `${c.nombre} ${c.libelle}`)).toEqual(['1 à rappeler', '2 tâches'])
+    expect(compteurs[1]?.alerte).toBe(true)
+    expect(
+      compteursJournee({
+        rendezVous: 0,
+        rappels: 0,
+        rappelsEnRetard: false,
+        taches: 0,
+        tachesEnRetard: false,
+      }),
+    ).toEqual([])
+  })
+
+  it('dit la fin de journée en une ligne courte, tant qu’elle est à venir', () => {
+    const fin = { heure: '17:30', minutes: h(17, 30), avecDuree: true }
+    expect(finDeJournee(fin, 3, h(10, 20))).toBe('Fin du dernier rendez-vous vers 17 h 30.')
+    expect(finDeJournee(fin, 1, h(10, 20))).toBe('Fin du rendez-vous vers 17 h 30.')
+    expect(finDeJournee({ ...fin, avecDuree: false }, 2, h(10))).toBe(
+      'Dernier rendez-vous à 17 h 30.',
+    )
+    expect(finDeJournee(fin, 3, h(17, 30))).toBeNull()
+    expect(finDeJournee(null, 0, h(10))).toBeNull()
   })
 })

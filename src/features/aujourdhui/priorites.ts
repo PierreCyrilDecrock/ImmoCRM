@@ -94,19 +94,76 @@ export function bilanPriorites(priorites: Priorites): { choisies: number; faites
   return { choisies: choisies.length, faites: choisies.filter((p) => p.faite).length }
 }
 
-/** Lit les trois actions du jour. */
+/**
+ * Les trois actions du jour, et si l'outil a déjà servi : une ligne existe (ce jour-ci ou un
+ * jour précédent) dès qu'une action a été écrite une fois.
+ */
+export type PrioritesLues = { priorites: Priorites; dejaUtilisees: boolean }
+
+/**
+ * Lit les trois actions du jour, en une lecture : la ligne la plus récente jusqu'à ce jour.
+ * Si elle est d'un jour précédent, les actions du jour sont encore vides, mais l'outil a déjà
+ * servi (`dejaUtilisees`).
+ */
 export async function lirePriorites(
   client: SupabaseClient,
   jour: string,
-): Promise<Resultat<Priorites>> {
+): Promise<Resultat<PrioritesLues>> {
   const page = await listerPage(client, 'priorites_du_jour', {
-    filtres: [{ colonne: 'jour', genre: 'egal', valeur: jour }],
-    tri: [{ colonne: 'id' }],
+    filtres: [{ colonne: 'jour', genre: 'max', valeur: jour }],
+    tri: [{ colonne: 'jour', croissant: false }, { colonne: 'id' }],
     debut: 0,
     taille: 1,
   })
   if (!page.ok) return page
-  return { ok: true, donnees: prioritesDepuis(page.donnees.lignes[0] ?? null) }
+  const ligne = page.donnees.lignes[0] ?? null
+  return {
+    ok: true,
+    donnees: {
+      priorites: prioritesDepuis(ligne !== null && ligne.jour === jour ? ligne : null),
+      dejaUtilisees: ligne !== null,
+    },
+  }
+}
+
+/** La forme du bloc : une seule ligne à déplier, ou les trois champs. */
+export type FormeTroisActions = 'ligne' | 'complete'
+
+/**
+ * Tant qu'aucune action n'a jamais été écrite, le bloc tient en une ligne « Choisir mes
+ * trois actions du jour », qui déplie les champs (étape F.2, proposition 3). Dès qu'une
+ * action est écrite, il garde ses trois champs, y compris les jours suivants. Pendant la
+ * lecture, `dejaUtilisees` est ce dont l'appareil se souvient (`utiliseesMemorisees`) : le
+ * bloc prend d'emblée sa forme habituelle. En cas d'erreur, les champs, avec le message.
+ */
+export function formeTroisActions(etat: {
+  erreur: boolean
+  choisies: number
+  dejaUtilisees: boolean
+  deplie: boolean
+}): FormeTroisActions {
+  return etat.erreur || etat.deplie || etat.choisies > 0 || etat.dejaUtilisees
+    ? 'complete'
+    : 'ligne'
+}
+
+const CLE_UTILISEES = 'immocrm.aujourdhui.trois-actions-utilisees'
+
+/** L'appareil se souvient que les trois actions ont déjà servi (forme du bloc à la lecture). */
+export function utiliseesMemorisees(): boolean {
+  try {
+    return window.localStorage.getItem(CLE_UTILISEES) === 'oui'
+  } catch {
+    return false
+  }
+}
+
+export function memoriserUtilisees(): void {
+  try {
+    window.localStorage.setItem(CLE_UTILISEES, 'oui')
+  } catch {
+    // Mémoire de l'appareil indisponible (navigation privée) : on s'en passe.
+  }
 }
 
 /** Enregistre les trois actions du jour (la ligne est créée au premier enregistrement). */

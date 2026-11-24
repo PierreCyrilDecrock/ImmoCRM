@@ -12,6 +12,7 @@ import type { Activite } from '../activites/activites'
 import type { ProjetAcquereur } from '../acquereurs/pipeline-acquereur'
 import type { Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
+import { ordreSansAction, SANS_ACTION_A_L_ACCUEIL } from '../contacts/jamais-contactes'
 import { lireReglagesEtSauvegardes, type DatesSauvegarde } from '../reglages/reglages'
 import { exportARappeler, joursDepuisExport } from '../sauvegarde/rappel-export'
 import { fichesDe, lireFiches, type AvecLiens, type FichesLues } from '../liens/fiches-liees'
@@ -61,7 +62,13 @@ export type Alerte =
       /** Jours depuis le dernier export, ou `null` s'il n'y en a jamais eu. */
       jours: number | null
     }
-  | { genre: 'contact_sans_action'; cle: string; contact: Contact }
+  | {
+      genre: 'contact_sans_action'
+      cle: string
+      contact: Contact
+      /** Aucune activité au journal ; `undefined` : la lecture a échoué, on n'en dit rien. */
+      jamaisContacte: boolean | undefined
+    }
   | { genre: 'projet_sans_activite'; cle: string; projet: ProjetCalme }
 
 /** Un groupe d'alertes du même genre, avec son nombre total. */
@@ -202,7 +209,7 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
   const lignesCalmes: LigneProjetCalme[] = calmes.ok ? calmes.donnees : []
 
   // Seconde vague : les fiches liées à toutes ces lignes, et la dernière activité des
-  // contacts à relancer.
+  // contacts à relancer et des contacts sans prochaine action.
   const liees: AvecLiens[] = [
     ...(blocAgenda.ok ? blocAgenda.donnees.lignes : []),
     ...(blocRelances.ok ? blocRelances.donnees.lignes : []),
@@ -215,13 +222,14 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
         }))
       : []),
   ]
-  const contactsARelancer = blocRelances.ok
-    ? [
-        ...new Set(
-          blocRelances.donnees.lignes.flatMap((t) => (t.contact_id === null ? [] : [t.contact_id])),
-        ),
-      ]
-    : []
+  const contactsARelancer = [
+    ...new Set([
+      ...(blocRelances.ok
+        ? blocRelances.donnees.lignes.flatMap((t) => (t.contact_id === null ? [] : [t.contact_id]))
+        : []),
+      ...(sansAction.ok ? sansAction.donnees.lignes.map((contact) => contact.id) : []),
+    ]),
+  ]
   const [fiches, dernieres] = await Promise.all([
     lireFiches(client, liees),
     contactsARelancer.length > 0
@@ -258,6 +266,7 @@ export async function lireJournee(client: SupabaseClient, aujourdhui: string): P
     taches: avecFiches(blocTaches, (tache) => afficher(tache, lues)),
     alertes: construireAlertes(
       sansAction,
+      dernieres.ok ? (id) => !derniereDe.has(id) : () => undefined,
       calmes.ok ? { ok: true, donnees: lignesCalmes } : calmes,
       lues,
       // Si les réglages n'ont pas pu être lus, le rappel est simplement omis.
@@ -300,6 +309,7 @@ function avecFiches<L>(
  */
 function construireAlertes(
   sansAction: Resultat<PageLignes<Contact>>,
+  jamaisContacte: (id: string) => boolean | undefined,
   calmes: Resultat<LigneProjetCalme[]>,
   fiches: FichesLues,
   sauvegardes: DatesSauvegarde | null,
@@ -344,11 +354,15 @@ function construireAlertes(
       cle: 'contact_sans_action',
       titre: 'Contacts sans prochaine action',
       total: sansAction.donnees.total ?? sansAction.donnees.lignes.length,
-      alertes: sansAction.donnees.lignes.map((contact) => ({
-        genre: 'contact_sans_action',
-        cle: `contact-${contact.id}`,
-        contact,
-      })),
+      // Vendeurs et acquéreurs d'abord, les plus chauds en tête ; trois d'emblée.
+      alertes: ordreSansAction(sansAction.donnees.lignes)
+        .slice(0, SANS_ACTION_A_L_ACCUEIL)
+        .map((contact) => ({
+          genre: 'contact_sans_action',
+          cle: `contact-${contact.id}`,
+          contact,
+          jamaisContacte: jamaisContacte(contact.id),
+        })),
     },
   ]
   return { ok: true, donnees: groupes.filter((groupe) => groupe.total > 0) }
