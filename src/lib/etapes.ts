@@ -49,3 +49,29 @@ export function phrasePassage(suivante: string, critere: string): string {
 export function phraseManque(manquantes: readonly string[]): string {
   return manquantes.length === 0 ? '' : `Il manque ${listeEnFrancais(manquantes)}.`
 }
+
+/** Un critère de sortie dans la liste « Pour passer à … » : acquis (coche verte) ou manquant. */
+export type CritereSortie = { libelle: string; acquis: boolean }
+
+/**
+ * La liste « Pour passer à … » d'après les informations que demande l'étape suivante, dans
+ * l'ordre des étapes. `propre` : l'information est demandée pour la première fois par cette
+ * étape (elle s'affiche toujours) ; les autres, d'étapes déjà franchies, ne s'affichent que si
+ * elles manquent encore. Deux informations de même libellé (estimation basse et haute) n'en
+ * font qu'une, acquise seulement si les deux le sont.
+ */
+export function listeCriteres(
+  informations: readonly { libelle: string; acquis: boolean; propre: boolean }[],
+): CritereSortie[] {
+  const parLibelle = new Map<string, boolean>()
+  for (const { libelle, acquis, propre } of informations) {
+    if (!propre && acquis && !parLibelle.has(libelle)) continue
+    parLibelle.set(libelle, (parLibelle.get(libelle) ?? true) && acquis)
+  }
+  return [...parLibelle].map(([libelle, acquis]) => ({ libelle, acquis }))
+}
+
+/** Le titre de la liste des critères : « Pour passer à Estimation ». */
+export function titrePassage(suivante: string): string {
+  return `Pour passer à ${suivante}`
+}

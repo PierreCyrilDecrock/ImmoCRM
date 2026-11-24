@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { ligneAccord, ongletAffiche, ongletsContact, puceTemperatureFiche } from './fiche-contact'
 
 describe('onglets de la fiche', () => {
-  it('garde les mêmes onglets partout, plus « Infos » sans colonne de profil', () => {
+  it('garde les mêmes onglets partout, plus « Infos » après Activité sans colonne de profil', () => {
     expect(ongletsContact('ordinateur')).toEqual(['activite', 'projets', 'taches', 'biens'])
-    expect(ongletsContact('telephone')).toEqual(['activite', 'projets', 'taches', 'biens', 'infos'])
+    expect(ongletsContact('telephone')).toEqual(['activite', 'infos', 'projets', 'taches', 'biens'])
     expect(ongletsContact('tablette')).toEqual(ongletsContact('telephone'))
   })
 

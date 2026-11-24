@@ -47,6 +47,7 @@ export default function Composants() {
   const [roles, setRoles] = useState<string[]>(['vendeur'])
   const [etiquettes, setEtiquettes] = useState(['investisseur'])
   const [onglet, setOnglet] = useState('aujourdhui')
+  const [ongletFiche, setOngletFiche] = useState('activite')
   const [temperature, setTemperature] = useState<'froid' | 'tiede' | 'chaud'>('tiede')
   const aujourdhui = dateDuJour()
   const [echeance, setEcheance] = useState(aujourdhui)
@@ -202,6 +203,24 @@ export default function Composants() {
           valeur={onglet}
           onChange={setOnglet}
         />
+        <p className="mt-4 mb-2 text-sm text-encre-douce">
+          Dans une colonne étroite, des onglets qui dépassent : un fondu sur le bord les signale (à
+          gauche aussi après défilement), et l'onglet choisi est ramené hors du fondu.
+        </p>
+        <div className="max-w-72">
+          <Onglets
+            libelle="Exemple d'onglets qui dépassent"
+            options={[
+              { valeur: 'activite', libelle: 'Activité', compteur: 12 },
+              { valeur: 'projets', libelle: 'Projets', compteur: 2 },
+              { valeur: 'taches', libelle: 'Tâches', compteur: 3 },
+              { valeur: 'biens', libelle: 'Biens', compteur: 1 },
+              { valeur: 'infos', libelle: 'Infos' },
+            ]}
+            valeur={ongletFiche}
+            onChange={setOngletFiche}
+          />
+        </div>
       </Carte>
 
       <Carte titre="Liens d'action">
@@ -408,12 +427,42 @@ export default function Composants() {
               ],
               'decouverte',
             )}
-            anciennete={{ texte: 'Depuis 12 jours', alerte: false }}
-            critere="Pour passer à l’étape suivante (Estimation) : projet, délai, motif."
-            manque="Il manque le motif de la vente."
+            anciennete={{ court: '12 j', texte: 'Depuis 12 jours', alerte: false }}
+            passage={{
+              titre: 'Pour passer à Estimation',
+              criteres: [
+                { libelle: 'Motif de la vente', acquis: true },
+                { libelle: 'Délai souhaité', acquis: false },
+              ],
+            }}
             suivante={{
               libelle: 'Estimation',
-              onPasser: () => notifier('succes', 'Étape suivante (exemple).'),
+              onPasser: () => notifier('succes', 'Passer à Estimation (exemple).'),
+              principal: true,
+            }}
+            choix={{
+              onChoisir: (valeur) => notifier('succes', `Passer à « ${valeur} » (exemple).`),
+            }}
+          />
+          <p className="text-sm text-encre-douce">
+            Dans une rubrique de fiche Contact ou Bien, la même frise avec une phrase :
+          </p>
+          <BarreEtapes
+            etapes={etatsEtapes(
+              [
+                { valeur: 'demande', libelle: 'Demande' },
+                { valeur: 'qualification', libelle: 'Qualification' },
+                { valeur: 'selection', libelle: 'Sélection' },
+                { valeur: 'visites', libelle: 'Visites' },
+              ],
+              'qualification',
+            )}
+            anciennete={{ court: '45 j', texte: 'Depuis 45 jours', alerte: true }}
+            critere="Pour passer à l’étape suivante (Sélection) : budget, critères."
+            manque="Il manque le financement."
+            suivante={{
+              libelle: 'Sélection',
+              onPasser: () => notifier('succes', 'Passer à Sélection (exemple).'),
             }}
           />
         </div>

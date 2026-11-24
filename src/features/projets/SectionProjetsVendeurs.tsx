@@ -14,9 +14,8 @@ import { useChangementEtape } from './changement-etape'
 import NouveauProjetVendeur from './NouveauProjetVendeur'
 import {
   aideEtapeSuivante,
-  ancienneteEtape,
+  ancienneteFrise,
   ETAPES_VENDEUR,
-  etapeQuiTraine,
   genreEtatProjet,
   libelleEtape,
   libelleEtatProjet,
@@ -106,7 +105,10 @@ export default function SectionProjetsVendeurs(props: Props) {
                           ? 'Contact introuvable'
                           : nomComplet(contact)
                     }
-                    detail={resumeEtat(projet)}
+                    // L'étape d'un projet en cours est dans la frise dessous : pas deux fois.
+                    detail={
+                      dansLePipeline && projet.etat === 'actif' ? undefined : resumeEtat(projet)
+                    }
                     fin={
                       <Etiquette genre={genreEtatProjet(projet.etat)}>
                         {libelleEtatProjet(projet.etat)}
@@ -121,10 +123,7 @@ export default function SectionProjetsVendeurs(props: Props) {
                       etapes={etatsEtapes(ETAPES_VENDEUR, projet.etape, projet.etat === 'gagne')}
                       anciennete={
                         projet.etat === 'actif'
-                          ? {
-                              texte: ancienneteEtape(projet.etape_le, aujourdhui),
-                              alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
-                            }
+                          ? ancienneteFrise(projet.etape_le, aujourdhui)
                           : undefined
                       }
                       critere={

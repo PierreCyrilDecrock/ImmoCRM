@@ -57,7 +57,7 @@ describe('vues', () => {
     expect(bornesVue('plus_tard', MARDI)).toEqual({ min: '2026-11-23' })
   })
 
-  it('le dimanche, « Cette semaine » est vide et demain est « Plus tard »', () => {
+  it('le dimanche, « Semaine » est vide et demain est « Plus tard »', () => {
     const dimanche = '2026-11-22'
     const { min = '', max = '' } = bornesVue('semaine', dimanche)
     expect(min > max).toBe(true)

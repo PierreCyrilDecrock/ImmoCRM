@@ -8,7 +8,7 @@ import Message from '../../components/Message'
 import { dateDuJour } from '../../lib/dates'
 import { etatsEtapes, phraseManque, phrasePassage } from '../../lib/etapes'
 import { exigerSupabase } from '../../lib/supabase'
-import { ancienneteEtape, etapeQuiTraine } from '../projets/pipeline-vendeur'
+import { ancienneteFrise } from '../projets/pipeline-vendeur'
 import { useChangementEtapeAcquereur } from './changement-etape-acquereur'
 import { nomComplet, type Contact } from '../contacts/contacts'
 import DemandeEntrante from './DemandeEntrante'
@@ -106,7 +106,13 @@ export default function SectionProjetsAcquereurs({
                         ? `Demande ${resumeOrigine(projet).toLowerCase()}`
                         : recherche
                     }
-                    detail={[role, resumeEtatAcquereur(projet)].filter(Boolean).join(' · ')}
+                    // L'étape d'un projet en cours est dans la frise dessous : pas deux fois.
+                    detail={[
+                      role,
+                      dansLePipeline && projet.etat === 'actif' ? '' : resumeEtatAcquereur(projet),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
                     fin={
                       <Etiquette genre={genreEtatAcquereur(projet.etat)}>
                         {libelleEtatAcquereur(projet.etat)}
@@ -121,10 +127,7 @@ export default function SectionProjetsAcquereurs({
                       etapes={etatsEtapes(ETAPES_ACQUEREUR, projet.etape, projet.etat === 'gagne')}
                       anciennete={
                         projet.etat === 'actif'
-                          ? {
-                              texte: ancienneteEtape(projet.etape_le, aujourdhui),
-                              alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
-                            }
+                          ? ancienneteFrise(projet.etape_le, aujourdhui)
                           : undefined
                       }
                       critere={

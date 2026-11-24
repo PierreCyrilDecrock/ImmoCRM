@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { LARGEUR_FONDU, masqueFondu, positionPourMontrer, useSuitesCachees } from './defilement'
 
 type Props<V extends string> = {
   /** Nom de l'ensemble, lu par les lecteurs d'écran. */
@@ -71,8 +72,10 @@ function compteur(valeur: number | null | undefined, actif: boolean, surPastille
 /**
  * Onglets d'une page (les vues de la page Tâches) : une commande segmentée, c'est-à-dire des
  * choix posés dans une capsule grise, le choix actif en blanc. Sur un écran étroit, la capsule
- * défile de côté plutôt que d'élargir la page. Un compteur facultatif suit chaque libellé.
- * Deux autres formes (`forme`) : des onglets de page soulignés, et de petites pastilles.
+ * défile de côté plutôt que d'élargir la page : tant que des onglets dépassent, un fondu sur
+ * le bord droit (et gauche après défilement) le signale, et l'onglet choisi est toujours
+ * ramené hors du fondu. Un compteur facultatif suit chaque libellé. Deux autres formes
+ * (`forme`) : des onglets de page soulignés, et de petites pastilles.
  */
 export default function Onglets<V extends string>({
   libelle,
@@ -83,14 +86,42 @@ export default function Onglets<V extends string>({
   forme = 'segmentee',
 }: Props<V>) {
   const ongletActif = useRef<HTMLButtonElement>(null)
+  const rangee = useRef<HTMLDivElement>(null)
+  const dejaPlace = useRef(false)
+  const suites = useSuitesCachees(rangee)
+  const masque = masqueFondu(suites)
+  // Les largeurs changent quand un libellé ou un compteur change (compteurs lus après coup).
+  const largeurs = options.map((option) => `${option.libelle}${option.compteur ?? ''}`).join('|')
 
-  // Sur un écran étroit, l'onglet choisi est ramené dans la partie visible de la capsule.
+  // Sur un écran étroit, l'onglet choisi est ramené dans la partie visible de la rangée, à
+  // l'écart des fondus. Seule la rangée défile, jamais la page (pas de `scrollIntoView`).
   useEffect(() => {
-    ongletActif.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [valeur])
+    const element = rangee.current
+    const onglet = ongletActif.current
+    if (element === null || onglet === null) return
+    const position = positionPourMontrer(
+      { debut: onglet.offsetLeft, fin: onglet.offsetLeft + onglet.offsetWidth },
+      { position: element.scrollLeft, visible: element.clientWidth, totale: element.scrollWidth },
+    )
+    if (Math.abs(position - element.scrollLeft) >= 1) {
+      element.scrollTo({ left: position, behavior: dejaPlace.current ? 'smooth' : 'auto' })
+    }
+    dejaPlace.current = true
+  }, [valeur, largeurs])
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+    <div
+      ref={rangee}
+      // `relative` : la position de chaque onglet se mesure depuis le début de la rangée.
+      className="relative -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0"
+      style={
+        masque === undefined
+          ? undefined
+          : // Tant que la rangée déborde, une marge de la largeur du fondu après le dernier
+            // onglet : défilée jusqu'au bout, elle le montre en entier, hors du fondu.
+            { maskImage: masque, WebkitMaskImage: masque, paddingRight: LARGEUR_FONDU }
+      }
+    >
       <div role="tablist" aria-label={libelle} className={CLASSES_GROUPE[forme]}>
         {options.map((option) => {
           const actif = option.valeur === valeur
