@@ -30,3 +30,16 @@ export function choisirAVenir<T>(
     seulementLaProchaine: sansLaPremiere && taches.length === 1,
   }
 }
+
+/**
+ * Ce que dit la rubrique quand il n'y a aucune tâche à faire : une phrase grise, avec ou sans
+ * le bouton pour en créer une (`ajout`) ; `masquer` : la rubrique disparaît, parce qu'un
+ * autre bloc de la fiche dit déjà l'absence et porte le geste (une absence se dit une fois).
+ */
+export type VideTaches = { phrase: string; ajout: boolean } | 'masquer'
+
+/** Par défaut, sur les fiches Contact et Bien. */
+export const VIDE_TACHES: VideTaches = {
+  phrase: 'Aucune tâche à faire. Les relances et les rendez-vous à venir s’afficheront ici.',
+  ajout: true,
+}

@@ -348,22 +348,40 @@ describe('aideEtapeSuivante', () => {
       critere: 'Projet, délai, motif',
       manquantes: ['le motif de la vente', 'le délai souhaité'],
       criteres: [
-        { libelle: 'Motif de la vente', acquis: false },
-        { libelle: 'Délai souhaité', acquis: false },
+        {
+          libelle: 'Motif de la vente',
+          acquis: false,
+          lien: { info: 'motif_vente', texte: 'Renseigner le motif de la vente' },
+        },
+        {
+          libelle: 'Délai souhaité',
+          acquis: false,
+          lien: { info: 'echeance_souhaitee', texte: 'Renseigner le délai souhaité' },
+        },
       ],
     })
   })
 
   it('liste les critères de l’étape, acquis ou non, et ceux d’avant seulement s’ils manquent', () => {
     const decouverte = projet({ etape: 'decouverte', echeance_souhaitee: '2027-03-01' })
+    // Un critère manquant mène au champ du projet ; un critère acquis n'a pas de lien.
     expect(aideEtapeSuivante(decouverte, 'pige')?.criteres).toEqual([
-      { libelle: 'Motif de la vente', acquis: false },
+      {
+        libelle: 'Motif de la vente',
+        acquis: false,
+        lien: { info: 'motif_vente', texte: 'Renseigner le motif de la vente' },
+      },
       { libelle: 'Délai souhaité', acquis: true },
     ])
-    // La source, critère du premier contact, revient en tête de liste si elle manque.
+    // La source, critère du premier contact, revient en tête de liste si elle manque ; elle
+    // est celle du contact, sans lien vers le projet.
     expect(aideEtapeSuivante(decouverte, null)?.criteres).toEqual([
       { libelle: 'Source du contact', acquis: false },
-      { libelle: 'Motif de la vente', acquis: false },
+      {
+        libelle: 'Motif de la vente',
+        acquis: false,
+        lien: { info: 'motif_vente', texte: 'Renseigner le motif de la vente' },
+      },
       { libelle: 'Délai souhaité', acquis: true },
     ])
     // Le suivi se quitte en signant le mandat : son type et sa date.
@@ -390,8 +408,16 @@ describe('aideEtapeSuivante', () => {
       estimation_haute: null,
     })
     expect(aideEtapeSuivante(estimation, 'pige')?.criteres).toEqual([
-      { libelle: 'Estimation (fourchette de prix)', acquis: false },
-      { libelle: 'Avis de valeur remis', acquis: false },
+      {
+        libelle: 'Estimation (fourchette de prix)',
+        acquis: false,
+        lien: { info: 'estimation_basse', texte: 'Renseigner l’estimation' },
+      },
+      {
+        libelle: 'Avis de valeur remis',
+        acquis: false,
+        lien: { info: 'avis_remis_le', texte: 'Renseigner la remise de l’avis de valeur' },
+      },
     ])
   })
 

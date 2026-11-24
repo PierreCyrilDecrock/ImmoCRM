@@ -30,11 +30,13 @@ import BlocJournee from '../features/aujourdhui/BlocJournee'
 import ExemplesJournee from '../features/aujourdhui/ExemplesJournee'
 import { progression } from '../features/aujourdhui/maintenant'
 import { videAutresTaches } from '../features/aujourdhui/ordre-journee'
+import { ALERTE_PROJET, phraseRienDePrevu, PLANIFIER_PROJET } from '../features/liens/fiche-projet'
 import { libelleJour } from '../features/taches/echeances'
+import CarteSansTache from '../features/taches/CarteSansTache'
 import ExemplesTaches from '../features/taches/ExemplesTaches'
 import ExemplesListes from '../features/projets/ExemplesListes'
 import ReportsRapides from '../features/taches/ReportsRapides'
-import { dateDuJour } from '../lib/dates'
+import { ajouterJours, dateDuJour } from '../lib/dates'
 import { etatsEtapes } from '../lib/etapes'
 
 /**
@@ -416,14 +418,23 @@ export default function Composants() {
               ]}
             />
           </div>
+          <p className="text-sm text-encre-douce">
+            Sous 820 px, la frise garde ses segments et se résume en une ligne (« Étape 2 sur 5 ·
+            Découverte · depuis 12 j », « Ensuite : Estimation ») ; la toucher ouvre la liste des
+            étapes. Un critère manquant mène au champ qui le renseigne.
+          </p>
           <BarreEtapes
             etapes={etatsEtapes(
               [
-                { valeur: 'premier_contact', libelle: 'Premier contact' },
-                { valeur: 'decouverte', libelle: 'Découverte' },
-                { valeur: 'estimation', libelle: 'Estimation' },
-                { valeur: 'suivi', libelle: 'Suivi' },
-                { valeur: 'mandat_signe', libelle: 'Mandat signé' },
+                {
+                  valeur: 'premier_contact',
+                  libelle: 'Premier contact',
+                  critere: 'Source identifiée',
+                },
+                { valeur: 'decouverte', libelle: 'Découverte', critere: 'Projet, délai, motif' },
+                { valeur: 'estimation', libelle: 'Estimation', critere: 'Avis de valeur remis' },
+                { valeur: 'suivi', libelle: 'Suivi', critere: 'Relances, objections' },
+                { valeur: 'mandat_signe', libelle: 'Mandat signé', critere: 'Simple ou exclusif' },
               ],
               'decouverte',
             )}
@@ -431,10 +442,15 @@ export default function Composants() {
             passage={{
               titre: 'Pour passer à Estimation',
               criteres: [
-                { libelle: 'Motif de la vente', acquis: true },
-                { libelle: 'Délai souhaité', acquis: false },
+                {
+                  libelle: 'Motif de la vente',
+                  acquis: false,
+                  lien: { info: 'motif_vente', texte: 'Renseigner le motif de la vente' },
+                },
+                { libelle: 'Délai souhaité', acquis: true },
               ],
             }}
+            onRenseigner={(info) => notifier('succes', `Ouvrir le champ « ${info} » (exemple).`)}
             suivante={{
               libelle: 'Estimation',
               onPasser: () => notifier('succes', 'Passer à Estimation (exemple).'),
@@ -463,6 +479,45 @@ export default function Composants() {
             suivante={{
               libelle: 'Sélection',
               onPasser: () => notifier('succes', 'Passer à Sélection (exemple).'),
+            }}
+          />
+        </div>
+      </Carte>
+
+      <Carte titre="Fiche Projet : rien de prévu">
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-encre-douce">
+            Une absence se dit une fois, sur le bon ton. Le contact a une action ailleurs : pas
+            d’alerte, « À venir » le dit en gris, avec le seul bouton pour planifier.
+          </p>
+          <div className="rounded-2xl p-4 ring-1 ring-bord">
+            <h3 className="text-base font-semibold text-encre">À venir</h3>
+            <p className="mt-2 text-sm text-encre-douce">
+              {phraseRienDePrevu(
+                {
+                  qui: 'Camille',
+                  echeance: ajouterJours(aujourdhui, 2),
+                  titre: 'Envoyer l’avis de valeur',
+                },
+                aujourdhui,
+              )}
+            </p>
+            <div className="mt-3">
+              <Bouton variante="secondaire" icone="ajouter">
+                {PLANIFIER_PROJET}
+              </Bouton>
+            </div>
+          </div>
+          <p className="text-sm text-encre-douce">
+            Le contact n’a vraiment rien de prévu, sur un projet en cours : la carte orange, un
+            risque de perte, et « À venir » se tait.
+          </p>
+          <CarteSansTache
+            texte={ALERTE_PROJET}
+            alerte
+            creer={{
+              libelle: PLANIFIER_PROJET,
+              onCreer: () => notifier('succes', 'Planifier pour ce projet (exemple).'),
             }}
           />
         </div>

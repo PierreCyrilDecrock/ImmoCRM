@@ -4,7 +4,11 @@ import {
   enTeteProjetVendeur,
   ongletsProjet,
   pastilleEtatProjet,
-  repliProchaineAction,
+  phraseRienDePrevu,
+  PLANIFIER_PROJET,
+  suiteProjet,
+  TACHES_A_VENIR_PROJET,
+  videTachesProjet,
 } from './fiche-projet'
 
 describe('ongletsProjet', () => {
@@ -65,13 +69,67 @@ describe('pastilleEtatProjet', () => {
   })
 })
 
-describe('repliProchaineAction', () => {
-  it('termine la phrase par un seul point', () => {
-    expect(repliProchaineAction('du vendeur', 'jeu. 26 nov.')).toBe(
-      'Prochaine action du vendeur, hors de ce projet : jeu. 26 nov.',
+describe('rien de prévu pour ce projet', () => {
+  const aujourdhui = '2026-11-24'
+  const ailleurs = { qui: 'Camille', echeance: '2026-11-26', titre: 'Envoyer l’avis de valeur' }
+
+  it('dit en gris l’action prévue ailleurs, avec son jour', () => {
+    expect(phraseRienDePrevu(ailleurs, aujourdhui)).toBe(
+      'Rien de prévu pour ce projet. Camille a une action jeudi 26 nov. : Envoyer l’avis de valeur.',
     )
-    expect(repliProchaineAction('de l’acquéreur', 'mar. 2 juin')).toBe(
-      'Prochaine action de l’acquéreur, hors de ce projet : mar. 2 juin.',
+    expect(phraseRienDePrevu({ ...ailleurs, echeance: '2026-11-24' }, aujourdhui)).toBe(
+      'Rien de prévu pour ce projet. Camille a une action aujourd’hui : Envoyer l’avis de valeur.',
     )
+    expect(phraseRienDePrevu({ ...ailleurs, echeance: '2026-11-25' }, aujourdhui)).toContain(
+      'a une action demain :',
+    )
+    expect(phraseRienDePrevu({ ...ailleurs, echeance: '2026-11-20' }, aujourdhui)).toContain(
+      'a une action en retard, prévue vendredi 20 nov. :',
+    )
+    // Un seul point final, même si le titre en a déjà un.
+    expect(phraseRienDePrevu({ ...ailleurs, titre: 'Rappeler ?' }, aujourdhui)).toMatch(
+      /: Rappeler \?$/,
+    )
+    expect(phraseRienDePrevu(null, aujourdhui)).toBe('Rien de prévu pour ce projet.')
+  })
+
+  it('garde l’orange pour un projet en cours dont le contact n’a rien de prévu', () => {
+    expect(suiteProjet({ tache: false, actif: true, ailleurs: null, aujourdhui })).toEqual({
+      forme: 'alerte',
+    })
+    expect(suiteProjet({ tache: false, actif: true, ailleurs, aujourdhui })).toEqual({
+      forme: 'phrase',
+      phrase: phraseRienDePrevu(ailleurs, aujourdhui),
+    })
+  })
+
+  it('ne crie pas pour un projet hors du pipeline, ni quand une tâche est prévue', () => {
+    expect(suiteProjet({ tache: false, actif: false, ailleurs: null, aujourdhui })).toEqual({
+      forme: 'phrase',
+      phrase: 'Rien de prévu pour ce projet.',
+    })
+    expect(suiteProjet({ tache: true, actif: true, ailleurs: null, aujourdhui })).toEqual({
+      forme: 'tache',
+    })
+  })
+
+  it('ne dit l’absence qu’une fois, avec un seul bouton pour planifier', () => {
+    const phrase = { forme: 'phrase' as const, phrase: 'Rien de prévu pour ce projet.' }
+    expect(videTachesProjet(phrase, 'a_venir', false)).toEqual({
+      phrase: 'Rien de prévu pour ce projet.',
+      ajout: true,
+    })
+    expect(videTachesProjet(phrase, 'a_venir', true)).toEqual({
+      phrase: 'Rien de prévu pour ce projet.',
+      ajout: false,
+    })
+    // La carte orange dit l'absence et porte le bouton : « À venir » se tait.
+    expect(videTachesProjet({ forme: 'alerte' }, 'a_venir', false)).toBe('masquer')
+    expect(videTachesProjet({ forme: 'alerte' }, 'taches', false)).toEqual({
+      phrase: TACHES_A_VENIR_PROJET,
+      ajout: false,
+    })
+    expect(videTachesProjet({ forme: 'chargement' }, 'a_venir', false)).toBe('masquer')
+    expect(PLANIFIER_PROJET).toBe('Planifier pour ce projet')
   })
 })

@@ -14,6 +14,7 @@ import {
   MOTIFS_VENTE_COURANTS,
   rangEtape,
   TYPES_MANDAT,
+  type InfoRenseignable,
   type ProjetVendeur,
   type TypeMandat,
 } from './pipeline-vendeur'
@@ -27,8 +28,19 @@ import {
 
 type Props = {
   projet: ProjetVendeur
+  /** Le champ où placer le curseur à l'ouverture (lien d'un critère manquant de la frise). */
+  champ?: InfoRenseignable
   onFermer: () => void
   onEnregistre: (projet: ProjetVendeur) => void
+}
+
+/** Le champ du formulaire qui renseigne chaque critère de passage d'étape. */
+const CHAMP_DU_CRITERE: Record<InfoRenseignable, keyof BrouillonProjet> = {
+  motif_vente: 'motifVente',
+  echeance_souhaitee: 'echeanceSouhaitee',
+  estimation_basse: 'estimationBasse',
+  estimation_haute: 'estimationHaute',
+  avis_remis_le: 'avisRemisLe',
 }
 
 const SECTION = 'flex flex-col gap-4 border-t border-bord pt-4 first:border-t-0 first:pt-0'
@@ -37,13 +49,14 @@ const SECTION = 'flex flex-col gap-4 border-t border-bord pt-4 first:border-t-0 
  * Modification d'un projet vendeur : découverte, estimation, concurrence, mandat, notes.
  * L'étape ne change pas ici (boutons de la fiche, ou glisser-déposer dans le pipeline).
  */
-export default function FormulaireProjetVendeur({ projet, onFermer, onEnregistre }: Props) {
+export default function FormulaireProjetVendeur({ projet, champ, onFermer, onEnregistre }: Props) {
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
   const [brouillon, setBrouillon] = useState<BrouillonProjet>(() => brouillonProjetDepuis(projet))
   const [erreurs, setErreurs] = useState<ErreursProjet>({})
   const [echec, setEchec] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
+  const focus = champ === undefined ? undefined : CHAMP_DU_CRITERE[champ]
 
   function changer<C extends keyof BrouillonProjet>(champ: C, valeur: BrouillonProjet[C]) {
     setBrouillon((actuel) => ({ ...actuel, [champ]: valeur }))
@@ -74,6 +87,7 @@ export default function FormulaireProjetVendeur({ projet, onFermer, onEnregistre
       libelle={libelle}
       inputMode="numeric"
       autoComplete="off"
+      autoFocus={focus === champ}
       value={brouillon[champ]}
       onChange={(evenement) => changer(champ, evenement.target.value)}
       erreur={erreurs[champ]}
@@ -87,6 +101,7 @@ export default function FormulaireProjetVendeur({ projet, onFermer, onEnregistre
     <ChampSaisie
       libelle={libelle}
       type="date"
+      autoFocus={focus === champ}
       max={passee ? aujourdhui : undefined}
       value={brouillon[champ]}
       onChange={(evenement) => changer(champ, evenement.target.value)}
@@ -124,6 +139,7 @@ export default function FormulaireProjetVendeur({ projet, onFermer, onEnregistre
             <ChampSaisie
               libelle="Motif de la vente"
               autoComplete="off"
+              autoFocus={focus === 'motifVente'}
               maxLength={LONGUEURS_MAX_PROJET.motif_vente}
               value={brouillon.motifVente}
               onChange={(evenement) => changer('motifVente', evenement.target.value)}

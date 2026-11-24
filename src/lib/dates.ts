@@ -135,6 +135,31 @@ export function formaterJourCourt(date: string, aujourdhui: string = dateDuJour(
   return format.format(new Date(versInstant(date)))
 }
 
+const JOUR_SEMAINE = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
+})
+
+const JOUR_SEMAINE_ANNEE = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
+/**
+ * Le jour de la semaine en entier, le mois abrégé : « jeudi 26 nov. », dans une phrase.
+ * L'année n'est ajoutée que si elle diffère de celle de `aujourdhui`. Vide si illisible.
+ */
+export function formaterJourSemaine(date: string, aujourdhui: string = dateDuJour()): string {
+  if (!estDateValide(date)) return ''
+  const format = date.slice(0, 4) === aujourdhui.slice(0, 4) ? JOUR_SEMAINE : JOUR_SEMAINE_ANNEE
+  return format.format(new Date(versInstant(date)))
+}
+
 const JOUR_LONG_SEMAINE = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long',
   day: 'numeric',

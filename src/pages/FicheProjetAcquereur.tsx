@@ -29,6 +29,7 @@ import {
   aideEtapeSuivanteAcquereur,
   criteresOffre,
   estEtapeAcquereur,
+  estInfoPassageAcquereur,
   ETAPES_ACQUEREUR,
   libelleBudget,
   libelleEtapeAcquereur,
@@ -38,6 +39,7 @@ import {
   libelleUrgence,
   resumeEtatAcquereur,
   resumeOrigine,
+  type InfoPassageAcquereur,
 } from '../features/acquereurs/pipeline-acquereur'
 import {
   archiverProjetAcquereur,
@@ -60,10 +62,13 @@ import {
   LIBELLES_ONGLETS_PROJET,
   ongletsProjet,
   pastilleEtatProjet,
-  repliProchaineAction,
+  ALERTE_PROJET,
+  PLANIFIER_PROJET,
+  videTachesProjet,
   type OngletProjet,
 } from '../features/liens/fiche-projet'
 import LiensProjet from '../features/liens/LiensProjet'
+import { useSuiteProjet } from '../features/liens/suite-projet'
 import { ancienneteFrise } from '../features/projets/pipeline-vendeur'
 import ConsignerEchange from '../features/saisie/ConsignerEchange'
 import { champConsigner, placerCurseur } from '../features/saisie/curseur-consigner'
@@ -71,13 +76,7 @@ import { ficheDeProjetAcquereur } from '../features/saisie/fiches-consultees'
 import { useConsultation } from '../features/saisie/recents'
 import ProchaineTacheFiche from '../features/taches/ProchaineTacheFiche'
 import SectionTaches from '../features/taches/SectionTaches'
-import {
-  dateDuJour,
-  formaterDate,
-  formaterHeure,
-  formaterJourCourt,
-  heureDuMoment,
-} from '../lib/dates'
+import { dateDuJour, formaterDate, formaterHeure, heureDuMoment } from '../lib/dates'
 import { useTailleEcran } from '../lib/ecran'
 import { etatsEtapes, titrePassage } from '../lib/etapes'
 import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
@@ -132,6 +131,8 @@ export default function FicheProjetAcquereur() {
   const [version, setVersion] = useState(0)
   const [compteurs, setCompteurs] = useState<CompteursFiche | null>(null)
   const [modification, setModification] = useState(false)
+  /** Le champ à ouvrir, quand la fenêtre s'ouvre depuis un critère manquant. */
+  const [champ, setChamp] = useState<InfoPassageAcquereur | undefined>(undefined)
   const [sortie, setSortie] = useState<'a_recontacter' | 'perdu' | null>(null)
   const [offre, setOffre] = useState(false)
   const [archivage, setArchivage] = useState(false)
@@ -142,6 +143,16 @@ export default function FicheProjetAcquereur() {
   const toutRelire = () => setVersion((v) => v + 1)
   const changement = useChangementEtapeAcquereur(toutRelire)
   const aujourdhui = dateDuJour()
+  // Ce qui est prévu pour le projet, ou pour son contact ailleurs : carte orange ou phrase grise.
+  const projetLu = etat.phase === 'pret' ? etat.affiche.projet : null
+  const suite = useSuiteProjet({
+    lien: { genre: 'acquereur', id },
+    contact: etat.phase === 'pret' ? etat.affiche.contact : null,
+    actif: projetLu !== null && projetLu.etat === 'actif' && projetLu.archived_at === null,
+    aujourdhui,
+    version,
+    pret: etat.phase === 'pret',
+  })
   useConsultation(etat.phase === 'pret' ? ficheDeProjetAcquereur(etat.affiche) : null)
 
   const [onglet, choisirOnglet] = useOngletFiche(ONGLETS)
@@ -309,7 +320,13 @@ export default function FicheProjetAcquereur() {
   )
 
   const modifier = archive ? null : (
-    <Bouton variante="secondaire" onClick={() => setModification(true)}>
+    <Bouton
+      variante="secondaire"
+      onClick={() => {
+        setChamp(undefined)
+        setModification(true)
+      }}
+    >
       <Icone nom="modifier" className="size-5 md:hidden" />
       <span className="max-md:sr-only">Modifier</span>
     </Bouton>
@@ -387,6 +404,17 @@ export default function FicheProjetAcquereur() {
               }
             : undefined
         }
+        // « Renseigner le budget › » ouvre la recherche, le champ prêt ; « Proposer un bien › »
+        // mène à l'onglet Biens proposés.
+        onRenseigner={(info) => {
+          if (!estInfoPassageAcquereur(info)) return
+          if (info === 'biens_proposes') {
+            choisirOnglet('biens')
+            return
+          }
+          setChamp(info)
+          setModification(true)
+        }}
       />
       {offrePossible && (
         <div className="mt-3">
@@ -491,16 +519,11 @@ export default function FicheProjetAcquereur() {
       version={version}
       onChangement={toutRelire}
       libelle="Prochaine action"
-      vide="Aucune action prévue pour ce projet"
+      vide={ALERTE_PROJET}
       alerte={actif}
-      repli={
-        contact?.prochaine_action_le == null
-          ? undefined
-          : repliProchaineAction(
-              'de l’acquéreur',
-              formaterJourCourt(contact.prochaine_action_le, aujourdhui),
-            )
-      }
+      // Rien pour ce projet mais une action ailleurs : pas d'orange, « À venir » le dit en gris.
+      masquerSiVide={suite.forme !== 'alerte'}
+      libelleCreer={PLANIFIER_PROJET}
       lectureSeule={archive}
     />
   )
@@ -531,7 +554,11 @@ export default function FicheProjetAcquereur() {
               onChangement={toutRelire}
               titre="À venir"
               limite={TACHES_DANS_ACTIVITE}
+              // La prochaine action, montrée au-dessus des onglets, n'est pas répétée.
+              sansLaPremiere
               onVoirTout={() => choisirOnglet('taches')}
+              vide={videTachesProjet(suite, 'a_venir', archive)}
+              libelleAjout={PLANIFIER_PROJET}
             />
             <SectionJournal
               projet={origine}
@@ -551,7 +578,15 @@ export default function FicheProjetAcquereur() {
           />
         )
       case 'taches':
-        return <SectionTaches projet={origine} version={version} onChangement={toutRelire} />
+        return (
+          <SectionTaches
+            projet={origine}
+            version={version}
+            onChangement={toutRelire}
+            vide={videTachesProjet(suite, 'taches', archive)}
+            libelleAjout={PLANIFIER_PROJET}
+          />
+        )
       case 'details':
         return (
           <>
@@ -611,6 +646,7 @@ export default function FicheProjetAcquereur() {
       {modification && (
         <FormulaireRecherche
           projet={projet}
+          champ={champ}
           onFermer={() => setModification(false)}
           onEnregistre={() => {
             setModification(false)
@@ -699,7 +735,9 @@ export default function FicheProjetAcquereur() {
       {telephone ? (
         prochaineAction
       ) : (
-        <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div
+          className={`grid items-start gap-4 ${suite.forme === 'phrase' ? '' : 'lg:grid-cols-2'}`}
+        >
           {liens}
           {prochaineAction}
         </div>

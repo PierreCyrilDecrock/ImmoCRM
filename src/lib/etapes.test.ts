@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  annonceResume,
+  depuisEtape,
   etatsEtapes,
   listeCriteres,
   listeEnFrancais,
   phraseManque,
   phrasePassage,
+  resumeEtapes,
+  texteRenseigner,
   titrePassage,
 } from './etapes'
 
@@ -85,5 +89,92 @@ describe('listeCriteres', () => {
 
   it('titre la liste par l’étape d’arrivée', () => {
     expect(titrePassage('Estimation')).toBe('Pour passer à Estimation')
+  })
+})
+
+describe('critère de sortie de chaque étape', () => {
+  it('suit chaque étape quand il est connu', () => {
+    const etapes = etatsEtapes(
+      [
+        { valeur: 'a', libelle: 'Un', critere: 'Source identifiée' },
+        { valeur: 'b', libelle: 'Deux' },
+      ],
+      'a',
+    )
+    expect(etapes[0]?.critere).toBe('Source identifiée')
+    expect(etapes[1]).toEqual({ valeur: 'b', libelle: 'Deux', etat: 'a_venir' })
+  })
+})
+
+describe('résumé de la frise au téléphone', () => {
+  const CINQ = [
+    { valeur: 'premier_contact', libelle: 'Premier contact' },
+    { valeur: 'decouverte', libelle: 'Découverte' },
+    { valeur: 'estimation', libelle: 'Estimation' },
+    { valeur: 'suivi', libelle: 'Suivi' },
+    { valeur: 'mandat_signe', libelle: 'Mandat signé' },
+  ]
+
+  it('dit l’étape en cours, sa place et la suivante', () => {
+    expect(resumeEtapes(etatsEtapes(CINQ, 'decouverte'))).toEqual({
+      position: 'Étape 2 sur 5',
+      nom: 'Découverte',
+      ensuite: 'Ensuite : Estimation',
+    })
+    expect(resumeEtapes(etatsEtapes(CINQ, 'mandat_signe'))).toEqual({
+      position: 'Étape 5 sur 5',
+      nom: 'Mandat signé',
+      ensuite: null,
+    })
+  })
+
+  it('résume un projet terminé à sa dernière étape, et rien sans étape', () => {
+    expect(resumeEtapes(etatsEtapes(CINQ, 'mandat_signe', true))).toEqual({
+      position: 'Étape 5 sur 5',
+      nom: 'Mandat signé',
+      ensuite: null,
+    })
+    expect(resumeEtapes([])).toBeNull()
+  })
+
+  it('écrit l’ancienneté et ce que lit un lecteur d’écran', () => {
+    expect(depuisEtape('12 j')).toBe('depuis 12 j')
+    const resume = resumeEtapes(etatsEtapes(CINQ, 'decouverte'))
+    if (resume === null) throw new Error('résumé attendu')
+    expect(annonceResume(resume, 'Depuis 12 jours')).toBe(
+      'Étape 2 sur 5 : Découverte, depuis 12 jours. Ensuite : Estimation. Voir les étapes',
+    )
+    expect(annonceResume({ ...resume, ensuite: null })).toBe(
+      'Étape 2 sur 5 : Découverte. Voir les étapes',
+    )
+  })
+})
+
+describe('lien d’un critère manquant', () => {
+  const motif = { info: 'motif_vente', texte: texteRenseigner('le motif de la vente') }
+
+  it('dit ce qu’il faut renseigner', () => {
+    expect(texteRenseigner('le motif de la vente')).toBe('Renseigner le motif de la vente')
+  })
+
+  it('ne garde le lien que d’un critère manquant, le premier connu', () => {
+    expect(
+      listeCriteres([
+        { libelle: 'Motif', acquis: false, propre: true, lien: motif },
+        { libelle: 'Délai', acquis: true, propre: true, lien: { info: 'd', texte: 'D' } },
+        { libelle: 'Source', acquis: false, propre: true },
+      ]),
+    ).toEqual([
+      { libelle: 'Motif', acquis: false, lien: motif },
+      { libelle: 'Délai', acquis: true },
+      { libelle: 'Source', acquis: false },
+    ])
+    // Deux bornes d'une même estimation : le lien de la première.
+    expect(
+      listeCriteres([
+        { libelle: 'Estimation', acquis: true, propre: true, lien: { info: 'basse', texte: 'E' } },
+        { libelle: 'Estimation', acquis: false, propre: true, lien: { info: 'haute', texte: 'E' } },
+      ]),
+    ).toEqual([{ libelle: 'Estimation', acquis: false, lien: { info: 'basse', texte: 'E' } }])
   })
 })

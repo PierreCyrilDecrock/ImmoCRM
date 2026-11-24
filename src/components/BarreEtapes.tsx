@@ -1,12 +1,22 @@
-import { useId } from 'react'
-import type { CritereSortie, EtatEtape } from '../lib/etapes'
+import { useId, useState } from 'react'
+import {
+  annonceResume,
+  depuisEtape,
+  resumeEtapes,
+  type CritereSortie,
+  type EtatEtape,
+} from '../lib/etapes'
 import { useSurvolPossible } from '../lib/ecran'
 import Bouton from './Bouton'
+import FenetreModale from './FenetreModale'
 import Icone from './Icone'
 
 type Props = {
-  /** Les étapes dans l'ordre, avec leur état (`etatsEtapes`, `src/lib/etapes.ts`). */
-  etapes: readonly { valeur: string; libelle: string; etat: EtatEtape }[]
+  /**
+   * Les étapes dans l'ordre, avec leur état et leur critère de sortie (`etatsEtapes`,
+   * `src/lib/etapes.ts`) ; le critère est écrit dans la liste des étapes du téléphone.
+   */
+  etapes: readonly { valeur: string; libelle: string; etat: EtatEtape; critere?: string }[]
   /**
    * L'ancienneté dans l'étape, collée à son nom (« Découverte · 12 j ») : `court` s'affiche,
    * `texte` (« Depuis 12 jours ») est lu par les lecteurs d'écran ; `alerte` : elle traîne.
@@ -31,6 +41,11 @@ type Props = {
    * en avant comme en arrière. Absent : la barre se lit seulement.
    */
   choix?: { onChoisir: (valeur: string) => void; desactive?: boolean }
+  /**
+   * Fiche du projet : un critère manquant qui a un `lien` devient un lien (« Renseigner le
+   * motif de la vente › ») ; la page ouvre le champ concerné (`info`).
+   */
+  onRenseigner?: (info: string) => void
 }
 
 const COULEUR_SEGMENT: Record<EtatEtape, string> = {
@@ -71,14 +86,64 @@ export default function BarreEtapes({
   manque,
   suivante,
   choix,
+  onRenseigner,
 }: Props) {
   const survol = useSurvolPossible()
   const id = useId()
+  const [liste, setListe] = useState(false)
+  const resume = resumeEtapes(etapes)
   return (
     <div className="flex flex-col gap-3">
+      {resume !== null && (
+        // Sous 820 px : les segments sans libellés et une ligne qui les résume ; un toucher
+        // ouvre la liste des étapes (revue n° 2, proposition 7).
+        <button
+          type="button"
+          onClick={() => setListe(true)}
+          aria-haspopup="dialog"
+          aria-label={annonceResume(
+            resume,
+            anciennete === undefined
+              ? undefined
+              : `${anciennete.texte}${anciennete.alerte ? ', l’étape traîne' : ''}`,
+          )}
+          className="-mx-1 flex min-h-11 flex-col gap-2 rounded-lg px-1 py-1 text-left min-[820px]:hidden hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span
+            aria-hidden="true"
+            className="grid w-full gap-1"
+            style={{ gridTemplateColumns: `repeat(${etapes.length}, 1fr)` }}
+          >
+            {etapes.map((etape) => (
+              <span
+                key={etape.valeur}
+                className={`h-1.5 rounded-full ${COULEUR_SEGMENT[etape.etat]}`}
+              />
+            ))}
+          </span>
+          <span aria-hidden="true" className="flex w-full items-start gap-2">
+            <span className="min-w-0 flex-1">
+              <span className="block text-base text-encre-douce">
+                {resume.position} · <span className="font-semibold text-encre">{resume.nom}</span>
+                {anciennete !== undefined && (
+                  // Le point reste collé à l'ancienneté : jamais seul en fin de ligne.
+                  <span className={`whitespace-nowrap ${anciennete.alerte ? 'text-alerte' : ''}`}>
+                    {'\u00a0· '}
+                    {depuisEtape(anciennete.court)}
+                  </span>
+                )}
+              </span>
+              {resume.ensuite !== null && (
+                <span className="block text-sm text-encre-douce">{resume.ensuite}</span>
+              )}
+            </span>
+            <Icone nom="chevron" className="mt-0.5 size-5 shrink-0 text-encre-douce" />
+          </span>
+        </button>
+      )}
       <ol
         aria-label="Étapes du projet"
-        className="grid gap-0.5 md:gap-1"
+        className="grid gap-0.5 max-[820px]:hidden md:gap-1"
         style={{ gridTemplateColumns: `repeat(${etapes.length}, ${COLONNE})` }}
       >
         {etapes.map((etape) => {
@@ -149,7 +214,9 @@ export default function BarreEtapes({
         })}
       </ol>
       {choix !== undefined && !survol && (
-        <p className="-mt-1 text-sm text-encre-douce">Touchez une étape pour y passer.</p>
+        <p className="-mt-1 text-sm text-encre-douce max-[820px]:hidden">
+          Touchez une étape pour y passer.
+        </p>
       )}
       {passage !== undefined && passage.criteres.length > 0 && (
         <section aria-labelledby={`${id}-passage`} className="flex flex-col gap-1.5">
@@ -167,12 +234,31 @@ export default function BarreEtapes({
                     className="mt-[0.1875rem] ml-0.5 size-4 shrink-0 rounded-full border-2 border-bord-fort"
                   />
                 )}
-                <span className={critereSortie.acquis ? 'text-encre-douce' : 'text-encre'}>
-                  {critereSortie.libelle}
-                  <span className="sr-only">
-                    {critereSortie.acquis ? ' : acquis' : ' : manquant'}
+                {!critereSortie.acquis &&
+                critereSortie.lien !== undefined &&
+                onRenseigner !== undefined ? (
+                  // Le critère manquant mène au champ qui le renseigne.
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (critereSortie.lien !== undefined) onRenseigner(critereSortie.lien.info)
+                    }}
+                    className="-my-2.5 inline-flex min-h-11 items-center rounded text-left font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    <span>
+                      {critereSortie.lien.texte}
+                      <span aria-hidden="true">{' ›'}</span>
+                      <span className="sr-only"> : {critereSortie.libelle}, manquant</span>
+                    </span>
+                  </button>
+                ) : (
+                  <span className={critereSortie.acquis ? 'text-encre-douce' : 'text-encre'}>
+                    {critereSortie.libelle}
+                    <span className="sr-only">
+                      {critereSortie.acquis ? ' : acquis' : ' : manquant'}
+                    </span>
                   </span>
-                </span>
+                )}
               </li>
             ))}
           </ul>
@@ -197,6 +283,114 @@ export default function BarreEtapes({
           </Bouton>
         </div>
       )}
+      <FenetreModale
+        feuille
+        ouverte={liste}
+        titre="Étapes du projet"
+        onFermer={() => setListe(false)}
+      >
+        <ListeEtapes
+          etapes={etapes}
+          anciennete={anciennete}
+          choix={
+            choix === undefined
+              ? undefined
+              : {
+                  desactive: choix.desactive,
+                  onChoisir: (valeur) => {
+                    // La feuille se ferme ; la fenêtre de passage habituelle prend le relais.
+                    setListe(false)
+                    choix.onChoisir(valeur)
+                  },
+                }
+          }
+        />
+      </FenetreModale>
+    </div>
+  )
+}
+
+/**
+ * La liste des étapes, dans la feuille du téléphone : chacune avec son critère de sortie,
+ * l'étape en cours marquée (« Étape en cours · depuis 12 j ») ; avec `choix`, les autres sont
+ * des boutons qui y font passer.
+ */
+function ListeEtapes({
+  etapes,
+  anciennete,
+  choix,
+}: Pick<Props, 'etapes' | 'anciennete' | 'choix'>) {
+  return (
+    <div className="flex flex-col gap-2">
+      {choix !== undefined && choix.desactive !== true && (
+        <p className="text-sm text-encre-douce">Touchez une étape pour y passer.</p>
+      )}
+      <ol className="-mx-2 flex flex-col">
+        {etapes.map((etape, rang) => {
+          const enCours = etape.etat === 'en_cours'
+          const contenu = (
+            <>
+              <span
+                aria-hidden="true"
+                className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                  etape.etat === 'passee'
+                    ? 'bg-accent-doux text-accent'
+                    : enCours
+                      ? 'bg-accent text-sur-plein'
+                      : 'text-encre-douce ring-2 ring-bord-fort/60 ring-inset'
+                }`}
+              >
+                {etape.etat === 'passee' ? <Icone nom="succes" className="size-4" /> : rang + 1}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className={`block text-base ${
+                    enCours ? 'font-semibold text-encre' : 'text-encre'
+                  }`}
+                >
+                  {etape.libelle}
+                  {/* « Étape en cours » est écrit dessous ; les autres états sont lus. */}
+                  {!enCours && <span className="sr-only">, {ANNONCE[etape.etat]}</span>}
+                </span>
+                {enCours && (
+                  <span
+                    className={`block text-sm ${
+                      anciennete?.alerte === true ? 'text-alerte' : 'text-accent'
+                    }`}
+                  >
+                    Étape en cours
+                    {anciennete !== undefined && ` · ${depuisEtape(anciennete.court)}`}
+                  </span>
+                )}
+                {etape.critere !== undefined && etape.critere !== '' && (
+                  <span className="block text-sm text-encre-douce">{etape.critere}</span>
+                )}
+              </span>
+            </>
+          )
+          return (
+            <li key={etape.valeur} aria-current={enCours ? 'step' : undefined}>
+              {choix === undefined || enCours ? (
+                <div
+                  className={`flex items-start gap-3 rounded-lg px-2 py-2.5 ${enCours ? 'bg-accent-doux/60' : ''}`}
+                >
+                  {contenu}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={choix.desactive}
+                  onClick={() => choix.onChoisir(etape.valeur)}
+                  aria-label={`Passer à l’étape « ${etape.libelle} »`}
+                  className="flex min-h-11 w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
+                >
+                  {contenu}
+                </button>
+              )}
+            </li>
+          )
+        })}
+      </ol>
     </div>
   )
 }

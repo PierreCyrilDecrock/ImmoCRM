@@ -278,6 +278,24 @@ export const LIBELLES_CRITERES_ACQUEREUR: Record<InfoPassageAcquereur, string> =
   biens_proposes: 'Au moins un bien proposé',
 }
 
+/**
+ * Le lien d'un critère manquant (« Renseigner le budget › ») : les champs de la fenêtre
+ * « Modifier la recherche », et « Proposer un bien », qui mène à l'onglet Biens proposés.
+ */
+export const LIENS_CRITERES_ACQUEREUR: Record<InfoPassageAcquereur, string> = {
+  origine: 'Renseigner l’origine de la demande',
+  budget_max: 'Renseigner le budget',
+  types_biens: 'Renseigner les types de biens',
+  secteurs: 'Renseigner les secteurs',
+  financement: 'Renseigner le financement',
+  biens_proposes: 'Proposer un bien',
+}
+
+/** Vrai pour une information connue du pipeline acquéreur (le lien d'un critère). */
+export function estInfoPassageAcquereur(info: string): info is InfoPassageAcquereur {
+  return Object.hasOwn(LIENS_CRITERES_ACQUEREUR, info)
+}
+
 /** Ce que demande l'arrivée à une étape : les critères de toutes les étapes d'avant. */
 export function exigencesEtapeAcquereur(cible: EtapeAcquereur): InfoPassageAcquereur[] {
   return ETAPES_ACQUEREUR.slice(0, rangEtapeAcquereur(cible)).flatMap(
@@ -752,6 +770,7 @@ export function aideEtapeSuivanteAcquereur(
       libelle: LIBELLES_CRITERES_ACQUEREUR[info],
       acquis: estConnu(info, projet, nbProposes),
       propre: !dejaDemandees.has(info),
+      lien: { info, texte: LIENS_CRITERES_ACQUEREUR[info] },
     })),
   )
   return { suivante, critere, manquantes: [...new Set(manquantes)], criteres }

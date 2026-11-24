@@ -43,6 +43,7 @@ import {
   LIBELLES_ONGLETS_BIEN,
   ONGLETS_BIEN,
   prixEtSurface,
+  RIEN_D_AUTRE_BIEN,
   type OngletBien,
 } from '../features/biens/fiche-bien'
 import { lirePageBiens } from '../features/biens/lecture-biens'
@@ -455,6 +456,11 @@ export default function FicheBien() {
               onChangement={toutRelire}
               titre="À venir"
               limite={TACHES_DANS_ACTIVITE}
+              // La prochaine tâche est montrée en haut de la fiche : elle n'est pas répétée, et
+              // un bien sans tâche ne le dit qu'une fois, dans cette carte (règle 12).
+              sansLaPremiere
+              rienDautre={RIEN_D_AUTRE_BIEN}
+              vide="masquer"
               onVoirTout={() => choisirOnglet('taches')}
             />
             <SectionJournal bien={bien} version={version} onChangement={toutRelire} historique />

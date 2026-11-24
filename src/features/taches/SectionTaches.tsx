@@ -14,7 +14,7 @@ import {
 } from '../liens/fiche-origine'
 import FormulaireTache from './FormulaireTache'
 import ListeTaches from './ListeTaches'
-import { choisirAVenir } from './a-venir'
+import { choisirAVenir, VIDE_TACHES, type VideTaches } from './a-venir'
 import { listerTachesLiees, type TacheAffichee } from './taches'
 
 type Props = FicheOrigine & {
@@ -38,6 +38,20 @@ type Props = FicheOrigine & {
    * « Prochaine action » de la fiche la montre déjà (même tri, mêmes tâches).
    */
   sansLaPremiere?: boolean
+  /**
+   * Avec `sansLaPremiere`, quand la prochaine tâche était la seule : « Rien d’autre de prévu
+   * après la prochaine action. » par défaut (fiche Contact) ; « Rien d’autre de prévu. » sur
+   * la fiche Bien.
+   */
+  rienDautre?: string
+  /**
+   * Aucune tâche à faire : la phrase grise et, si `ajout`, le bouton pour en créer une ;
+   * `masquer` : la rubrique disparaît, un autre bloc de la fiche dit déjà l'absence et porte
+   * le geste (fiche Projet en alerte, fiche Bien). Par défaut, `VIDE_TACHES`.
+   */
+  vide?: VideTaches
+  /** Le bouton qui crée une tâche liée à la fiche : « Planifier pour ce projet » (fiches Projet). */
+  libelleAjout?: string
 }
 
 type Etat =
@@ -46,8 +60,9 @@ type Etat =
   | { phase: 'pret'; taches: TacheAffichee[] }
 
 /**
- * Rubrique « Tâches » d'une fiche Contact ou Bien : les tâches et rendez-vous à venir liés à
- * la fiche, avec leurs gestes, et l'ajout d'une tâche déjà liée.
+ * Rubrique « Tâches » d'une fiche Contact, Bien ou Projet : les tâches et rendez-vous à venir
+ * liés à la fiche, avec leurs gestes, et l'ajout d'une tâche déjà liée. Vide, elle dit
+ * l'absence en gris (`vide`), ou se tait quand un autre bloc la dit déjà.
  */
 export default function SectionTaches(props: Props) {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
@@ -75,13 +90,25 @@ export default function SectionTaches(props: Props) {
 
   const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
   const masquer = masqueDeFiche(props)
-  const { titre = 'Tâches', limite, onVoirTout, sansLaPremiere = false } = props
+  const {
+    titre = 'Tâches',
+    limite,
+    onVoirTout,
+    sansLaPremiere = false,
+    rienDautre = 'Rien d’autre de prévu après la prochaine action.',
+    vide = VIDE_TACHES,
+    libelleAjout = 'Ajouter une tâche',
+  } = props
   const choix =
     etat.phase === 'pret' && limite !== undefined
       ? choisirAVenir(etat.taches, { limite, sansLaPremiere })
       : null
   const montrees = choix?.montrees ?? null
   const cachees = choix?.cachees ?? 0
+  const aucune = etat.phase === 'pret' && etat.taches.length === 0
+  // Une absence se dit une fois : un autre bloc de la fiche la dit déjà.
+  if (aucune && vide === 'masquer') return null
+  const ajout = !aucune || (vide !== 'masquer' && vide.ajout)
 
   return (
     <Carte titre={titre}>
@@ -89,13 +116,11 @@ export default function SectionTaches(props: Props) {
       {etat.phase === 'erreur' && (
         <Message genre="erreur">Les tâches n'ont pas pu être lues. {etat.message}</Message>
       )}
-      {etat.phase === 'pret' && etat.taches.length === 0 && (
-        <p className="text-sm text-encre-douce">
-          Aucune tâche à faire. Les relances et les rendez-vous à venir s'afficheront ici.
-        </p>
+      {aucune && vide !== 'masquer' && vide.phrase !== '' && (
+        <p className="text-sm text-encre-douce">{vide.phrase}</p>
       )}
       {choix?.seulementLaProchaine === true && (
-        <p className="text-sm text-encre-douce">Rien d’autre de prévu après la prochaine action.</p>
+        <p className="text-sm text-encre-douce">{rienDautre}</p>
       )}
       {etat.phase === 'pret' && (montrees ?? etat.taches).length > 0 && (
         <div className="-mx-4">
@@ -107,10 +132,12 @@ export default function SectionTaches(props: Props) {
           />
         </div>
       )}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Bouton variante="secondaire" icone="ajouter" onClick={() => setCreation(true)}>
-          Ajouter une tâche
-        </Bouton>
+      <div className="mt-3 flex flex-wrap items-center gap-2 empty:hidden">
+        {ajout && (
+          <Bouton variante="secondaire" icone="ajouter" onClick={() => setCreation(true)}>
+            {libelleAjout}
+          </Bouton>
+        )}
         {cachees > 0 && onVoirTout !== undefined ? (
           <Bouton variante="discret" onClick={onVoirTout}>
             {cachees === 1 ? 'Voir l’autre tâche' : `Voir les ${cachees} autres`}
