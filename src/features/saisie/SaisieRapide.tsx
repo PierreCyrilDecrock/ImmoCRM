@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useBarreBasOccupee } from '../../components/barre-bas'
+import { useRecherchePage } from '../../components/recherche-page'
 import Icone from '../../components/Icone'
 import { dateDuJour } from '../../lib/dates'
 import DemandeEntrante from '../acquereurs/DemandeEntrante'
@@ -29,15 +30,21 @@ type Ouvert = { quoi: 'menu' } | { quoi: CreationPage; direct: boolean }
  * Met le curseur dans le champ de recherche visible : celui de la page s'il y en a un (la
  * liste des contacts), sinon celui du bandeau du haut ou de la colonne (sur ordinateur).
  * Un champ caché à cette taille d'écran (`display: none`) n'a pas de `offsetParent`.
+ * Aucun champ visible (une page à loupe, sur tablette avec clavier) : `ouvrir` ouvre la
+ * recherche, comme la loupe.
  */
-function allerALaRecherche() {
+function allerALaRecherche(ouvrir: () => void) {
   const champs = [
     ...document.querySelectorAll<HTMLInputElement>('main [data-raccourci-recherche]'),
     ...document.querySelectorAll<HTMLInputElement>('[data-raccourci-recherche]'),
   ]
   const champ = champs.find((candidat) => candidat.offsetParent !== null)
-  champ?.focus()
-  champ?.select()
+  if (champ === undefined) {
+    ouvrir()
+    return
+  }
+  champ.focus()
+  champ.select()
 }
 
 /**
@@ -53,6 +60,12 @@ export default function SaisieRapide({ rafraichir }: Props) {
   const { pathname } = useLocation()
   // Sur téléphone, une fiche peut poser sa barre d'actions en bas : le « + » s'efface.
   const barreBas = useBarreBasOccupee()
+  // La recherche d'une page à loupe, ouverte par ⌘K quand aucun champ n'est visible.
+  const { ouvrir } = useRecherchePage()
+  const ouvrirRecherche = useRef(ouvrir)
+  useEffect(() => {
+    ouvrirRecherche.current = ouvrir
+  }, [ouvrir])
   const plus = actionDuPlus(useCreationPage())
   const [ouvert, setOuvertBrut] = useState<Ouvert | null>(null)
   // Ce qui avait le clavier avant l'ouverture (« Créer », « + ») : il le retrouve à la fermeture.
@@ -93,7 +106,7 @@ export default function SaisieRapide({ rafraichir }: Props) {
       if (raccourci.genre === 'recherche') {
         setOuvert(null)
         // Le menu se ferme d'abord : le champ redevient accessible.
-        window.requestAnimationFrame(allerALaRecherche)
+        window.requestAnimationFrame(() => allerALaRecherche(ouvrirRecherche.current))
       } else if (raccourci.genre === 'menu') {
         setOuvert({ quoi: 'menu' })
       } else {

@@ -1,11 +1,10 @@
 import { ecartJours, formaterJourCourt } from '../../lib/dates'
-import { pastilleRetard } from '../taches/retards'
 import { libelleRole, TEMPERATURES, type Contact, type Temperature } from './contacts'
 
 /**
  * Ce que dit une ligne de contact, d'un coup d'œil : qui (les initiales colorées selon le
- * rôle, le nom), où en est la relation (le rôle, le dernier échange) et ce qui presse (le
- * retard de la prochaine action, sinon la température). Tout vient de la fiche elle-même
+ * rôle, le nom), où en est la relation (le rôle, le dernier échange, ou le retard de la
+ * prochaine action en rouge) et la température, toujours à droite du nom. Tout vient de la fiche elle-même
  * (`dernier_contact_le`, `prochaine_action_le`, `temperature`) : la liste ne lit rien de plus,
  * sauf pour savoir si un contact a déjà été joint (`aVerifierJamaisContacte`).
  */
@@ -91,25 +90,80 @@ export function detailSansAction(
   return `${rolesDuContact(contact)} · Confirmé le ${formaterJourCourt(contact.sans_prochaine_action_le, aujourdhui)}`
 }
 
-/** Ce qui se montre à droite d'une ligne de contact. */
-export type RepereContact =
-  | { genre: 'retard'; texte: string; annonce: string }
-  | { genre: 'temperature'; temperature: Temperature; texte: string }
+/**
+ * Un retard en mots courts : « 3 j » jusqu'à 59 jours, puis « 2 mois », puis « plus d'un an »,
+ * et ce qu'entend un lecteur d'écran (« 3 jours », « un jour »).
+ */
+export function retardEnMots(jours: number): { texte: string; annonce: string } {
+  if (jours < 60) {
+    return { texte: `${jours} j`, annonce: jours === 1 ? 'un jour' : `${jours} jours` }
+  }
+  if (jours < 365) {
+    const mois = Math.floor(jours / 30)
+    return { texte: `${mois} mois`, annonce: `${mois} mois` }
+  }
+  return { texte: "plus d'un an", annonce: "plus d'un an" }
+}
 
 /**
- * À droite de la ligne : la pastille de retard si la prochaine action est passée (« 3 j »),
- * sinon la température (« Chaud »), sinon rien.
+ * Le retard de la prochaine action, en mots, pour la ligne grise : « relance en retard de 3 j »
+ * (lu « relance en retard de 3 jours »). `null` si elle est prévue aujourd'hui ou plus tard,
+ * ou s'il n'y en a pas.
  */
-export function repereContact(
-  contact: Pick<Contact, 'prochaine_action_le' | 'temperature'>,
+export function retardRelance(
+  prochaineActionLe: string | null,
   aujourdhui: string,
-): RepereContact | null {
-  const retard =
-    contact.prochaine_action_le === null
-      ? null
-      : pastilleRetard(contact.prochaine_action_le, aujourdhui)
-  if (retard !== null) return { genre: 'retard', texte: retard.texte, annonce: retard.annonce }
+): { texte: string; annonce: string } | null {
+  if (prochaineActionLe === null) return null
+  const jours = ecartJours(prochaineActionLe, aujourdhui)
+  if (jours <= 0) return null
+  const enMots = retardEnMots(jours)
+  // « de 3 jours », mais « d'un jour ».
+  const de = (mots: string) => (mots.startsWith('un ') ? `d'${mots}` : `de ${mots}`)
+  return {
+    texte: `relance en retard ${de(enMots.texte)}`,
+    annonce: `relance en retard ${de(enMots.annonce)}`,
+  }
+}
+
+/**
+ * La ligne grise d'un contact (étape F.3, proposition 9 de la revue n° 2). Une prochaine
+ * action en retard y prend la place du dernier échange, en rouge : « Acquéreur · relance en
+ * retard de 3 j » (`debut` : « Acquéreur », `retard` : la fin rouge). Sinon, la ligne ne
+ * change pas : le rôle et le dernier échange, ou la confirmation dans la vue « Sans prochaine
+ * action » (`retard` vaut alors `null`).
+ */
+export function ligneGriseContact(
+  contact: Pick<
+    Contact,
+    | 'roles'
+    | 'dernier_contact_le'
+    | 'collecte_date'
+    | 'sans_prochaine_action_le'
+    | 'prochaine_action_le'
+  >,
+  aujourdhui: string,
+  jamaisContacte: boolean | undefined,
+  sansAction = false,
+): { debut: string; retard: { texte: string; annonce: string } | null } {
+  const retard = retardRelance(contact.prochaine_action_le, aujourdhui)
+  if (retard !== null) return { debut: rolesDuContact(contact), retard }
+  const debut = sansAction
+    ? detailSansAction(contact, aujourdhui, jamaisContacte)
+    : detailLigneContact(contact, aujourdhui, jamaisContacte)
+  return { debut, retard: null }
+}
+
+/** La température d'un contact, à droite de son nom. */
+export type RepereContact = { temperature: Temperature; texte: string }
+
+/**
+ * À droite du nom, toujours la température (« Chaud »), jamais autre chose : la colonne garde
+ * le même sens d'une ligne à l'autre. Rien si elle n'est pas renseignée. Le retard est dans
+ * la ligne grise (`ligneGriseContact`).
+ */
+export function repereContact(contact: Pick<Contact, 'temperature'>): RepereContact | null {
   const option = TEMPERATURES.find((t) => t.valeur === contact.temperature)
   if (option === undefined) return null
-  return { genre: 'temperature', temperature: option.valeur, texte: option.libelle }
+  return { temperature: option.valeur, texte: option.libelle }
 }

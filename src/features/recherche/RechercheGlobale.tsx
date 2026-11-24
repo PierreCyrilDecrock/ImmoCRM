@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Bouton from '../../components/Bouton'
 import ChampRecherche from '../../components/ChampRecherche'
 import LigneListe from '../../components/LigneListe'
 import { rappelRecherche } from '../../lib/clavier'
@@ -18,17 +19,23 @@ export type DispositionRecherche = 'bandeau' | 'colonne'
 
 type Props = {
   disposition?: DispositionRecherche
+  /**
+   * Bandeau ouvert par la loupe d'une page (étape F.3) : « Fermer » à côté du champ, Échap ou
+   * un toucher à côté le referment tout entier, pas seulement ses résultats.
+   */
+  onFermer?: () => void
 }
 
 /**
  * Champ de recherche présent sur toutes les pages : quelques lettres, et les fiches
  * correspondantes s'affichent juste dessous. « Entrée » ouvre la liste complète des résultats.
  * Champ vide, il propose les fiches consultées récemment. Au clavier : « / » ou Ctrl+K (⌘K).
- * Sur téléphone et tablette, il est dans un bandeau en haut de la page ; sur ordinateur, en
- * tête de la colonne de gauche, et ses résultats s'ouvrent par-dessus la page.
+ * Sur téléphone et tablette, il est dans un bandeau en haut de l'accueil, ou ouvert par la
+ * loupe des autres pages (`onFermer`) ; sur ordinateur, en tête de la colonne de gauche, et
+ * ses résultats s'ouvrent par-dessus la page.
  * La page qui l'affiche le recrée à chaque changement de page : il repart alors vide.
  */
-export default function RechercheGlobale({ disposition = 'bandeau' }: Props) {
+export default function RechercheGlobale({ disposition = 'bandeau', onFermer }: Props) {
   const naviguer = useNavigate()
   const [saisie, setSaisie] = useState('')
   const [ouvert, setOuvert] = useState(false)
@@ -62,7 +69,10 @@ export default function RechercheGlobale({ disposition = 'bandeau' }: Props) {
       onFocus={() => setOuvert(true)}
       onKeyDown={(evenement) => {
         if (evenement.key === 'Enter') voirTout()
-        if (evenement.key === 'Escape') setOuvert(false)
+        if (evenement.key === 'Escape') {
+          setOuvert(false)
+          onFermer?.()
+        }
       }}
     />
   )
@@ -118,8 +128,15 @@ export default function RechercheGlobale({ disposition = 'bandeau' }: Props) {
   return (
     <>
       {/* Voile invisible : un toucher en dehors des résultats les referme. */}
-      {panneau && (
-        <div className="fixed inset-0 z-10" aria-hidden="true" onClick={() => setOuvert(false)} />
+      {(panneau || onFermer !== undefined) && (
+        <div
+          className="fixed inset-0 z-10"
+          aria-hidden="true"
+          onClick={() => {
+            setOuvert(false)
+            onFermer?.()
+          }}
+        />
       )}
       {enColonne ? (
         <div role="search" className="relative z-20">
@@ -133,7 +150,18 @@ export default function RechercheGlobale({ disposition = 'bandeau' }: Props) {
         </div>
       ) : (
         <div role="search" className="relative z-20 border-b border-bord bg-surface">
-          <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-8">{champ}</div>
+          {onFermer === undefined ? (
+            <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-8">{champ}</div>
+          ) : (
+            <div className="mx-auto flex w-full max-w-5xl items-center gap-1 py-2 pl-4 md:pl-8">
+              <div className="min-w-0 flex-1">{champ}</div>
+              <div className="shrink-0 pr-1 md:pr-5">
+                <Bouton variante="discret" onClick={onFermer}>
+                  Fermer
+                </Bouton>
+              </div>
+            </div>
+          )}
           {resultats !== false && (
             <div className="absolute inset-x-0 top-full">
               <div className="mx-auto w-full max-w-5xl px-2 md:px-6">{resultats}</div>

@@ -5,7 +5,10 @@ import {
   depuisQuandCourt,
   detailLigneContact,
   detailSansAction,
+  ligneGriseContact,
   repereContact,
+  retardEnMots,
+  retardRelance,
   rolesDuContact,
   teinteRole,
 } from './ligne-contact'
@@ -89,29 +92,73 @@ describe('vue « Sans prochaine action »', () => {
   })
 })
 
+describe('retard dans la ligne grise', () => {
+  it('écrit le retard en mots courts', () => {
+    expect(retardEnMots(1)).toEqual({ texte: '1 j', annonce: 'un jour' })
+    expect(retardEnMots(3)).toEqual({ texte: '3 j', annonce: '3 jours' })
+    expect(retardEnMots(59)).toEqual({ texte: '59 j', annonce: '59 jours' })
+    expect(retardEnMots(75)).toEqual({ texte: '2 mois', annonce: '2 mois' })
+    expect(retardEnMots(400)).toEqual({ texte: "plus d'un an", annonce: "plus d'un an" })
+  })
+
+  it('dit « relance en retard de 3 j », seulement pour une échéance passée', () => {
+    expect(retardRelance('2026-11-21', AUJOURDHUI)).toEqual({
+      texte: 'relance en retard de 3 j',
+      annonce: 'relance en retard de 3 jours',
+    })
+    expect(retardRelance('2026-11-23', AUJOURDHUI)).toEqual({
+      texte: 'relance en retard de 1 j',
+      annonce: "relance en retard d'un jour",
+    })
+    expect(retardRelance(AUJOURDHUI, AUJOURDHUI)).toBeNull()
+    expect(retardRelance('2026-11-30', AUJOURDHUI)).toBeNull()
+    expect(retardRelance(null, AUJOURDHUI)).toBeNull()
+  })
+
+  it('remplace le dernier échange par le retard', () => {
+    const fiche = contactEssai({
+      roles: ['acquereur'],
+      collecte_date: '2026-10-01',
+      dernier_contact_le: '2026-11-17',
+      prochaine_action_le: '2026-11-21',
+    })
+    expect(ligneGriseContact(fiche, AUJOURDHUI, undefined)).toEqual({
+      debut: 'Acquéreur',
+      retard: { texte: 'relance en retard de 3 j', annonce: 'relance en retard de 3 jours' },
+    })
+  })
+
+  it('ne change rien sans retard', () => {
+    const fiche = contactEssai({
+      roles: ['vendeur'],
+      collecte_date: '2026-10-01',
+      dernier_contact_le: '2026-11-17',
+      prochaine_action_le: AUJOURDHUI,
+    })
+    expect(ligneGriseContact(fiche, AUJOURDHUI, undefined)).toEqual({
+      debut: 'Vendeur · dernier échange il y a 7 j',
+      retard: null,
+    })
+    const confirmee = contactEssai({
+      roles: ['vendeur'],
+      prochaine_action_le: null,
+      sans_prochaine_action_le: '2026-11-12',
+    })
+    expect(ligneGriseContact(confirmee, AUJOURDHUI, undefined, true).debut).toBe(
+      'Vendeur · Confirmé le jeu. 12 nov.',
+    )
+  })
+})
+
 describe('repère à droite', () => {
-  it('montre le retard de la prochaine action en premier', () => {
+  it('montre toujours la température, même en retard', () => {
     const fiche = contactEssai({ prochaine_action_le: '2026-11-21', temperature: 'chaud' })
-    expect(repereContact(fiche, AUJOURDHUI)).toEqual({
-      genre: 'retard',
-      texte: '3 j',
-      annonce: 'En retard de 3 jours',
-    })
-  })
-
-  it('sinon la température', () => {
-    const aJour = contactEssai({ prochaine_action_le: AUJOURDHUI, temperature: 'tiede' })
-    expect(repereContact(aJour, AUJOURDHUI)).toEqual({
-      genre: 'temperature',
-      temperature: 'tiede',
-      texte: 'Tiède',
-    })
+    expect(repereContact(fiche)).toEqual({ temperature: 'chaud', texte: 'Chaud' })
     const sansAction = contactEssai({ prochaine_action_le: null, temperature: 'veille' })
-    expect(repereContact(sansAction, AUJOURDHUI)).toMatchObject({ texte: 'Veille' })
+    expect(repereContact(sansAction)).toMatchObject({ texte: 'Veille' })
   })
 
-  it('sinon rien', () => {
-    expect(repereContact(contactEssai(), AUJOURDHUI)).toBeNull()
-    expect(repereContact(contactEssai({ temperature: 'inconnue' }), AUJOURDHUI)).toBeNull()
+  it('ne montre rien sans température', () => {
+    expect(repereContact(contactEssai({ temperature: null }))).toBeNull()
   })
 })

@@ -6,6 +6,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import FournisseurSession from './features/connexion/FournisseurSession'
 import { useSession } from './features/connexion/session-contexte'
 import BarreRecherche from './features/recherche/BarreRecherche'
+import FournisseurRecherche from './features/recherche/FournisseurRecherche'
 import BoutonCreer from './features/saisie/BoutonCreer'
 import RecentesColonne from './features/saisie/RecentesColonne'
 import SaisieRapide from './features/saisie/SaisieRapide'
@@ -35,28 +36,32 @@ import Reglages from './pages/Reglages'
 import Taches from './pages/Taches'
 
 /**
- * La coquille une fois connecté : la navigation et ce qu'elle porte (recherche, fiches
+ * La coquille une fois connecté : la recherche des contacts (`FournisseurRecherche`), la
+ * navigation et ce qu'elle porte (recherche, fiches
  * récentes, « Créer », état des enregistrements, pastille des tâches en retard), la page en
  * cours et la saisie rapide.
  */
 function Coquille() {
   const retards = pastilleRetards(useTachesEnRetard())
   return (
-    <MiseEnPage
-      enTete={<BarreRecherche />}
-      colonne={{
-        recherche: <BarreRecherche disposition="colonne" />,
-        suite: <RecentesColonne />,
-        pied: (
-          <>
-            <BoutonCreer />
-            <EtatEnregistrement />
-          </>
-        ),
-      }}
-      pastilles={retards === null ? {} : { '/taches': retards }}
-      flottant={(rafraichir) => <SaisieRapide rafraichir={rafraichir} />}
-    />
+    // La recherche des contacts : barre de l'accueil, loupe des autres pages (étape F.3).
+    <FournisseurRecherche>
+      <MiseEnPage
+        enTete={<BarreRecherche />}
+        colonne={{
+          recherche: <BarreRecherche disposition="colonne" />,
+          suite: <RecentesColonne />,
+          pied: (
+            <>
+              <BoutonCreer />
+              <EtatEnregistrement />
+            </>
+          ),
+        }}
+        pastilles={retards === null ? {} : { '/taches': retards }}
+        flottant={(rafraichir) => <SaisieRapide rafraichir={rafraichir} />}
+      />
+    </FournisseurRecherche>
   )
 }
 
