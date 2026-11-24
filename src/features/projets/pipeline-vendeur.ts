@@ -124,6 +124,27 @@ export function resumeEtat(projet: ProjetVendeur): string {
   return libelleEtape(projet.etape)
 }
 
+/**
+ * La ligne sous un projet, à côté de sa pastille d'état (rubriques des fiches Contact et Bien) :
+ * ce que la pastille ne dit pas déjà. « Le 12 mars 2027 · étape atteinte : Estimation » à côté
+ * de « À recontacter », « Vente entre particuliers · étape atteinte : Suivi » à côté de
+ * « Perdu », « Exclusif, signé le 17 novembre 2026 » à côté de « Mandat signé ».
+ */
+export function detailEtatProjet(projet: ProjetVendeur): string {
+  const atteinte = `étape atteinte : ${libelleEtape(projet.etape)}`
+  if (projet.etat === 'a_recontacter') {
+    return `Le ${formaterDate(projet.recontacter_le)} · ${atteinte}`
+  }
+  if (projet.etat === 'perdu') return `${libelleMotifPerte(projet.motif_perte)} · ${atteinte}`
+  if (projet.etat === 'gagne') {
+    const signe = `signé le ${formaterDate(projet.mandat_le)}`
+    return projet.mandat_type === null
+      ? `S${signe.slice(1)}`
+      : `${libelleTypeMandat(projet.mandat_type)}, ${signe}`
+  }
+  return libelleEtape(projet.etape)
+}
+
 /** Ancienneté dans l'étape : « Depuis aujourd'hui », « Depuis 12 jours », « Depuis 3 mois ». */
 export function ancienneteEtape(etapeLe: string, aujourdhui: string): string {
   const jours = Math.max(0, ecartJours(etapeLe, aujourdhui))

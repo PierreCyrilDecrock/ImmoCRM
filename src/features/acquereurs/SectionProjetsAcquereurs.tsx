@@ -6,7 +6,7 @@ import BarreEtapes from '../../components/BarreEtapes'
 import LigneListe from '../../components/LigneListe'
 import Message from '../../components/Message'
 import { dateDuJour } from '../../lib/dates'
-import { etatsEtapes, phraseManque, phrasePassage } from '../../lib/etapes'
+import { etatsEtapes, titrePassage } from '../../lib/etapes'
 import { exigerSupabase } from '../../lib/supabase'
 import { ancienneteFrise } from '../projets/pipeline-vendeur'
 import { useChangementEtapeAcquereur } from './changement-etape-acquereur'
@@ -18,7 +18,7 @@ import {
   genreEtatAcquereur,
   libelleEtapeAcquereur,
   libelleEtatAcquereur,
-  resumeEtatAcquereur,
+  detailEtatAcquereur,
   resumeOrigine,
   resumeRecherche,
 } from './pipeline-acquereur'
@@ -28,7 +28,10 @@ type Props = {
   contact: Contact
   /** Fiche archivée : on n'y ouvre pas de nouveau projet. */
   lectureSeule?: boolean
-  /** Sous chaque projet du pipeline, ses étapes en barre et « Étape suivante » (fiche Contact). */
+  /**
+   * Sous chaque projet du pipeline, la même frise que la fiche du projet : l'étape en cours et
+   * son ancienneté, « Pour passer à … » et ses critères en liste, et « Passer à … ».
+   */
   avecEtapes?: boolean
 }
 
@@ -109,14 +112,17 @@ export default function SectionProjetsAcquereurs({
                     // L'étape d'un projet en cours est dans la frise dessous : pas deux fois.
                     detail={[
                       role,
-                      dansLePipeline && projet.etat === 'actif' ? '' : resumeEtatAcquereur(projet),
+                      dansLePipeline && projet.etat === 'actif' ? '' : detailEtatAcquereur(projet),
                     ]
                       .filter(Boolean)
                       .join(' · ')}
+                    // Pas de pastille « En cours » au-dessus de la frise : elle le dit déjà.
                     fin={
-                      <Etiquette genre={genreEtatAcquereur(projet.etat)}>
-                        {libelleEtatAcquereur(projet.etat)}
-                      </Etiquette>
+                      dansLePipeline && projet.etat === 'actif' ? undefined : (
+                        <Etiquette genre={genreEtatAcquereur(projet.etat)}>
+                          {libelleEtatAcquereur(projet.etat)}
+                        </Etiquette>
+                      )
                     }
                     vers={`/pipelines/acquereurs/${id}`}
                   />
@@ -130,14 +136,20 @@ export default function SectionProjetsAcquereurs({
                           ? ancienneteFrise(projet.etape_le, aujourdhui)
                           : undefined
                       }
-                      critere={
-                        projet.etat !== 'actif'
+                      passage={
+                        aide === null
                           ? undefined
-                          : aide === null
-                            ? 'Dernière étape : l’offre acceptée se note depuis la fiche du projet.'
-                            : phrasePassage(libelleEtapeAcquereur(aide.suivante), aide.critere)
+                          : {
+                              titre: titrePassage(libelleEtapeAcquereur(aide.suivante)),
+                              criteres: aide.criteres,
+                            }
                       }
-                      manque={aide === null ? undefined : phraseManque(aide.manquantes)}
+                      critere={
+                        projet.etat === 'actif' && aide === null
+                          ? 'Dernière étape : l’offre acceptée se note depuis la fiche du projet.'
+                          : undefined
+                      }
+                      // En blanc : sur une fiche, le bleu est à « Appeler ».
                       suivante={
                         aide === null || lectureSeule
                           ? undefined

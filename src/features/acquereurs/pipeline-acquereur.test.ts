@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   aideEtapeSuivanteAcquereur,
   criteresOffre,
+  detailEtatAcquereur,
   ajouterSecteur,
   brouillonPassageAcquereur,
   brouillonRechercheDepuis,
@@ -323,6 +324,27 @@ describe('résumés', () => {
     expect(
       resumeEtatAcquereur(projetAcquereurEssai({ etat: 'perdu', motif_perte: 'financement' })),
     ).toBe('Perdu : Financement refusé')
+  })
+
+  it('dit à côté de la pastille d’état ce qu’elle ne dit pas déjà', () => {
+    expect(
+      detailEtatAcquereur(
+        projetAcquereurEssai({
+          etat: 'a_recontacter',
+          etape: 'selection',
+          recontacter_le: '2027-03-12',
+        }),
+      ),
+    ).toBe('Le 12 mars 2027 · étape atteinte : Sélection')
+    expect(
+      detailEtatAcquereur(
+        projetAcquereurEssai({ etat: 'perdu', etape: 'visites', motif_perte: 'financement' }),
+      ),
+    ).toBe('Financement refusé · étape atteinte : Visites')
+    expect(
+      detailEtatAcquereur(projetAcquereurEssai({ etat: 'gagne', offre_le: '2026-11-03' })),
+    ).toBe('Le 3 novembre 2026')
+    expect(detailEtatAcquereur(projetAcquereurEssai())).toBe('Demande')
   })
 
   it('rangent les projets par étape, les plus anciens dans l’étape d’abord', () => {

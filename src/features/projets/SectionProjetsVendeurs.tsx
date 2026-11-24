@@ -6,7 +6,7 @@ import BarreEtapes from '../../components/BarreEtapes'
 import LigneListe from '../../components/LigneListe'
 import Message from '../../components/Message'
 import { dateDuJour } from '../../lib/dates'
-import { etatsEtapes, phraseManque, phrasePassage } from '../../lib/etapes'
+import { etatsEtapes, titrePassage } from '../../lib/etapes'
 import { exigerSupabase } from '../../lib/supabase'
 import { adresseBien, type Bien } from '../biens/biens'
 import { nomComplet, type Contact } from '../contacts/contacts'
@@ -15,11 +15,11 @@ import NouveauProjetVendeur from './NouveauProjetVendeur'
 import {
   aideEtapeSuivante,
   ancienneteFrise,
+  detailEtatProjet,
   ETAPES_VENDEUR,
   genreEtatProjet,
   libelleEtape,
   libelleEtatProjet,
-  resumeEtat,
 } from './pipeline-vendeur'
 import { listerProjetsVendeursLies, type ProjetVendeurAffiche } from './projets-vendeurs'
 
@@ -27,8 +27,9 @@ type Props = ({ contact: Contact; bien?: undefined } | { bien: Bien; contact?: u
   /** Fiche archivée : on n'y ouvre pas de nouveau projet. */
   lectureSeule?: boolean
   /**
-   * Sous chaque projet du pipeline, ses étapes en barre, l'ancienneté dans l'étape, ce qu'il
-   * faut pour passer à la suivante et le bouton « Étape suivante » (fiche Contact).
+   * Sous chaque projet du pipeline, la même frise que la fiche du projet : l'étape en cours
+   * (écrite là seulement) et son ancienneté, « Pour passer à … » et ses critères en liste,
+   * acquis ou manquants, et le bouton « Passer à … » (fiches Contact et Bien).
    */
   avecEtapes?: boolean
 }
@@ -107,12 +108,17 @@ export default function SectionProjetsVendeurs(props: Props) {
                     }
                     // L'étape d'un projet en cours est dans la frise dessous : pas deux fois.
                     detail={
-                      dansLePipeline && projet.etat === 'actif' ? undefined : resumeEtat(projet)
+                      dansLePipeline && projet.etat === 'actif'
+                        ? undefined
+                        : detailEtatProjet(projet)
                     }
+                    // Pas de pastille « En cours » au-dessus de la frise : elle le dit déjà.
                     fin={
-                      <Etiquette genre={genreEtatProjet(projet.etat)}>
-                        {libelleEtatProjet(projet.etat)}
-                      </Etiquette>
+                      dansLePipeline && projet.etat === 'actif' ? undefined : (
+                        <Etiquette genre={genreEtatProjet(projet.etat)}>
+                          {libelleEtatProjet(projet.etat)}
+                        </Etiquette>
+                      )
                     }
                     vers={`/pipelines/vendeurs/${id}`}
                   />
@@ -126,12 +132,15 @@ export default function SectionProjetsVendeurs(props: Props) {
                           ? ancienneteFrise(projet.etape_le, aujourdhui)
                           : undefined
                       }
-                      critere={
+                      passage={
                         aide === null
                           ? undefined
-                          : phrasePassage(libelleEtape(aide.suivante), aide.critere)
+                          : {
+                              titre: titrePassage(libelleEtape(aide.suivante)),
+                              criteres: aide.criteres,
+                            }
                       }
-                      manque={aide === null ? undefined : phraseManque(aide.manquantes)}
+                      // En blanc : sur une fiche, le bleu est à « Appeler ».
                       suivante={
                         aide === null || props.lectureSeule === true
                           ? undefined
