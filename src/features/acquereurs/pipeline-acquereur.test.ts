@@ -368,8 +368,16 @@ describe('aideEtapeSuivanteAcquereur', () => {
       critere: 'Appel ou portail',
       manquantes: ['l’origine de la demande', 'le budget'],
       criteres: [
-        { libelle: 'Origine de la demande', acquis: false },
-        { libelle: 'Budget', acquis: false },
+        {
+          libelle: 'Origine de la demande',
+          acquis: false,
+          lien: { info: 'origine', texte: 'Renseigner l’origine de la demande' },
+        },
+        {
+          libelle: 'Budget',
+          acquis: false,
+          lien: { info: 'budget_max', texte: 'Renseigner le budget' },
+        },
       ],
     })
     expect(aideEtapeSuivanteAcquereur(qualifie, 0)?.manquantes).toEqual([
@@ -391,7 +399,11 @@ describe('aideEtapeSuivanteAcquereur', () => {
     expect(aideEtapeSuivanteAcquereur(enSelection, 2)?.manquantes).toEqual([])
     expect(aideEtapeSuivanteAcquereur({ ...enSelection, etape: 'visites' }, 2)).toBeNull()
     expect(aideEtapeSuivanteAcquereur(enSelection, 0)?.criteres).toEqual([
-      { libelle: 'Au moins un bien proposé', acquis: false },
+      {
+        libelle: 'Au moins un bien proposé',
+        acquis: false,
+        lien: { info: 'biens_proposes', texte: 'Proposer un bien' },
+      },
     ])
     expect(aideEtapeSuivanteAcquereur(enSelection, 2)?.criteres).toEqual([
       { libelle: 'Au moins un bien proposé', acquis: true },
@@ -400,16 +412,40 @@ describe('aideEtapeSuivanteAcquereur', () => {
 
   it('liste les critères de la qualification, et le budget s’il manque encore', () => {
     expect(aideEtapeSuivanteAcquereur(qualifie, 0)?.criteres).toEqual([
-      { libelle: 'Types de biens recherchés', acquis: false },
-      { libelle: 'Secteurs', acquis: false },
-      { libelle: 'Financement', acquis: false },
+      {
+        libelle: 'Types de biens recherchés',
+        acquis: false,
+        lien: { info: 'types_biens', texte: 'Renseigner les types de biens' },
+      },
+      {
+        libelle: 'Secteurs',
+        acquis: false,
+        lien: { info: 'secteurs', texte: 'Renseigner les secteurs' },
+      },
+      {
+        libelle: 'Financement',
+        acquis: false,
+        lien: { info: 'financement', texte: 'Renseigner le financement' },
+      },
     ])
     const sansBudget = { ...qualifie, budget_max: null, types_biens: ['maison' as const] }
     expect(aideEtapeSuivanteAcquereur(sansBudget, 0)?.criteres).toEqual([
-      { libelle: 'Budget', acquis: false },
+      {
+        libelle: 'Budget',
+        acquis: false,
+        lien: { info: 'budget_max', texte: 'Renseigner le budget' },
+      },
       { libelle: 'Types de biens recherchés', acquis: true },
-      { libelle: 'Secteurs', acquis: false },
-      { libelle: 'Financement', acquis: false },
+      {
+        libelle: 'Secteurs',
+        acquis: false,
+        lien: { info: 'secteurs', texte: 'Renseigner les secteurs' },
+      },
+      {
+        libelle: 'Financement',
+        acquis: false,
+        lien: { info: 'financement', texte: 'Renseigner le financement' },
+      },
     ])
   })
 })

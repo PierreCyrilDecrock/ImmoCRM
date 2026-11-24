@@ -7,7 +7,7 @@ import FenetreModale from '../../components/FenetreModale'
 import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import { exigerSupabase } from '../../lib/supabase'
-import ChampsRecherche from './ChampsRecherche'
+import ChampsRecherche, { type FocusRecherche } from './ChampsRecherche'
 import {
   brouillonRechercheDepuis,
   LONGUEURS_MAX_PROJET_ACQUEREUR,
@@ -16,6 +16,7 @@ import {
   type BrouillonPassageAcquereur,
   type BrouillonRecherche,
   type ErreursRecherche,
+  type InfoPassageAcquereur,
   type ProjetAcquereur,
   type Urgence,
 } from './pipeline-acquereur'
@@ -23,8 +24,20 @@ import { modifierRecherche } from './projets-acquereurs'
 
 type Props = {
   projet: ProjetAcquereur
+  /** Le champ où placer le curseur à l'ouverture (lien d'un critère manquant de la frise). */
+  champ?: InfoPassageAcquereur
   onFermer: () => void
   onEnregistre: () => void
+}
+
+/** Le champ du formulaire qui renseigne chaque critère (un bien proposé se choisit ailleurs). */
+const FOCUS_DU_CRITERE: Record<InfoPassageAcquereur, FocusRecherche | undefined> = {
+  origine: 'origine',
+  budget_max: 'budget',
+  types_biens: 'types',
+  secteurs: 'secteurs',
+  financement: 'financement',
+  biens_proposes: undefined,
 }
 
 const SECTION = 'flex flex-col gap-4 border-t border-bord pt-4 first:border-t-0 first:pt-0'
@@ -33,7 +46,8 @@ const SECTION = 'flex flex-col gap-4 border-t border-bord pt-4 first:border-t-0 
  * Modification d'un projet acquéreur : origine de la demande, budget, critères, urgence,
  * financement, notes. L'étape ne change pas ici (boutons de la fiche, ou glisser-déposer).
  */
-export default function FormulaireRecherche({ projet, onFermer, onEnregistre }: Props) {
+export default function FormulaireRecherche({ projet, champ, onFermer, onEnregistre }: Props) {
+  const focus = champ === undefined ? undefined : FOCUS_DU_CRITERE[champ]
   const { notifier } = useNotifications()
   const [brouillon, setBrouillon] = useState<BrouillonRecherche>(() =>
     brouillonRechercheDepuis(projet),
@@ -104,6 +118,7 @@ export default function FormulaireRecherche({ projet, onFermer, onEnregistre }: 
             saisie={brouillon}
             erreurs={erreurs}
             rubriques={['budget', 'criteres']}
+            focus={focus}
             onChange={changerCommun}
           />
           <div className="grid grid-cols-2 gap-4">
@@ -156,6 +171,7 @@ export default function FormulaireRecherche({ projet, onFermer, onEnregistre }: 
             saisie={brouillon}
             erreurs={erreurs}
             rubriques={['financement']}
+            focus={focus}
             onChange={changerCommun}
           />
           <label className="flex min-h-11 items-center gap-3 text-base text-encre">
@@ -174,6 +190,7 @@ export default function FormulaireRecherche({ projet, onFermer, onEnregistre }: 
             saisie={brouillon}
             erreurs={erreurs}
             rubriques={['origine']}
+            focus={focus}
             onChange={changerCommun}
           />
         </section>

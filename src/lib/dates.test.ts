@@ -14,6 +14,7 @@ import {
   formaterDuree,
   formaterHeure,
   formaterJourCourt,
+  formaterJourSemaine,
   formaterJourLong,
   heureDeFin,
   instantDeParis,
@@ -128,6 +129,12 @@ describe('formats courts', () => {
     expect(formaterJourCourt('2026-11-18', '2026-11-17')).toBe('mer. 18 nov.')
     expect(formaterJourCourt('2027-01-04', '2026-11-17')).toBe('lun. 4 janv. 2027')
     expect(formaterJourCourt('pas une date', '2026-11-17')).toBe('')
+  })
+
+  it('écrit le jour de la semaine en entier dans une phrase', () => {
+    expect(formaterJourSemaine('2026-11-26', '2026-11-24')).toBe('jeudi 26 nov.')
+    expect(formaterJourSemaine('2027-01-04', '2026-11-24')).toBe('lundi 4 janv. 2027')
+    expect(formaterJourSemaine('pas une date', '2026-11-24')).toBe('')
   })
 
   it('écrit une heure et une durée à la française', () => {

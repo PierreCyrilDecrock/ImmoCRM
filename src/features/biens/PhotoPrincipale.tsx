@@ -3,6 +3,7 @@ import Bouton from '../../components/Bouton'
 import FenetreModale from '../../components/FenetreModale'
 import Icone from '../../components/Icone'
 import { exigerSupabase } from '../../lib/supabase'
+import { avecPhoto } from './fiche-bien'
 import { listerPhotosBien, rangSuivant, signerPhotos, type PhotoBien } from './photos'
 
 type Props = {
@@ -23,8 +24,8 @@ type Etat = { photos: PhotoBien[]; apercu: string | null } | null
 /**
  * La photo principale d'un bien, en tête de sa fiche (étape D.7). Un toucher ouvre la
  * galerie : les photos en grand, une à une, avec « Précédente » et « Suivante » (flèches
- * du clavier). Sans photo, un dessin tient la place ; les photos s'ajoutent dans l'onglet
- * Détails.
+ * du clavier). Sans photo (ou tant qu'elles se lisent), rien ne s'affiche : le statut et le
+ * type passent au-dessus de l'adresse. Les photos s'ajoutent dans l'onglet Détails.
  */
 export default function PhotoPrincipale({ bienId, version, taille, description }: Props) {
   const [etat, setEtat] = useState<Etat>(null)
@@ -94,24 +95,9 @@ export default function PhotoPrincipale({ bienId, version, taille, description }
     ? 'aspect-[4/3] w-full shrink-0 rounded-2xl'
     : 'size-16 shrink-0 rounded-xl md:size-20'
 
-  if (etat === null || photos.length === 0) {
-    // Sans photo, la place réservée reste petite : le profil ne s'allonge pas pour rien.
-    const vide = grande ? 'h-24 w-full shrink-0 rounded-2xl' : cadre
-    return (
-      <div
-        className={`${vide} flex items-center justify-center bg-creux text-encre-douce ring-1 ring-bord`}
-        aria-hidden={etat === null ? true : undefined}
-      >
-        {etat !== null && (
-          <span className="flex flex-col items-center gap-1">
-            <Icone nom="biens" className={grande ? 'size-10' : 'size-7'} />
-            {grande && <span className="text-sm">Aucune photo</span>}
-            {!grande && <span className="sr-only">Aucune photo</span>}
-          </span>
-        )}
-      </div>
-    )
-  }
+  // Sans photo, rien : pas de carré gris qui serait le même pour tous les biens (revue n° 2,
+  // proposition 11). Les photos s'ajoutent dans l'onglet Détails.
+  if (etat === null || !avecPhoto(photos.length)) return null
 
   return (
     <>

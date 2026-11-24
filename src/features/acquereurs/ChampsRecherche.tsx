@@ -16,11 +16,18 @@ import {
 
 export type RubriqueRecherche = 'origine' | 'budget' | 'criteres' | 'financement'
 
+/** Le champ où placer le curseur à l'ouverture (lien d'un critère manquant de la frise). */
+export type FocusRecherche = 'origine' | 'budget' | 'types' | 'secteurs' | 'financement'
+
+/** Repère lu par `FenetreModale` : le curseur va au premier élément du bloc marqué. */
+const repere = (oui: boolean) => (oui ? { 'data-autofocus': '' } : {})
+
 type Props = {
   saisie: BrouillonPassageAcquereur
   erreurs: ErreursPassageAcquereur
   /** Les rubriques à afficher, dans cet ordre. */
   rubriques: readonly RubriqueRecherche[]
+  focus?: FocusRecherche
   onChange: <C extends keyof BrouillonPassageAcquereur>(
     champ: C,
     valeur: BrouillonPassageAcquereur[C],
@@ -36,7 +43,7 @@ function Erreur({ texte }: { texte: string | undefined }) {
  * critères (types et secteurs), financement. Servent à la fenêtre de passage d'étape (seules
  * les rubriques qui manquent) et au formulaire complet de la recherche.
  */
-export default function ChampsRecherche({ saisie, erreurs, rubriques, onChange }: Props) {
+export default function ChampsRecherche({ saisie, erreurs, rubriques, focus, onChange }: Props) {
   return (
     <>
       {rubriques.map((rubrique) => {
@@ -46,7 +53,7 @@ export default function ChampsRecherche({ saisie, erreurs, rubriques, onChange }
               <legend className="mb-2 text-sm font-medium text-encre">
                 D'où vient la demande ?
               </legend>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" {...repere(focus === 'origine')}>
                 {ORIGINES_DEMANDE.map((option) => (
                   <Pastille
                     key={option.valeur}
@@ -103,6 +110,7 @@ export default function ChampsRecherche({ saisie, erreurs, rubriques, onChange }
                 libelle="Budget maximum (€)"
                 inputMode="numeric"
                 autoComplete="off"
+                autoFocus={focus === 'budget'}
                 value={saisie.budgetMax}
                 onChange={(evenement) => onChange('budgetMax', evenement.target.value)}
                 erreur={erreurs.budgetMax}
@@ -113,7 +121,7 @@ export default function ChampsRecherche({ saisie, erreurs, rubriques, onChange }
         if (rubrique === 'criteres') {
           return (
             <div key={rubrique} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1" {...repere(focus === 'types')}>
                 <ChoixMultiple
                   libelle="Types de biens recherchés"
                   options={TYPES_BIEN}
@@ -129,7 +137,7 @@ export default function ChampsRecherche({ saisie, erreurs, rubriques, onChange }
                 onChange={(categories) => onChange('categoriesBiens', categories)}
                 aide="Rien de coché : indifférent."
               />
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1" {...repere(focus === 'secteurs')}>
                 <ChampEtiquettes
                   libelle="Secteurs ou communes"
                   etiquettes={saisie.secteurs}
@@ -146,7 +154,7 @@ export default function ChampsRecherche({ saisie, erreurs, rubriques, onChange }
         return (
           <fieldset key={rubrique} className="flex flex-col gap-3">
             <legend className="mb-2 text-sm font-medium text-encre">Financement</legend>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" {...repere(focus === 'financement')}>
               {FINANCEMENTS.map((option) => (
                 <Pastille
                   key={option.valeur}

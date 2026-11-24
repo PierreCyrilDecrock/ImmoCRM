@@ -1,7 +1,7 @@
 import type { GenreEtiquette } from '../../components/Etiquette'
 import { ajouterJours, ajouterMois, ecartJours, estDateValide, formaterDate } from '../../lib/dates'
 import type { Ligne } from '../../lib/donnees'
-import { listeCriteres, type CritereSortie } from '../../lib/etapes'
+import { listeCriteres, texteRenseigner, type CritereSortie } from '../../lib/etapes'
 import { lireNombre } from '../../lib/nombres'
 
 /**
@@ -235,6 +235,30 @@ export const LIBELLES_CRITERES: Record<InfoPassage, string> = {
   avis_remis_le: 'Avis de valeur remis',
   mandat_type: 'Type de mandat',
   mandat_le: 'Date de signature du mandat',
+}
+
+/**
+ * Les informations qui se renseignent depuis la fenêtre « Modifier le projet » : un critère
+ * manquant y mène par un lien (« Renseigner le motif de la vente › »). La source est celle du
+ * contact, et le mandat n'a sa rubrique qu'une fois signé : ces critères restent sans lien
+ * (la fenêtre de passage d'étape les demande).
+ */
+export type InfoRenseignable = Extract<
+  InfoPassage,
+  'motif_vente' | 'echeance_souhaitee' | 'estimation_basse' | 'estimation_haute' | 'avis_remis_le'
+>
+
+const RENSEIGNABLES: readonly InfoPassage[] = [
+  'motif_vente',
+  'echeance_souhaitee',
+  'estimation_basse',
+  'estimation_haute',
+  'avis_remis_le',
+]
+
+/** Vrai pour une information du formulaire du projet (le lien d'un critère manquant). */
+export function estRenseignable(info: string): info is InfoRenseignable {
+  return (RENSEIGNABLES as readonly string[]).includes(info)
 }
 
 /** Ce que demande l'arrivée à une étape : les critères de toutes les étapes d'avant. */
@@ -582,6 +606,9 @@ export function aideEtapeSuivante(
       libelle: LIBELLES_CRITERES[info],
       acquis: estConnu(info, projet, source),
       propre: !dejaDemandees.has(info),
+      ...(estRenseignable(info)
+        ? { lien: { info, texte: texteRenseigner(SUJETS_PASSAGE[info]) } }
+        : {}),
     })),
   )
   return { suivante, critere, manquantes: [...new Set(manquantes)], criteres }

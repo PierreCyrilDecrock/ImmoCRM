@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import Bouton from '../../components/Bouton'
-import Icone from '../../components/Icone'
 import { dateDuJour } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import { nomComplet } from '../contacts/contacts'
 import { lienDeFiche, liensDeFiche, verrouDeFiche, type FicheOrigine } from '../liens/fiche-origine'
 import CarteProchaineTache from './CarteProchaineTache'
+import CarteSansTache from './CarteSansTache'
 import FormulaireTache from './FormulaireTache'
 import { useGestesTache } from './gestes-tache'
 import { lireProchaineTacheLiee, type TacheAffichee } from './taches'
@@ -25,8 +24,13 @@ type Props = {
   vide: string
   /** Rien de prévu est une alerte (un projet en cours sans suite) ; sinon, une simple ligne. */
   alerte?: boolean
-  /** Sous le message vide : ce qui est prévu ailleurs (« Prochaine action du contact : … »). */
-  repli?: string
+  /**
+   * Rien de prévu : la carte ne s'affiche pas, c'est « À venir » qui le dit en gris (fiche
+   * Projet dont le contact a une action ailleurs ; revue n° 2, proposition 6).
+   */
+  masquerSiVide?: boolean
+  /** Le bouton du message vide : « Nouvelle tâche », « Planifier pour ce projet ». */
+  libelleCreer?: string
   /** Fiche en lecture seule (archivée) : pas de gestes. */
   lectureSeule?: boolean
 }
@@ -50,7 +54,8 @@ export default function ProchaineTacheFiche({
   compacte = false,
   vide,
   alerte = false,
-  repli,
+  masquerSiVide = false,
+  libelleCreer = 'Nouvelle tâche',
   lectureSeule = false,
 }: Props) {
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
@@ -84,6 +89,8 @@ export default function ProchaineTacheFiche({
   }, [cle, version])
 
   if (etat.phase === 'chargement') {
+    // Sans tâche, la carte n'apparaîtra peut-être pas : pas de place réservée pour rien.
+    if (masquerSiVide) return gestes.fenetres
     return <div className="min-h-16 rounded-2xl bg-surface ring-1 ring-bord" aria-hidden="true" />
   }
   if (etat.phase === 'erreur') {
@@ -103,7 +110,7 @@ export default function ProchaineTacheFiche({
 
   return (
     <>
-      {affichee !== null ? (
+      {affichee === null && masquerSiVide ? null : affichee !== null ? (
         <CarteProchaineTache
           tache={affichee.tache}
           aujourdhui={aujourdhui}
@@ -116,33 +123,14 @@ export default function ProchaineTacheFiche({
           onAutreDate={() => gestes.reporter(affichee)}
         />
       ) : (
-        <div
-          role="status"
-          className={`flex flex-col gap-2 rounded-2xl p-3 ring-1 ${
-            alerte ? 'bg-alerte-doux ring-alerte/30' : 'bg-surface ring-bord'
-          }`}
-        >
-          <p className="flex items-start gap-2 text-base font-semibold text-encre">
-            <Icone
-              nom={alerte ? 'erreur' : 'taches'}
-              className={`mt-0.5 size-5 shrink-0 ${alerte ? 'text-alerte' : 'text-encre-douce'}`}
-            />
-            {vide}
-          </p>
-          {repli !== undefined && repli !== '' && <p className="text-sm text-encre">{repli}</p>}
-          {!lectureSeule && (
-            <div className={compacte ? undefined : 'md:self-start'}>
-              <Bouton
-                variante="secondaire"
-                icone="ajouter"
-                pleineLargeur
-                onClick={() => setCreation(true)}
-              >
-                Nouvelle tâche
-              </Bouton>
-            </div>
-          )}
-        </div>
+        <CarteSansTache
+          texte={vide}
+          alerte={alerte}
+          compacte={compacte}
+          creer={
+            lectureSeule ? undefined : { libelle: libelleCreer, onCreer: () => setCreation(true) }
+          }
+        />
       )}
 
       {gestes.fenetres}

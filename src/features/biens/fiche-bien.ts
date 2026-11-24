@@ -41,3 +41,19 @@ export function prixEtSurface(
     .filter((morceau) => morceau !== null)
     .join(' · ')
 }
+
+/**
+ * « À venir » de l'onglet Activité, quand la prochaine tâche (montrée en haut de la fiche)
+ * était la seule : la liste ne la répète pas (revue n° 2, proposition 11, règle 12).
+ */
+export const RIEN_D_AUTRE_BIEN = 'Rien d’autre de prévu.'
+
+/**
+ * Le haut de la fiche : la photo principale s'il y en a une ; sinon rien à sa place (plus de
+ * carré gris), le statut et le type passent au-dessus de l'adresse. Tant que les photos ne
+ * sont pas lues (`null`), rien non plus : un bien sans photo ne voit pas de carré apparaître
+ * puis disparaître.
+ */
+export function avecPhoto(nombrePhotos: number | null): boolean {
+  return nombrePhotos !== null && nombrePhotos > 0
+}

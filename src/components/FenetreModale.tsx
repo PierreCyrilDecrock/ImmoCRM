@@ -11,10 +11,20 @@ type Props = {
   pied?: ReactNode
   /** Petit geste placé dans l'en-tête, avant la croix (« Créer autre chose »). */
   actionEnTete?: ReactNode
+  /**
+   * Au téléphone, une feuille qui monte du bas, à la hauteur de son contenu (la liste des
+   * étapes d'un projet), au lieu du plein écran ; centrée à partir de la tablette.
+   */
+  feuille?: boolean
 }
 
+/** Ce qui peut recevoir le curseur, dans un bloc marqué « data-autofocus ». */
+const FOCALISABLE =
+  'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
 /**
- * Fenêtre modale : plein écran sur téléphone, centrée sur tablette et ordinateur.
+ * Fenêtre modale : plein écran sur téléphone (ou feuille qui monte du bas, avec `feuille`),
+ * centrée sur tablette et ordinateur.
  * Tant qu'elle est ouverte, le reste de la page est inaccessible (clavier compris).
  */
 export default function FenetreModale({
@@ -24,6 +34,7 @@ export default function FenetreModale({
   children,
   pied,
   actionEnTete,
+  feuille = false,
 }: Props) {
   const dialogue = useRef<HTMLDialogElement>(null)
   const idTitre = useId()
@@ -35,8 +46,13 @@ export default function FenetreModale({
       element.showModal()
       // Le champ marqué « autoFocus » a été monté avant l'ouverture : le navigateur a donc
       // placé le curseur sur la croix. On le remet dans le champ prévu (titre d'une tâche,
-      // recherche d'un contact), pour pouvoir taper aussitôt.
-      element.querySelector<HTMLElement>('[data-autofocus]')?.focus()
+      // recherche d'un contact), pour pouvoir taper aussitôt. Un bloc marqué (une rangée de
+      // pastilles) donne le curseur à son premier élément.
+      const repere = element.querySelector<HTMLElement>('[data-autofocus]')
+      const cible = repere?.matches(FOCALISABLE)
+        ? repere
+        : repere?.querySelector<HTMLElement>(FOCALISABLE)
+      cible?.focus()
     }
     if (!ouverte && element.open) element.close()
   }, [ouverte])
@@ -54,10 +70,20 @@ export default function FenetreModale({
       onClick={(evenement) => {
         if (evenement.target === evenement.currentTarget) onFermer()
       }}
-      className="m-0 h-dvh max-h-none w-full max-w-none bg-surface text-encre backdrop:bg-black/45 backdrop:backdrop-blur-[2px] md:m-auto md:h-fit md:max-h-[85dvh] md:max-w-lg md:rounded-3xl md:shadow-2xl md:ring-1 md:ring-bord"
+      className={`w-full max-w-none bg-surface text-encre backdrop:bg-black/45 backdrop:backdrop-blur-[2px] md:m-auto md:h-fit md:max-h-[85dvh] md:max-w-lg md:rounded-3xl md:shadow-2xl md:ring-1 md:ring-bord ${
+        feuille
+          ? 'mx-0 mt-auto mb-0 h-fit max-h-[85dvh] rounded-t-3xl shadow-2xl ring-1 ring-bord motion-safe:animate-monter md:motion-safe:animate-none'
+          : 'm-0 h-dvh max-h-none'
+      }`}
     >
       {ouverte && (
-        <div className="flex h-dvh flex-col md:h-auto md:max-h-[85dvh]">
+        <div
+          className={
+            feuille
+              ? 'flex max-h-[85dvh] flex-col'
+              : 'flex h-dvh flex-col md:h-auto md:max-h-[85dvh]'
+          }
+        >
           <header className="flex items-center gap-2 border-b border-bord py-1 pr-1 pl-4">
             <h2
               id={idTitre}
@@ -76,7 +102,13 @@ export default function FenetreModale({
               <Icone nom="fermer" />
             </button>
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
+          <div
+            className={`min-h-0 flex-1 overflow-y-auto p-4 ${
+              feuille && pied === undefined ? 'pb-[max(1rem,env(safe-area-inset-bottom))]' : ''
+            }`}
+          >
+            {children}
+          </div>
           {pied !== undefined && (
             <footer className="flex flex-col gap-2 border-t border-bord p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:flex-row-reverse">
               {pied}

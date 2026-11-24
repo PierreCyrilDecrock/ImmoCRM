@@ -1,5 +1,7 @@
 import type { GenreEtiquette } from '../../components/Etiquette'
-import { formaterDate } from '../../lib/dates'
+import { ecartJours, formaterDate, formaterJourSemaine } from '../../lib/dates'
+import { nomComplet, type Contact } from '../contacts/contacts'
+import type { VideTaches } from '../taches/a-venir'
 import type { GenreProjet } from './lien-projet'
 
 /**
@@ -86,11 +88,103 @@ export function pastilleEtatProjet(projet: {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Rien de prévu pour ce projet (revue n° 2, proposition 6, règle 10)
+// ---------------------------------------------------------------------------
+
+/** Le geste unique pour créer une tâche depuis une fiche Projet (liée au projet et au contact). */
+export const PLANIFIER_PROJET = 'Planifier pour ce projet'
+
+/** La carte orange : un projet en cours dont le contact n'a rien de prévu, nulle part. */
+export const ALERTE_PROJET = 'Aucune action prévue pour ce projet'
+
+/** L'onglet Tâches quand la carte orange est au-dessus : il ne répète pas l'absence. */
+export const TACHES_A_VENIR_PROJET = 'Les tâches liées à ce projet s’afficheront ici.'
+
+/** La prochaine action du contact du projet, prévue ailleurs (un autre projet, sa fiche). */
+export type ActionAilleurs = {
+  /** Le prénom du contact (« Camille »), ou son nom s'il n'a pas de prénom. */
+  qui: string
+  echeance: string
+  titre: string
+}
+
+/** Comment la fiche dit qu'il n'y a rien de prévu, ou qu'il y a quelque chose. */
+export type SuiteProjet =
+  | { forme: 'chargement' }
+  /** Le projet a une tâche à faire : la carte « Prochaine action » la montre. */
+  | { forme: 'tache' }
+  /** Projet en cours, contact sans aucune action : la carte orange, un risque de perte. */
+  | { forme: 'alerte' }
+  /** Rien pour ce projet, mais pas d'alerte : une phrase grise dans « À venir ». */
+  | { forme: 'phrase'; phrase: string }
+
+/** Le jour d'une action dans une phrase : « aujourd'hui », « demain », « jeudi 26 nov. ». */
+function quand(echeance: string, aujourdhui: string): string {
+  const ecart = ecartJours(aujourdhui, echeance)
+  if (ecart === 0) return 'aujourd’hui'
+  if (ecart === 1) return 'demain'
+  if (ecart < 0) return `en retard, prévue ${formaterJourSemaine(echeance, aujourdhui)}`
+  return formaterJourSemaine(echeance, aujourdhui)
+}
+
+/** Un titre de tâche en fin de phrase : un point final, sauf s'il en a déjà un. */
+function finDePhrase(texte: string): string {
+  const net = texte.trim()
+  return /[.!?…]$/.test(net) ? net : `${net}.`
+}
+
 /**
- * Sous « Aucune action prévue pour ce projet » : la prochaine action du contact, ailleurs.
- * « Prochaine action du vendeur, hors de ce projet : jeu. 26 nov. » (un seul point final,
- * même quand le mois abrégé en porte déjà un).
+ * « Rien de prévu pour ce projet. Camille a une action jeudi 26 nov. : Envoyer l'avis de
+ * valeur. » La seconde phrase seulement si le contact a une action prévue ailleurs.
  */
-export function repliProchaineAction(qui: string, jour: string): string {
-  return `Prochaine action ${qui}, hors de ce projet : ${jour}${jour.endsWith('.') ? '' : '.'}`
+export function phraseRienDePrevu(ailleurs: ActionAilleurs | null, aujourdhui: string): string {
+  const debut = 'Rien de prévu pour ce projet.'
+  if (ailleurs === null) return debut
+  return `${debut} ${ailleurs.qui} a une action ${quand(ailleurs.echeance, aujourdhui)} : ${finDePhrase(ailleurs.titre)}`
+}
+
+/**
+ * Carte orange ou phrase grise. L'orange est réservé au vrai risque : un projet en cours
+ * dont le contact n'a rien de prévu, ni ici ni ailleurs. Si le contact a une action ailleurs,
+ * ou si le projet n'est plus en cours (hors du pipeline, gagné, archivé), « À venir » le dit
+ * en gris. `tache` : le projet a au moins une tâche à faire.
+ */
+export function suiteProjet({
+  tache,
+  actif,
+  ailleurs,
+  aujourdhui,
+}: {
+  tache: boolean
+  actif: boolean
+  ailleurs: ActionAilleurs | null
+  aujourdhui: string
+}): Exclude<SuiteProjet, { forme: 'chargement' }> {
+  if (tache) return { forme: 'tache' }
+  if (actif && ailleurs === null) return { forme: 'alerte' }
+  return { forme: 'phrase', phrase: phraseRienDePrevu(ailleurs, aujourdhui) }
+}
+
+/**
+ * Ce que dit une rubrique de tâches vide sur la fiche Projet (`SectionTaches`, `vide`).
+ * « À venir » (onglet Activité) : la phrase grise et « Planifier pour ce projet », ou rien du
+ * tout quand la carte orange le dit déjà au-dessus. L'onglet Tâches ne répète pas l'alerte et
+ * ne double pas son bouton.
+ */
+export function videTachesProjet(
+  suite: SuiteProjet,
+  rubrique: 'a_venir' | 'taches',
+  lectureSeule: boolean,
+): VideTaches {
+  if (suite.forme === 'phrase') return { phrase: suite.phrase, ajout: !lectureSeule }
+  if (rubrique === 'a_venir') return 'masquer'
+  return { phrase: suite.forme === 'alerte' ? TACHES_A_VENIR_PROJET : '', ajout: false }
+}
+
+/** Qui a l'action ailleurs, dans la phrase : le prénom, sinon le nom (une société). */
+export function quiDansLaPhrase(
+  contact: Parameters<typeof nomComplet>[0] & Pick<Contact, 'prenom'>,
+): string {
+  return contact.prenom.trim() === '' ? nomComplet(contact) : contact.prenom.trim()
 }
