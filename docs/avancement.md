@@ -11,7 +11,7 @@ Ce tableau suit les 60 étapes du [plan de développement](plan-developpement.md
 | Phase 0 — Fondations | 5 sur 5 | terminée |
 | Version 1 — Le quotidien | 14 sur 14 | livrée (version 1.0.0, 20/11/2026) |
 | Interface — version 3 | 8 sur 9 (D.0 à D.7 faites) | en cours (recette D.8 après la phase E) |
-| Interface — corrections de design | 0 sur 7 | à faire |
+| Interface — corrections de design | 2 sur 7 (E.1 et E.2 faites) | en cours |
 | Version 2 — Les dossiers | 0 sur 11 | à faire |
 | Version 3 — Le pilotage | 0 sur 8 | à faire |
 | Version 4 — Le confort | 0 sur 7 | à faire |
@@ -65,8 +65,8 @@ Revue de design du 23/11/2026 : 19 corrections décrites dans [revue-design.md](
 
 | Étape | Intitulé | État | Date | Notes |
 | --- | --- | --- | --- | --- |
-| E.1 | Aujourd'hui : relances en une ligne et agenda en frise | fait | 23/11/2026 | Corrections 1 et 3. Relance en une ligne de 65 px (initiales colorées selon le rôle, nom, motif, retard « 5 j », Appeler rond) ; toucher la déplie (Consigner, Fait, Fiche, reports ; une seule à la fois, Échap la replie), glisser reste ; au survol sur ordinateur, reports et « Fait ». Agenda en frise (heure à gauche, « Ci-dessus », Itinéraire seul, la ligne ouvre la fiche). Logique testée (`teinteRole`, `basculerRelance`, `relanceDeplieeAffichee`, `rendezVousCiDessus`, `ficheDuRendezVous`, `detailRendezVous`). Vérifié au navigateur sur un aperçu à données fictives (téléphone, ordinateur, clair et sombre). Aucune migration. |
-| E.2 | Aujourd'hui : en-tête, carte « Maintenant » et blocs cohérents | à faire | | Corrections 4, 14, 15 et 16. |
+| E.1 | Aujourd'hui : relances en une ligne et agenda en frise | terminée | 23/11/2026 | Corrections 1 et 3. Relance en une ligne de 65 px (initiales colorées selon le rôle, nom, motif, retard « 5 j », Appeler rond) ; toucher la déplie (Consigner, Fait, Fiche, reports ; une seule à la fois, Échap la replie), glisser reste ; au survol sur ordinateur, reports et « Fait ». Agenda en frise (heure à gauche, « Ci-dessus », Itinéraire seul, la ligne ouvre la fiche). Logique testée (`teinteRole`, `basculerRelance`, `relanceDeplieeAffichee`, `rendezVousCiDessus`, `ficheDuRendezVous`, `detailRendezVous`). Vérifié au navigateur sur un aperçu à données fictives (téléphone, ordinateur, clair et sombre). Aucune migration. |
+| E.2 | Aujourd'hui : en-tête, carte « Maintenant » et blocs cohérents | terminée | 23/11/2026 | Corrections 4, 14, 15 et 16. Bloc « Autres tâches » : vide, il renvoie aux relances et rendez-vous restants en gris ; vert seulement quand tout est fait. En-tête : « 11 à faire aujourd'hui » sans anneau, puis anneau à droite du titre et « 3 sur 11 faits ». Carte « Maintenant » : Appeler puis Itinéraire de même largeur, le titre mène à la fiche (chevron). Trois actions : exemples, puis texte à toucher pour corriger. Logique testée (`videAutresTaches`, `rendezVousRestants`, `progression`). Vérifié au navigateur sur un aperçu à données fictives (téléphone, ordinateur, clair et sombre). Aucune migration. |
 | E.3 | Tâches et prochaine action : faire avant reporter | à faire | | Corrections 2 et 5. |
 | E.4 | Un seul bouton bleu, une seule façon de créer | à faire | | Corrections 6, 17 et 19. |
 | E.5 | Listes et pipelines : se repérer d'un coup d'œil | à faire | | Corrections 8, 9 et 13. |

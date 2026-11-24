@@ -223,8 +223,59 @@ export function relanceDeplieeAffichee(
 }
 
 // ---------------------------------------------------------------------------
-// Tâches : « En retard » puis « Aujourd'hui »
+// Autres tâches : « En retard » puis « Aujourd'hui »
 // ---------------------------------------------------------------------------
+
+/** Ce que dit un bloc vide : `succes` (en vert) ou `neutre` (en gris, sans compteur vert). */
+export type MessageVide = { titre: string; texte: string; ton: 'succes' | 'neutre' }
+
+function vosRelances(nombre: number): string {
+  return nombre === 1 ? 'votre relance' : `vos ${nombre} relances`
+}
+
+function vosRendezVous(nombre: number, apresVos: boolean): string {
+  if (nombre === 1) return 'votre rendez-vous'
+  // « vos 8 relances et 3 rendez-vous » : le second « vos » se sous-entend.
+  return apresVos ? `${nombre} rendez-vous` : `vos ${nombre} rendez-vous`
+}
+
+/**
+ * Ce que dit le bloc « Autres tâches » quand il est vide. Les relances et les rendez-vous
+ * sont dans leurs propres blocs : tant qu'il en reste, le bloc les situe, en gris (« Rien
+ * d'autre que vos 8 relances et 3 rendez-vous. »), pour ne pas contredire le reste de
+ * l'écran. Le vert et « place au terrain » sont réservés à une journée vraiment finie.
+ * `rendezVous` : ceux qui restent à venir (ou en cours), pas ceux déjà passés.
+ */
+export function videAutresTaches(reste: { relances: number; rendezVous: number }): MessageVide {
+  const relances = Math.max(0, reste.relances)
+  const rendezVous = Math.max(0, reste.rendezVous)
+  if (relances === 0 && rendezVous === 0) {
+    return {
+      titre: 'Aucune tâche en attente.',
+      texte: 'Rien d’autre à faire aujourd’hui : place au terrain.',
+      ton: 'succes',
+    }
+  }
+  if (rendezVous === 0) {
+    return {
+      titre: `Rien d’autre que ${vosRelances(relances)}.`,
+      texte: `${relances === 1 ? 'Elle est' : 'Elles sont'} plus haut, dans « À rappeler ».`,
+      ton: 'neutre',
+    }
+  }
+  if (relances === 0) {
+    return {
+      titre: `Rien d’autre que ${vosRendezVous(rendezVous, false)}.`,
+      texte: `${rendezVous === 1 ? 'Il est' : 'Ils sont'} plus haut, dans l’agenda.`,
+      ton: 'neutre',
+    }
+  }
+  return {
+    titre: `Rien d’autre que ${vosRelances(relances)} et ${vosRendezVous(rendezVous, relances > 1)}.`,
+    texte: 'Ils sont plus haut, dans l’agenda et « À rappeler ».',
+    ton: 'neutre',
+  }
+}
 
 export type GroupeTaches<L> = { cle: 'en_retard' | 'du_jour'; titre: string; lignes: L[] }
 

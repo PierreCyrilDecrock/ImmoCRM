@@ -20,6 +20,19 @@ export type Priorites = readonly [Priorite, Priorite, Priorite]
 
 export const LONGUEUR_MAX_PRIORITE = 200
 
+/**
+ * Les exemples affichés dans les champs vides, un par rang : ils montrent le genre d'action
+ * attendu (jamais « Action 2 »).
+ */
+export const EXEMPLES_PRIORITES = [
+  'Ex. : rappeler le notaire',
+  'Ex. : envoyer l’avis de valeur',
+  'Ex. : préparer la visite de 14 h',
+] as const
+
+/** Le nom de chaque action pour les lecteurs d'écran. */
+export const NOMS_PRIORITES = ['Première action', 'Deuxième action', 'Troisième action'] as const
+
 const VIDE: Priorite = { texte: '', faite: false }
 
 export const PRIORITES_VIDES: Priorites = [VIDE, VIDE, VIDE]

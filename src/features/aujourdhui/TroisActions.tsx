@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { CLASSES_CHAMP } from '../../components/champ-commun'
 import Icone from '../../components/Icone'
 import { useNotifications } from '../../components/notifications-contexte'
@@ -7,8 +7,10 @@ import {
   bilanPriorites,
   changerPriorite,
   enregistrerPriorites,
+  EXEMPLES_PRIORITES,
   lirePriorites,
   LONGUEUR_MAX_PRIORITE,
+  NOMS_PRIORITES,
   PRIORITES_VIDES,
   type Priorites,
 } from './priorites'
@@ -20,10 +22,15 @@ const RANGS = [0, 1, 2] as const
 
 type Etat = 'lecture' | 'pret' | 'erreur'
 
+type Rang = (typeof RANGS)[number]
+
 /**
  * « Trois actions qui comptent » : choisies chaque matin, écrites librement, cochées au fil
- * de la journée. Chaque action s'enregistre quand on quitte son champ (ou par « Entrée ») ;
- * la case s'enregistre aussitôt. Elles se retrouvent sur tous les appareils.
+ * de la journée. Un champ vide montre un exemple. Chaque action s'enregistre quand on quitte
+ * son champ (ou par « Entrée ») ; elle s'affiche alors en texte, sans bordure, avec sa case
+ * ronde ; la toucher (ou « Entrée » au clavier) la rend de nouveau modifiable, « Échap »
+ * abandonne la correction. La case s'enregistre aussitôt. Elles se retrouvent sur tous les
+ * appareils.
  */
 export default function TroisActions({ jour }: Props) {
   const { notifier } = useNotifications()
@@ -34,6 +41,30 @@ export default function TroisActions({ jour }: Props) {
   const [envoi, setEnvoi] = useState(false)
   // Les enregistrements partent l'un après l'autre, dans l'ordre des gestes.
   const file = useRef<Promise<unknown>>(Promise.resolve())
+  // L'action en cours de saisie : elle garde son champ, même une fois écrite.
+  const [edition, setEdition] = useState<Rang | null>(null)
+  const champs = useRef<(HTMLInputElement | null)[]>([])
+  const textes = useRef<(HTMLButtonElement | null)[]>([])
+  // Après « Entrée » ou « Échap », le clavier revient sur l'action affichée en texte.
+  const aRendre = useRef<Rang | null>(null)
+  // « Échap » : le champ se referme sans enregistrer.
+  const abandon = useRef(false)
+
+  // Toucher une action écrite ouvre son champ, le curseur à la fin du texte (aussitôt, pour
+  // que le clavier du téléphone s'ouvre dans la foulée du toucher).
+  useLayoutEffect(() => {
+    if (edition === null) return
+    const champ = champs.current[edition]
+    if (champ === null || champ === undefined || document.activeElement === champ) return
+    champ.focus()
+    champ.setSelectionRange(champ.value.length, champ.value.length)
+  }, [edition])
+
+  useLayoutEffect(() => {
+    if (edition !== null || aRendre.current === null) return
+    textes.current[aRendre.current]?.focus()
+    aRendre.current = null
+  })
 
   useEffect(() => {
     let actif = true
@@ -69,8 +100,33 @@ export default function TroisActions({ jour }: Props) {
     })
   }
 
-  /** Quitter un champ : enregistre l'action si elle a changé. */
-  function valider(rang: 0 | 1 | 2) {
+  /** Quitter un champ : enregistre l'action si elle a changé, et la montre en texte. */
+  function quitter(rang: Rang) {
+    setEdition((courante) => (courante === rang ? null : courante))
+    if (abandon.current) {
+      abandon.current = false
+      return
+    }
+    valider(rang)
+  }
+
+  function touche(rang: Rang, evenement: KeyboardEvent<HTMLInputElement>) {
+    if (evenement.key === 'Enter') {
+      // Sans cela, la même touche « cliquerait » le texte qui prend le focus, et rouvrirait
+      // aussitôt le champ.
+      evenement.preventDefault()
+      aRendre.current = rang
+      evenement.currentTarget.blur()
+    } else if (evenement.key === 'Escape') {
+      evenement.preventDefault()
+      abandon.current = true
+      aRendre.current = rang
+      setSaisies(changerPriorite(saisies, rang, { texte: enregistrees[rang].texte }))
+      evenement.currentTarget.blur()
+    }
+  }
+
+  function valider(rang: Rang) {
     const texte = saisies[rang].texte.trim()
     if (texte === enregistrees[rang].texte) return
     enregistrer(
@@ -78,7 +134,7 @@ export default function TroisActions({ jour }: Props) {
     )
   }
 
-  function cocher(rang: 0 | 1 | 2) {
+  function cocher(rang: Rang) {
     const priorite = saisies[rang]
     if (priorite.texte.trim() === '') return
     enregistrer(
@@ -115,10 +171,13 @@ export default function TroisActions({ jour }: Props) {
           page.
         </p>
       )}
-      <ol className="flex flex-col gap-2">
+      <ol className="flex flex-col gap-1">
         {RANGS.map((rang) => {
           const priorite = saisies[rang]
-          const ecrite = priorite.texte.trim() !== ''
+          const texte = priorite.texte.trim()
+          const ecrite = texte !== ''
+          // Écrite : en texte ; vide ou en cours de saisie : un champ.
+          const enTexte = ecrite && edition !== rang
           return (
             <li key={rang} className="flex items-center gap-1">
               <button
@@ -127,9 +186,11 @@ export default function TroisActions({ jour }: Props) {
                 onClick={() => cocher(rang)}
                 aria-pressed={priorite.faite}
                 aria-label={
-                  priorite.faite
-                    ? `Action ${rang + 1} faite : la remettre à faire`
-                    : `Marquer l'action ${rang + 1} comme faite`
+                  !ecrite
+                    ? `${NOMS_PRIORITES[rang]} : à écrire d'abord`
+                    : priorite.faite
+                      ? `« ${texte} » est faite : la remettre à faire`
+                      : `Marquer « ${texte} » comme faite`
                 }
                 className="group flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40"
               >
@@ -143,24 +204,41 @@ export default function TroisActions({ jour }: Props) {
                   <Icone nom="succes" className="size-4" />
                 </span>
               </button>
-              <input
-                type="text"
-                value={priorite.texte}
-                maxLength={LONGUEUR_MAX_PRIORITE}
-                disabled={etat !== 'pret'}
-                enterKeyHint="done"
-                autoComplete="off"
-                aria-label={`Action ${rang + 1}`}
-                placeholder={rang === 0 ? 'La plus importante de la journée' : `Action ${rang + 1}`}
-                onChange={(evenement) =>
-                  setSaisies(changerPriorite(saisies, rang, { texte: evenement.target.value }))
-                }
-                onBlur={() => valider(rang)}
-                onKeyDown={(evenement) => {
-                  if (evenement.key === 'Enter') evenement.currentTarget.blur()
-                }}
-                className={`${CLASSES_CHAMP} min-w-0 flex-1 ${priorite.faite ? 'text-encre-douce line-through' : ''}`}
-              />
+              {enTexte ? (
+                <button
+                  type="button"
+                  ref={(bouton) => {
+                    textes.current[rang] = bouton
+                  }}
+                  disabled={etat !== 'pret'}
+                  onClick={() => setEdition(rang)}
+                  className={`min-h-11 min-w-0 flex-1 rounded-lg px-3 py-2 text-left text-base break-words hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent ${priorite.faite ? 'text-encre-douce line-through' : 'text-encre'}`}
+                >
+                  {texte}
+                  <span className="sr-only"> ({NOMS_PRIORITES[rang].toLowerCase()}, modifier)</span>
+                </button>
+              ) : (
+                <input
+                  type="text"
+                  ref={(champ) => {
+                    champs.current[rang] = champ
+                  }}
+                  value={priorite.texte}
+                  maxLength={LONGUEUR_MAX_PRIORITE}
+                  disabled={etat !== 'pret'}
+                  enterKeyHint="done"
+                  autoComplete="off"
+                  aria-label={NOMS_PRIORITES[rang]}
+                  placeholder={EXEMPLES_PRIORITES[rang]}
+                  onFocus={() => setEdition(rang)}
+                  onChange={(evenement) =>
+                    setSaisies(changerPriorite(saisies, rang, { texte: evenement.target.value }))
+                  }
+                  onBlur={() => quitter(rang)}
+                  onKeyDown={(evenement) => touche(rang, evenement)}
+                  className={`${CLASSES_CHAMP} min-w-0 flex-1 ${priorite.faite ? 'text-encre-douce line-through' : ''}`}
+                />
+              )}
             </li>
           )
         })}

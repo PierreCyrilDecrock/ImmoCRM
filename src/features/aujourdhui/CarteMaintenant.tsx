@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import Bouton from '../../components/Bouton'
 import Icone from '../../components/Icone'
 import LienBouton from '../../components/LienBouton'
@@ -14,7 +15,7 @@ import {
   type Cartes,
 } from './journee'
 import type { Relance } from './lecture-journee'
-import { tempsRestant, type ChoixMaintenant } from './maintenant'
+import { ficheDuRendezVous, tempsRestant, type ChoixMaintenant } from './maintenant'
 
 type Props = {
   choix: ChoixMaintenant<Relance>
@@ -52,11 +53,61 @@ function Pastille({ texte, genre }: { texte: string; genre: 'en_cours' | 'a_veni
   )
 }
 
+/** Les deux gestes de la carte, de même largeur, côte à côte même sur téléphone. */
+const CLASSES_GESTES = 'mt-4 flex gap-2 *:min-w-0 *:flex-1'
+
+/**
+ * Le grand titre de la carte, qui mène à la fiche (`vers`) avec un chevron ; sans fiche, il
+ * ouvre la tâche elle-même (`onOuvrir`).
+ */
+function TitreVersFiche({
+  texte,
+  vers,
+  fiche,
+  onOuvrir,
+}: {
+  texte: string
+  vers: string | null
+  /** Dit aux lecteurs d'écran ce que le lien ouvre : « fiche du bien ». */
+  fiche: string
+  onOuvrir: () => void
+}) {
+  const classes =
+    'group block w-full rounded-lg text-left text-2xl leading-tight font-bold tracking-tight break-words hover:bg-inverse-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+  // Le dernier mot reste collé au chevron : le chevron ne passe jamais seul à la ligne.
+  const coupure = texte.trimEnd().lastIndexOf(' ')
+  const debut = coupure === -1 ? '' : texte.slice(0, coupure + 1)
+  const fin = coupure === -1 ? texte.trimEnd() : texte.trimEnd().slice(coupure + 1)
+  const contenu = (
+    <>
+      <span className="group-hover:underline group-hover:underline-offset-4">{debut}</span>
+      <span className="whitespace-nowrap">
+        <span className="group-hover:underline group-hover:underline-offset-4">{fin}</span>
+        <span className="sr-only">, {fiche}</span>
+        <Icone
+          nom="chevron"
+          className="ml-1 inline-block size-6 align-[-0.2em] text-sur-inverse-doux"
+        />
+      </span>
+    </>
+  )
+  return vers !== null ? (
+    <Link to={vers} className={classes}>
+      {contenu}
+    </Link>
+  ) : (
+    <button type="button" onClick={onOuvrir} className={classes}>
+      {contenu}
+    </button>
+  )
+}
+
 /**
  * La carte « Maintenant », en tête de l'écran Aujourd'hui, sur fond encre : le rendez-vous
  * en cours ou le prochain, avec son temps restant (remis à jour chaque minute par la page),
- * ses gestes (Itinéraire, Appeler, la fiche) et ce qu'il reste à préparer. Après le dernier
- * rendez-vous, la première relance du jour.
+ * deux gestes de même largeur (Appeler en bleu, puis Itinéraire) et ce qu'il reste à
+ * préparer ; le titre mène à la fiche du bien, sinon du contact. Après le dernier
+ * rendez-vous, la première relance du jour (Appeler, Consigner ; le nom mène à la fiche).
  */
 export default function CarteMaintenant(props: Props) {
   const { choix } = props
@@ -100,6 +151,7 @@ function RendezVous({
 }: Props & { affichee: TacheAffichee; enCours: boolean }) {
   const { tache, contact, bien } = affichee
   const adresse = adresseRendezVous(tache, bien, contact)
+  const fiche = ficheDuRendezVous(affichee)
 
   return (
     <>
@@ -110,18 +162,19 @@ function RendezVous({
         }
       />
 
-      <button
-        type="button"
-        onClick={() => onOuvrir(affichee)}
-        className="mt-3 block w-full rounded-lg text-left hover:bg-inverse-creux"
-      >
-        <span className="block text-base font-semibold text-sur-inverse-doux tabular-nums">
-          {horaireTache(tache)} · {libelleCategorie(tache.categorie)}
-        </span>
-        <span className="mt-0.5 block text-2xl leading-tight font-bold tracking-tight break-words">
-          {tache.titre}
-        </span>
-      </button>
+      <p className="mt-3 text-base font-semibold text-sur-inverse-doux tabular-nums">
+        {horaireTache(tache)} · {libelleCategorie(tache.categorie)}
+      </p>
+      <div className="mt-0.5">
+        <TitreVersFiche
+          texte={tache.titre}
+          vers={fiche}
+          fiche={
+            bien !== null ? 'fiche du bien' : contact !== null ? 'fiche du contact' : 'le modifier'
+          }
+          onOuvrir={() => onOuvrir(affichee)}
+        />
+      </div>
       {contact !== null && (
         <p className="mt-2 flex items-start gap-1.5 text-base break-words">
           <Icone nom="contacts" className="mt-0.5 size-5 text-sur-inverse-doux" />
@@ -135,7 +188,8 @@ function RendezVous({
         </p>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className={CLASSES_GESTES}>
+        {contact !== null && <BoutonAppel contact={contact} surInverse />}
         {adresse !== null && (
           <LienBouton
             icone="itineraire"
@@ -146,18 +200,6 @@ function RendezVous({
           >
             Itinéraire
           </LienBouton>
-        )}
-        {contact !== null && <BoutonAppel contact={contact} surInverse />}
-        {bien !== null ? (
-          <LienBouton icone="biens" variante="inverse" vers={`/biens/${bien.id}`}>
-            Fiche du bien
-          </LienBouton>
-        ) : (
-          contact !== null && (
-            <LienBouton icone="contacts" variante="inverse" vers={`/contacts/${contact.id}`}>
-              Fiche du contact
-            </LienBouton>
-          )
         )}
       </div>
 
@@ -207,20 +249,19 @@ function ProchaineRelance({
         pastille={<Pastille texte={retard.texte} genre={retard.enRetard ? 'retard' : 'a_venir'} />}
       />
 
-      <button
-        type="button"
-        onClick={() => onOuvrir(relance)}
-        className="mt-3 block w-full rounded-lg text-left hover:bg-inverse-creux"
-      >
-        <span className="block text-2xl leading-tight font-bold tracking-tight break-words">
-          {contact === null ? tache.titre : nomComplet(contact)}
-        </span>
-        {contact !== null && contact.roles.length > 0 && (
-          <span className="mt-0.5 block text-base text-sur-inverse-doux">
-            {contact.roles.map(libelleRole).join(', ')}
-          </span>
-        )}
-      </button>
+      <div className="mt-3">
+        <TitreVersFiche
+          texte={contact === null ? tache.titre : nomComplet(contact)}
+          vers={contact === null ? null : `/contacts/${contact.id}`}
+          fiche={contact === null ? 'la modifier' : 'fiche du contact'}
+          onOuvrir={() => onOuvrir(relance)}
+        />
+      </div>
+      {contact !== null && contact.roles.length > 0 && (
+        <p className="mt-0.5 text-base text-sur-inverse-doux">
+          {contact.roles.map(libelleRole).join(', ')}
+        </p>
+      )}
       <p className="mt-2 text-base break-words">
         {contact === null ? motif || 'Relance sans contact' : tache.titre}
         {contact !== null && motif !== '' && (
@@ -228,7 +269,7 @@ function ProchaineRelance({
         )}
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className={CLASSES_GESTES}>
         {contact !== null && (
           <BoutonAppel contact={contact} onAppel={() => onCocher(relance)} surInverse />
         )}
@@ -240,11 +281,6 @@ function ProchaineRelance({
         >
           <span className="text-sm">{contact === null ? 'Fait' : 'Consigner'}</span>
         </Bouton>
-        {contact !== null && (
-          <LienBouton icone="contacts" variante="inverse" vers={`/contacts/${contact.id}`}>
-            Fiche du contact
-          </LienBouton>
-        )}
       </div>
     </>
   )

@@ -21,8 +21,11 @@ type Props = {
   onBasculer: () => void
   /** Message d'erreur de lecture du bloc. */
   erreur?: string | null
-  /** Message positif quand le bloc est vide. */
-  vide: { titre: string; texte: string }
+  /**
+   * Message quand le bloc est vide : positif, en vert (`succes`, par défaut), ou `neutre`, en
+   * gris avec un compteur gris, quand il reste du travail ailleurs sur l'écran.
+   */
+  vide: { titre: string; texte: string; ton?: 'succes' | 'neutre' }
   /** Le contenu ; ignoré si le compteur vaut 0. */
   children?: ReactNode
   /** Sous la liste : lien « Voir tout », explication. */
@@ -31,7 +34,8 @@ type Props = {
 
 /**
  * Un bloc de l'écran Aujourd'hui : un titre avec son compteur, qui replie ou déplie le
- * contenu d'un toucher. Vide, il le dit sur un ton positif.
+ * contenu d'un toucher. Vide, il le dit sur un ton positif, ou neutre quand le reste de
+ * l'écran a encore du travail (le vert ne contredit jamais une pastille de retard).
  */
 export default function BlocJournee({
   cle,
@@ -50,9 +54,12 @@ export default function BlocJournee({
   pied,
 }: Props) {
   const idContenu = `bloc-${cle}`
+  const neutre = vide.ton === 'neutre'
   const couleurCompteur =
     compteur === 0
-      ? 'bg-succes-doux text-succes'
+      ? neutre
+        ? 'bg-creux text-encre-douce'
+        : 'bg-succes-doux text-succes'
       : compteurAlerte
         ? 'bg-danger-doux text-danger'
         : 'bg-accent-doux text-accent-fort'
@@ -101,8 +108,13 @@ export default function BlocJournee({
           {erreur !== null ? (
             <Message genre="erreur">Ce bloc n'a pas pu être lu. {erreur}</Message>
           ) : compteur === 0 ? (
-            <div className="flex items-start gap-3 rounded-xl bg-succes-doux px-3 py-3">
-              <Icone nom="succes" className="mt-0.5 size-5 text-succes" />
+            <div
+              className={`flex items-start gap-3 rounded-xl px-3 py-3 ${neutre ? 'bg-creux' : 'bg-succes-doux'}`}
+            >
+              <Icone
+                nom={neutre ? 'info' : 'succes'}
+                className={`mt-0.5 size-5 ${neutre ? 'text-encre-douce' : 'text-succes'}`}
+              />
               <p className="text-sm text-encre">
                 <span className="font-semibold">{vide.titre}</span> {vide.texte}
               </p>
