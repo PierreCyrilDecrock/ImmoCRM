@@ -3,7 +3,7 @@ import LienBouton from '../../components/LienBouton'
 import { formaterHeure } from '../../lib/dates'
 import { nomComplet } from '../contacts/contacts'
 import type { TacheAffichee } from '../taches/taches'
-import CaseTache from './CaseTache'
+import CaseTache from '../taches/CaseTache'
 import { adresseRendezVous, lienItineraire, type Cartes } from './journee'
 import { detailRendezVous, ficheDuRendezVous } from './maintenant'
 

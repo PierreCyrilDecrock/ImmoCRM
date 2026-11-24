@@ -1,5 +1,5 @@
 import Bouton from '../../components/Bouton'
-import Icone from '../../components/Icone'
+import CaseTache from './CaseTache'
 import { libelleJour } from './echeances'
 import ReportsRapides from './ReportsRapides'
 import { horaireTache, type Tache } from './taches'
@@ -11,11 +11,11 @@ type Props = {
   libelle: string
   /** Sous le titre : avec qui (« Avec Camille Fictif »), s'il y a lieu. */
   detail?: string
-  /** Dans une colonne étroite (profil d'une fiche sur ordinateur) : les gestes sous le texte. */
+  /** Dans une colonne étroite (profil d'une fiche sur ordinateur) : « C'est fait » sous le texte. */
   compacte?: boolean
   /** La tâche est en train d'être enregistrée : les gestes attendent. */
   occupee: boolean
-  /** « C'est fait » : la boucle de relance si un contact est lié, sinon faite en un geste. */
+  /** La case ronde et « C'est fait » : la boucle de relance si un contact est lié, sinon close. */
   onFait: () => void
   /** Un report en un geste (demain, dans 3 jours, lundi). */
   onReporter: (echeance: string) => void
@@ -24,9 +24,11 @@ type Props = {
 }
 
 /**
- * La prochaine tâche d'une fiche : son titre, son jour (en rouge si elle est en retard) et
- * son horaire, « C'est fait » et les reports en un geste. Commun aux quatre fiches (étapes
- * D.5 et D.7) ; la fiche donne la tâche et les gestes.
+ * La prochaine tâche d'une fiche (étape E.3) : la case ronde vide à gauche, comme toute tâche
+ * à faire (la boucle de relance si un contact est lié, sinon la tâche est close), le libellé,
+ * le titre, le jour (en rouge si elle est en retard) et l'horaire ; à droite, un seul bouton
+ * Reporter qui ouvre les reports en un geste. « C'est fait » s'ajoute sur ordinateur
+ * seulement. Commun aux quatre fiches ; la fiche donne la tâche et les gestes.
  */
 export default function CarteProchaineTache({
   tache,
@@ -41,22 +43,11 @@ export default function CarteProchaineTache({
 }: Props) {
   const enRetard = tache.echeance < aujourdhui
   const horaire = horaireTache(tache)
-  const boutonFait = (
-    <Bouton
-      variante="secondaire"
-      icone="succes"
-      pleineLargeur={compacte}
-      disabled={occupee}
-      onClick={onFait}
-    >
-      C’est fait
-    </Bouton>
-  )
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-surface p-3 ring-1 ring-bord">
-      <div className="flex items-center gap-3">
-        <Icone nom="taches" className="size-6 shrink-0 text-accent" />
-        <div className="min-w-0 flex-1">
+    <div className="flex flex-col gap-2 rounded-2xl bg-surface p-2 pr-3 ring-1 ring-bord">
+      <div className="flex items-center gap-1">
+        <CaseTache titre={tache.titre} occupee={occupee} onCocher={onFait} />
+        <div className="min-w-0 flex-1 py-1">
           <p className="text-sm text-encre-douce">{libelle}</p>
           <p className="text-base font-semibold break-words text-encre">{tache.titre}</p>
           <p className="text-sm">
@@ -70,11 +61,16 @@ export default function CarteProchaineTache({
             <p className="text-sm break-words text-encre-douce">{detail}</p>
           )}
         </div>
-        {!compacte && boutonFait}
-      </div>
-      {compacte && boutonFait}
-      <div className={compacte ? undefined : 'md:pl-9'}>
+        {!compacte && (
+          // « C'est fait » en toutes lettres, là où la place ne manque pas (ordinateur).
+          <div className="hidden lg:block">
+            <Bouton variante="secondaire" icone="succes" disabled={occupee} onClick={onFait}>
+              C’est fait
+            </Bouton>
+          </div>
+        )}
         <ReportsRapides
+          replie
           aujourdhui={aujourdhui}
           titre={tache.titre}
           avecLibelle={!compacte}
@@ -83,6 +79,19 @@ export default function CarteProchaineTache({
           onAutreDate={onAutreDate}
         />
       </div>
+      {compacte && (
+        <div className="hidden pl-12 lg:block">
+          <Bouton
+            variante="secondaire"
+            icone="succes"
+            pleineLargeur
+            disabled={occupee}
+            onClick={onFait}
+          >
+            C’est fait
+          </Bouton>
+        </div>
+      )}
     </div>
   )
 }

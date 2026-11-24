@@ -434,7 +434,7 @@ export default function Aujourdhui() {
                           onReporter={() => gestes.reporter(affichee)}
                           onOuvrir={() => gestes.ouvrir(affichee)}
                           onRouvrir={() => gestes.rouvrir(affichee)}
-                          glissable
+                          onReporterA={(echeance) => gestes.reporterA(affichee, echeance)}
                           echeanceADroite={echeanceADroite(affichee.tache, aujourdhui)}
                         />
                       ))}

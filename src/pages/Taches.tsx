@@ -174,8 +174,8 @@ export default function Taches() {
               <ListeTaches
                 taches={liste.lignes}
                 aujourdhui={aujourdhui}
+                vue={vue}
                 onChangement={relire}
-                gestesRapides
               />
             </div>
           </Carte>
