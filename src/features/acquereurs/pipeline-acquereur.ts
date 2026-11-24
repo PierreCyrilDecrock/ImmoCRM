@@ -209,6 +209,26 @@ export function resumeEtatAcquereur(
   return libelleEtapeAcquereur(projet.etape)
 }
 
+/**
+ * La ligne sous un projet, à côté de sa pastille d'état (rubrique de la fiche Contact) : ce
+ * que la pastille ne dit pas déjà. « Le 12 mars 2027 · étape atteinte : Sélection » à côté de
+ * « À recontacter », « Financement refusé · étape atteinte : Visites » à côté de « Perdu »,
+ * « Le 3 novembre 2026 » à côté de « Offre acceptée ».
+ */
+export function detailEtatAcquereur(
+  projet: Pick<ProjetAcquereur, 'etat' | 'etape' | 'recontacter_le' | 'motif_perte' | 'offre_le'>,
+): string {
+  const atteinte = `étape atteinte : ${libelleEtapeAcquereur(projet.etape)}`
+  if (projet.etat === 'a_recontacter') {
+    return `Le ${formaterDate(projet.recontacter_le)} · ${atteinte}`
+  }
+  if (projet.etat === 'perdu') {
+    return `${libelleMotifPerteAcquereur(projet.motif_perte)} · ${atteinte}`
+  }
+  if (projet.etat === 'gagne') return `Le ${formaterDate(projet.offre_le)}`
+  return libelleEtapeAcquereur(projet.etape)
+}
+
 /** Origine de la demande : « Portail Leboncoin », « Appel ». */
 export function resumeOrigine(projet: Pick<ProjetAcquereur, 'origine' | 'portail'>): string {
   const origine = libelleOrigine(projet.origine)

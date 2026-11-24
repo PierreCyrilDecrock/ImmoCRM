@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   aideEtapeSuivante,
   ancienneteCourte,
+  detailEtatProjet,
   ancienneteEtape,
   brouillonPassage,
   brouillonSortie,
@@ -283,6 +284,27 @@ describe('affichage', () => {
   it('signale un projet qui stagne au-delà de 30 jours', () => {
     expect(etapeQuiTraine('2026-10-18', AUJOURDHUI)).toBe(false)
     expect(etapeQuiTraine('2026-10-17', AUJOURDHUI)).toBe(true)
+  })
+
+  it('dit à côté de la pastille d’état ce qu’elle ne dit pas déjà', () => {
+    expect(
+      detailEtatProjet(
+        projet({ etat: 'a_recontacter', etape: 'estimation', recontacter_le: '2027-03-12' }),
+      ),
+    ).toBe('Le 12 mars 2027 · étape atteinte : Estimation')
+    expect(
+      detailEtatProjet(
+        projet({ etat: 'perdu', etape: 'suivi', motif_perte: 'vente_particuliers' }),
+      ),
+    ).toBe('Vente entre particuliers · étape atteinte : Suivi')
+    const gagne = { etat: 'gagne', etape: 'mandat_signe', mandat_le: '2026-11-17' }
+    expect(detailEtatProjet(projet({ ...gagne, mandat_type: 'exclusif' }))).toBe(
+      'Exclusif, signé le 17 novembre 2026',
+    )
+    expect(detailEtatProjet(projet({ ...gagne, mandat_type: null }))).toBe(
+      'Signé le 17 novembre 2026',
+    )
+    expect(detailEtatProjet(projet({ etape: 'suivi' }))).toBe('Suivi')
   })
 
   it('résume l’état d’un projet', () => {
