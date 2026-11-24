@@ -8,7 +8,11 @@ import { seDeconnecter } from '../features/connexion/deconnexion'
 import { useSession } from '../features/connexion/session-contexte'
 import { libelleVersion, VERSION } from '../lib/version'
 
-/** Page « Plus » : le journal, les réglages, le compte et la déconnexion. */
+/**
+ * Page « Plus » : le journal, les réglages, le compte et la déconnexion. La page du
+ * développeur, « Composants de l'interface », n'est pas dans ce menu : elle s'ouvre à son
+ * adresse, `#/plus/composants`.
+ */
 export default function Plus() {
   const { session } = useSession()
   const [deconnexion, setDeconnexion] = useState(false)
@@ -34,12 +38,6 @@ export default function Plus() {
           titre="Réglages"
           detail="Préférences de l'application"
           vers="/plus/reglages"
-        />
-        <LigneListe
-          icone="palette"
-          titre="Composants de l'interface"
-          detail="Boutons, champs, fenêtres et messages disponibles"
-          vers="/plus/composants"
         />
       </Liste>
       <Carte titre="Compte">

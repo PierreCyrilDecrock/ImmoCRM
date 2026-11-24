@@ -14,6 +14,7 @@ import AlerteDoublons from '../contacts/AlerteDoublons'
 import { LONGUEURS_MAX, SOURCES, TEMPERATURES, type Contact } from '../contacts/contacts'
 import { chercherDoublons } from '../contacts/doublons'
 import { libelleDelai, proposerRelance } from '../relances/delais'
+import AutreCreation from './AutreCreation'
 import ChampsProchaineAction from './ChampsProchaineAction'
 import { useDelaisRelance } from './delais-relance'
 import GroupePastilles from './GroupePastilles'
@@ -33,7 +34,14 @@ import {
  * prochaine action sur un seul écran. Une source ou une température se choisit d'un toucher ;
  * la prochaine action est proposée et suit la température. L'enregistrement ouvre la fiche.
  */
-export default function ContactExpress({ onFermer }: { onFermer: () => void }) {
+export default function ContactExpress({
+  onFermer,
+  onAutreChose,
+}: {
+  onFermer: () => void
+  /** Ouverte directement par le « + » : « Créer autre chose » ouvre le menu complet. */
+  onAutreChose?: () => void
+}) {
   const naviguer = useNavigate()
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
@@ -105,6 +113,7 @@ export default function ContactExpress({ onFermer }: { onFermer: () => void }) {
       ouverte
       titre="Nouveau contact"
       onFermer={onFermer}
+      actionEnTete={onAutreChose && <AutreCreation onClick={onAutreChose} />}
       pied={
         <>
           <Bouton

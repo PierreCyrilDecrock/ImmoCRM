@@ -355,6 +355,20 @@ export function aGarder(brouillon: Pick<BrouillonCompteRendu, 'compteRendu' | 'v
   )
 }
 
+/**
+ * Vrai s'il y a quelque chose à enregistrer : du texte, le résultat d'un appel, ou un compte
+ * rendu de visite commencé. Tant que c'est faux, « Enregistrer » reste secondaire (blanc) :
+ * au repos, le seul bouton bleu de la fiche est « Appeler » (revue de design, correction 6).
+ */
+export function aEnregistrer(
+  brouillon: Pick<BrouillonCompteRendu, 'type' | 'compteRendu' | 'resultat' | 'visite'>,
+): boolean {
+  if (brouillon.compteRendu.trim() !== '') return true
+  if (brouillon.type === 'appel') return brouillon.resultat !== ''
+  if (brouillon.type === 'visite') return aGarder({ compteRendu: '', visite: brouillon.visite })
+  return false
+}
+
 export function brouillonAGarder(
   brouillon: BrouillonCompteRendu,
   maintenant: Date,

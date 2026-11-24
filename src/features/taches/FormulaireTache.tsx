@@ -12,6 +12,7 @@ import { adresseBien, type Bien } from '../biens/biens'
 import type { Contact } from '../contacts/contacts'
 import ChoixLiens from '../liens/ChoixLiens'
 import type { LienProjet } from '../liens/lien-projet'
+import AutreCreation from '../saisie/AutreCreation'
 import { useActionsTache } from './actions-tache'
 import { libelleVue, REPORTS, vueDe } from './echeances'
 import { RECURRENCES, type Recurrence } from './recurrence'
@@ -54,6 +55,8 @@ type Props = {
    * lieu de clore la tâche en un geste.
    */
   onBoucler?: () => void
+  /** Ouverte directement par le « + » : « Créer autre chose » ouvre le menu complet. */
+  onAutreChose?: () => void
 }
 
 /** Les dates proposées d'un toucher sous le champ Date. */
@@ -72,6 +75,7 @@ export default function FormulaireTache({
   onFermer,
   onChangement,
   onBoucler,
+  onAutreChose,
 }: Props) {
   const { notifier } = useNotifications()
   const actions = useActionsTache(onChangement)
@@ -181,6 +185,11 @@ export default function FormulaireTache({
       ouverte
       titre={existante === null ? 'Nouvelle tâche' : 'Tâche'}
       onFermer={onFermer}
+      actionEnTete={
+        existante === null && onAutreChose !== undefined ? (
+          <AutreCreation onClick={onAutreChose} />
+        ) : undefined
+      }
       pied={
         <>
           <Bouton type="submit" form="formulaire-tache" pleineLargeur disabled={occupe}>

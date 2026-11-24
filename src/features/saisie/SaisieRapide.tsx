@@ -5,20 +5,25 @@ import Icone from '../../components/Icone'
 import { dateDuJour } from '../../lib/dates'
 import DemandeEntrante from '../acquereurs/DemandeEntrante'
 import NouveauBien from '../biens/NouveauBien'
+import NouveauProjetVendeur from '../projets/NouveauProjetVendeur'
 import FormulaireTache from '../taches/FormulaireTache'
 import CompteRenduExpress from './CompteRenduExpress'
 import ContactExpress from './ContactExpress'
+import { actionDuPlus, useCreationPage, type CreationPage } from './creation-page'
 import MenuCreation from './MenuCreation'
 import { ecouterOuvertureMenu } from './ouverture'
-import { estUnChamp, raccourciDe, type Creation } from './raccourcis'
+import { estUnChamp, raccourciDe } from './raccourcis'
 
 type Props = {
   /** Fait relire la page affichée, après une création qui n'ouvre pas de fiche. */
   rafraichir: () => void
 }
 
-/** Ce qui est ouvert : le menu, ou la fenêtre d'une création. */
-type Ouvert = 'menu' | Creation
+/**
+ * Ce qui est ouvert : le menu, ou la fenêtre d'une création. `direct` : la fenêtre a été
+ * ouverte par le « + » sans passer par le menu ; elle propose alors « Créer autre chose ».
+ */
+type Ouvert = { quoi: 'menu' } | { quoi: CreationPage; direct: boolean }
 
 /**
  * Met le curseur dans le champ de recherche visible : celui de la page s'il y en a un (la
@@ -38,13 +43,17 @@ function allerALaRecherche() {
 /**
  * Saisie rapide, présente sur toutes les pages : le bouton « + » flottant (en bas à droite,
  * sous le pouce, sur téléphone et tablette), son menu, les fenêtres de création et les
- * raccourcis clavier. Sur ordinateur, le bouton « Créer » de la colonne de navigation
- * remplace le « + » (`ouvrirMenuCreation`). Changer de page referme le menu et les fenêtres.
+ * raccourcis clavier. Le « + » crée ce que montre la page (un contact sur Contacts, un bien
+ * sur Biens, une tâche sur Tâches, un projet de l'onglet affiché sur Pipelines :
+ * `useCreationDeLaPage`), et ouvre le menu ailleurs. Sur ordinateur, le bouton « Créer » de
+ * la colonne de navigation remplace le « + » et ouvre toujours le menu
+ * (`ouvrirMenuCreation`). Changer de page referme le menu et les fenêtres.
  */
 export default function SaisieRapide({ rafraichir }: Props) {
   const { pathname } = useLocation()
   // Sur téléphone, une fiche peut poser sa barre d'actions en bas : le « + » s'efface.
   const barreBas = useBarreBasOccupee()
+  const plus = actionDuPlus(useCreationPage())
   const [ouvert, setOuvertBrut] = useState<Ouvert | null>(null)
   // Ce qui avait le clavier avant l'ouverture (« Créer », « + ») : il le retrouve à la fermeture.
   const retourFocus = useRef<HTMLElement | null>(null)
@@ -86,9 +95,9 @@ export default function SaisieRapide({ rafraichir }: Props) {
         // Le menu se ferme d'abord : le champ redevient accessible.
         window.requestAnimationFrame(allerALaRecherche)
       } else if (raccourci.genre === 'menu') {
-        setOuvert('menu')
+        setOuvert({ quoi: 'menu' })
       } else {
-        setOuvert(raccourci.creation)
+        setOuvert({ quoi: raccourci.creation, direct: false })
       }
     }
     window.addEventListener('keydown', surTouche)
@@ -96,7 +105,7 @@ export default function SaisieRapide({ rafraichir }: Props) {
   }, [])
 
   // Le bouton « Créer » de la colonne de navigation (ordinateur).
-  useEffect(() => ecouterOuvertureMenu(() => setOuvert('menu')), [])
+  useEffect(() => ecouterOuvertureMenu(() => setOuvert({ quoi: 'menu' })), [])
 
   const fermer = () => {
     const retour = retourFocus.current
@@ -106,30 +115,51 @@ export default function SaisieRapide({ rafraichir }: Props) {
     })
   }
 
+  // « Créer autre chose » : la fenêtre ouverte par le « + » laisse place au menu complet.
+  const menuComplet = () => setOuvertBrut({ quoi: 'menu' })
+  const autreChose =
+    ouvert !== null && ouvert.quoi !== 'menu' && ouvert.direct ? menuComplet : undefined
+  const quoi = ouvert?.quoi ?? null
+
   return (
     <>
       <button
         type="button"
-        onClick={() => setOuvert('menu')}
-        aria-label="Saisie rapide : créer un contact, une activité, une tâche…"
+        onClick={() =>
+          setOuvert(
+            plus.genre === 'menu' ? { quoi: 'menu' } : { quoi: plus.creation, direct: true },
+          )
+        }
+        aria-label={plus.libelle}
         aria-haspopup="dialog"
-        aria-keyshortcuts="N"
-        title="Saisie rapide (N)"
+        aria-keyshortcuts={plus.genre === 'menu' ? 'N' : undefined}
+        title={plus.bulle}
         className={`absolute right-[max(1rem,env(safe-area-inset-right))] bottom-4 z-10 flex size-14 items-center justify-center rounded-2xl bg-accent text-sur-plein shadow-lg shadow-accent/30 ring-4 ring-fond hover:bg-accent-fort focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:right-8 md:bottom-8 lg:hidden ${barreBas ? 'max-md:hidden' : ''}`}
       >
         <Icone nom="ajouter" className="size-7" />
       </button>
 
-      {ouvert === 'menu' && (
-        <MenuCreation onFermer={fermer} onChoisir={(creation) => setOuvert(creation)} />
+      {quoi === 'menu' && (
+        <MenuCreation
+          onFermer={fermer}
+          onChoisir={(creation) => setOuvert({ quoi: creation, direct: false })}
+        />
       )}
-      {ouvert === 'contact' && <ContactExpress onFermer={fermer} />}
-      {ouvert === 'activite' && <CompteRenduExpress onFermer={fermer} onEnregistre={rafraichir} />}
-      {ouvert === 'tache' && (
-        <FormulaireTache aujourdhui={dateDuJour()} onFermer={fermer} onChangement={rafraichir} />
+      {quoi === 'contact' && <ContactExpress onFermer={fermer} onAutreChose={autreChose} />}
+      {quoi === 'activite' && <CompteRenduExpress onFermer={fermer} onEnregistre={rafraichir} />}
+      {quoi === 'tache' && (
+        <FormulaireTache
+          aujourdhui={dateDuJour()}
+          onFermer={fermer}
+          onChangement={rafraichir}
+          onAutreChose={autreChose}
+        />
       )}
-      {ouvert === 'bien' && <NouveauBien onFermer={fermer} />}
-      {ouvert === 'demande' && <DemandeEntrante onFermer={fermer} />}
+      {quoi === 'bien' && <NouveauBien onFermer={fermer} onAutreChose={autreChose} />}
+      {quoi === 'demande' && <DemandeEntrante onFermer={fermer} onAutreChose={autreChose} />}
+      {quoi === 'projetVendeur' && (
+        <NouveauProjetVendeur onFermer={fermer} onAutreChose={autreChose} />
+      )}
     </>
   )
 }

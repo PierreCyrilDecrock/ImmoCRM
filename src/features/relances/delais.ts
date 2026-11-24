@@ -24,6 +24,11 @@ export const DELAIS_PAR_DEFAUT: DelaisRelance = {
   veille: '6m',
 }
 
+/** Vrai si les deux réglages donnent le même délai à chaque température. */
+export function memesDelais(a: DelaisRelance, b: DelaisRelance): boolean {
+  return (Object.keys(a) as Temperature[]).every((temperature) => a[temperature] === b[temperature])
+}
+
 /** Délai retenu pour un contact sans température : celui d'un contact tiède. */
 export const TEMPERATURE_PAR_DEFAUT: Temperature = 'tiede'
 

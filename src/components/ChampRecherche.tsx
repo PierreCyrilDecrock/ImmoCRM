@@ -12,23 +12,38 @@ type Props = Omit<
   onChange: (valeur: string) => void
   /** Rappel du raccourci clavier (« ⌘K »), affiché à droite tant que le champ est vide. */
   rappel?: string
+  /**
+   * Texte de 13 px, pour une colonne étroite sur ordinateur (« Rechercher un contact » tient
+   * avec son rappel). Pas sur téléphone : sous 16 px, l'iPhone agrandit la page au toucher.
+   */
+  compact?: boolean
 }
 
 /**
  * Champ de recherche sur une ligne : une loupe, la saisie, et une croix pour tout effacer.
  * Champ vide, il peut rappeler son raccourci clavier.
  */
-export default function ChampRecherche({ libelle, valeur, onChange, rappel, ...champ }: Props) {
+export default function ChampRecherche({
+  libelle,
+  valeur,
+  onChange,
+  rappel,
+  compact = false,
+  ...champ
+}: Props) {
+  const classes = compact
+    ? `${CLASSES_CHAMP.replace('text-base', 'text-[0.8125rem]')} pr-12 pl-8`
+    : `${CLASSES_CHAMP} pr-11 pl-10`
   return (
     <div className="relative">
       <Icone
         nom="recherche"
-        className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-encre-douce"
+        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-encre-douce ${compact ? 'left-2.5 size-4' : 'left-3 size-5'}`}
       />
       <input
         type="search"
         aria-label={libelle}
-        className={`${CLASSES_CHAMP} pr-11 pl-10 [&::-webkit-search-cancel-button]:hidden`}
+        className={`${classes} [&::-webkit-search-cancel-button]:hidden`}
         value={valeur}
         onChange={(evenement) => onChange(evenement.target.value)}
         autoComplete="off"
@@ -44,7 +59,7 @@ export default function ChampRecherche({ libelle, valeur, onChange, rappel, ...c
         // Déjà dit aux lecteurs d'écran par `aria-keyshortcuts` sur le champ.
         <kbd
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded-md px-1.5 py-0.5 font-sans text-xs font-medium text-encre-douce ring-1 ring-bord-fort"
+          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md font-sans font-medium text-encre-douce ring-1 ring-bord-fort ${compact ? 'right-2 px-1 py-px text-[0.6875rem]' : 'right-2.5 px-1.5 py-0.5 text-xs'}`}
         >
           {rappel}
         </kbd>

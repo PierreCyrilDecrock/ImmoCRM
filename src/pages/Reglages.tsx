@@ -20,6 +20,7 @@ import { TEMPERATURES, type Temperature } from '../features/contacts/contacts'
 import {
   CHOIX_DELAIS,
   DELAIS_PAR_DEFAUT,
+  memesDelais,
   libelleDelai,
   type DelaisRelance,
 } from '../features/relances/delais'
@@ -225,6 +226,8 @@ function CartePreferences() {
   const [chargement, setChargement] = useState(true)
   const [erreurLecture, setErreurLecture] = useState<string | null>(null)
   const [nom, setNom] = useState('')
+  /** Le nom tel qu'il est enregistré : « Enregistrer » ne passe au bleu qu'après un changement. */
+  const [nomEnregistre, setNomEnregistre] = useState('')
   const [erreurNom, setErreurNom] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
 
@@ -232,8 +235,10 @@ function CartePreferences() {
     let actif = true
     void lireReglages(exigerSupabase()).then((resultat) => {
       if (!actif) return
-      if (resultat.ok) setNom(resultat.donnees.nom_affiche)
-      else setErreurLecture(resultat.erreur.message)
+      if (resultat.ok) {
+        setNom(resultat.donnees.nom_affiche)
+        setNomEnregistre(resultat.donnees.nom_affiche)
+      } else setErreurLecture(resultat.erreur.message)
       setChargement(false)
     })
     return () => {
@@ -251,6 +256,7 @@ function CartePreferences() {
     setEnvoi(false)
     if (resultat.ok) {
       setNom(resultat.donnees.nom_affiche)
+      setNomEnregistre(resultat.donnees.nom_affiche)
       notifier('succes', 'Réglages enregistrés')
     } else {
       notifier('erreur', `L'enregistrement a échoué. ${resultat.erreur.message}`)
@@ -276,7 +282,12 @@ function CartePreferences() {
             autoCapitalize="words"
           />
           <div className="md:self-start">
-            <Bouton type="submit" pleineLargeur disabled={envoi}>
+            <Bouton
+              type="submit"
+              variante={nom.trim() !== nomEnregistre.trim() ? 'principal' : 'secondaire'}
+              pleineLargeur
+              disabled={envoi}
+            >
               {envoi ? 'Enregistrement…' : 'Enregistrer'}
             </Bouton>
           </div>
@@ -290,6 +301,8 @@ function CartePreferences() {
 function CarteRelances() {
   const { notifier } = useNotifications()
   const [delais, setDelais] = useState<DelaisRelance | null>(null)
+  /** Les délais tels qu'ils sont enregistrés : « Enregistrer » passe au bleu s'ils changent. */
+  const [delaisEnregistres, setDelaisEnregistres] = useState<DelaisRelance | null>(null)
   const [erreurLecture, setErreurLecture] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
 
@@ -297,8 +310,10 @@ function CarteRelances() {
     let actif = true
     void lireReglages(exigerSupabase()).then((resultat) => {
       if (!actif) return
-      if (resultat.ok) setDelais(resultat.donnees.delais_relance)
-      else setErreurLecture(resultat.erreur.message)
+      if (resultat.ok) {
+        setDelais(resultat.donnees.delais_relance)
+        setDelaisEnregistres(resultat.donnees.delais_relance)
+      } else setErreurLecture(resultat.erreur.message)
     })
     return () => {
       actif = false
@@ -313,6 +328,7 @@ function CarteRelances() {
     setEnvoi(false)
     if (resultat.ok) {
       setDelais(resultat.donnees.delais_relance)
+      setDelaisEnregistres(resultat.donnees.delais_relance)
       notifier('succes', 'Rythme des relances enregistré')
     } else {
       notifier('erreur', `L'enregistrement a échoué. ${resultat.erreur.message}`)
@@ -354,7 +370,16 @@ function CarteRelances() {
             ))}
           </div>
           <div className="flex flex-col gap-2 md:flex-row">
-            <Bouton type="submit" pleineLargeur disabled={envoi}>
+            <Bouton
+              type="submit"
+              variante={
+                delaisEnregistres !== null && !memesDelais(delais, delaisEnregistres)
+                  ? 'principal'
+                  : 'secondaire'
+              }
+              pleineLargeur
+              disabled={envoi}
+            >
               {envoi ? 'Enregistrement…' : 'Enregistrer'}
             </Bouton>
             <Bouton variante="discret" onClick={() => setDelais(DELAIS_PAR_DEFAUT)}>

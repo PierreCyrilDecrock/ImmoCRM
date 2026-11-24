@@ -29,6 +29,7 @@ import {
   type FiltresBiens,
 } from '../features/biens/filtres'
 import NouveauBien from '../features/biens/NouveauBien'
+import { useCreationDeLaPage } from '../features/saisie/creation-page'
 import { useListeBiens } from '../features/biens/liste-biens'
 import { memoriserParcours, type EtatParcours } from '../lib/parcours'
 import { useVignettesBiens } from '../features/biens/vignettes-biens'
@@ -50,6 +51,8 @@ export default function Biens() {
   const restreinte = listeBiensRestreinte(filtres)
   const nbFiltres = nombreFiltresBiens(filtres)
   const filtresSaisis = nbFiltres > 0 || filtres.prixMin !== '' || filtres.prixMax !== ''
+  // Sur téléphone et tablette, le « + » crée un bien.
+  useCreationDeLaPage('bien')
 
   // La liste lue est gardée pour l'onglet : la fiche d'un bien passe au précédent ou au suivant.
   const { cle, total, rafraichissement, erreur, lignes } = liste
@@ -65,10 +68,13 @@ export default function Biens() {
     memoriserFiltresBiens(suivants)
   }
 
+  // Une seule façon de créer par écran : sous 1024 px, c'est le « + » flottant.
   const ajouter = (
-    <Bouton icone="ajouter" onClick={() => setCreation(true)}>
-      Ajouter
-    </Bouton>
+    <div className="hidden lg:block">
+      <Bouton icone="ajouter" onClick={() => setCreation(true)}>
+        Ajouter
+      </Bouton>
+    </div>
   )
 
   const decompte =
@@ -214,7 +220,7 @@ export default function Biens() {
             Les fiches que vous archivez sont rangées ici. Vous pouvez les restaurer à tout moment.
           </EtatVide>
         ) : (
-          <EtatVide icone="biens" titre="Aucun bien pour l'instant" action={ajouter}>
+          <EtatVide icone="biens" titre="Aucun bien pour l'instant">
             Une adresse et un type suffisent pour commencer : le reste se complète ensuite.
           </EtatVide>
         ))}

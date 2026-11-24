@@ -39,6 +39,7 @@ import {
   type FiltresContacts,
 } from '../features/contacts/filtres'
 import FormulaireContact from '../features/contacts/FormulaireContact'
+import { useCreationDeLaPage } from '../features/saisie/creation-page'
 import { useListeContacts } from '../features/contacts/liste-contacts'
 import { memoriserParcours, type EtatParcours } from '../lib/parcours'
 import { formaterDate } from '../lib/dates'
@@ -163,6 +164,8 @@ export default function Contacts() {
   const liste = useListeContacts({ ...filtres, sansAction }, archives)
   const restreinte = listeRestreinte(filtres)
   const nbFiltres = nombreFiltres(filtres)
+  // Sur téléphone et tablette, le « + » crée un contact (« Nouveau contact express »).
+  useCreationDeLaPage('contact')
 
   // Nombre de fiches sans prochaine action, affiché sur l'onglet (toutes fiches actives).
   useEffect(() => {
@@ -213,10 +216,13 @@ export default function Contacts() {
     ...etiquettes,
   ].map((etiquette) => ({ valeur: etiquette, libelle: etiquette }))
 
+  // Une seule façon de créer par écran : sous 1024 px, c'est le « + » flottant.
   const ajouter = (
-    <Bouton icone="ajouter" onClick={() => setCreation(true)}>
-      Ajouter
-    </Bouton>
+    <div className="hidden lg:block">
+      <Bouton icone="ajouter" onClick={() => setCreation(true)}>
+        Ajouter
+      </Bouton>
+    </div>
   )
 
   const decompte =
@@ -249,8 +255,8 @@ export default function Contacts() {
       <div className="flex gap-2">
         <div className="min-w-0 flex-1">
           <ChampRecherche
-            libelle="Rechercher dans les contacts"
-            placeholder="Nom, téléphone, courriel, adresse…"
+            libelle="Rechercher un contact"
+            placeholder="Rechercher un contact"
             data-raccourci-recherche=""
             aria-keyshortcuts="/ Control+K"
             valeur={filtres.recherche}
@@ -375,7 +381,7 @@ export default function Contacts() {
               moment.
             </EtatVide>
           ) : (
-            <EtatVide icone="contacts" titre="Aucun contact pour l'instant" action={ajouter}>
+            <EtatVide icone="contacts" titre="Aucun contact pour l'instant">
               Un nom et un téléphone suffisent pour commencer : le reste se complète ensuite.
             </EtatVide>
           )}

@@ -9,13 +9,22 @@ type Props = {
   children: ReactNode
   /** Boutons d'action, fixés en bas de la fenêtre : toujours à portée de pouce. */
   pied?: ReactNode
+  /** Petit geste placé dans l'en-tête, avant la croix (« Créer autre chose »). */
+  actionEnTete?: ReactNode
 }
 
 /**
  * Fenêtre modale : plein écran sur téléphone, centrée sur tablette et ordinateur.
  * Tant qu'elle est ouverte, le reste de la page est inaccessible (clavier compris).
  */
-export default function FenetreModale({ ouverte, titre, onFermer, children, pied }: Props) {
+export default function FenetreModale({
+  ouverte,
+  titre,
+  onFermer,
+  children,
+  pied,
+  actionEnTete,
+}: Props) {
   const dialogue = useRef<HTMLDialogElement>(null)
   const idTitre = useId()
 
@@ -52,10 +61,12 @@ export default function FenetreModale({ ouverte, titre, onFermer, children, pied
           <header className="flex items-center gap-2 border-b border-bord py-1 pr-1 pl-4">
             <h2
               id={idTitre}
-              className="min-w-0 flex-1 truncate text-lg font-semibold tracking-tight"
+              // Avec un geste dans l'en-tête, un titre long passe à la ligne plutôt que d'être coupé.
+              className={`min-w-0 flex-1 text-lg font-semibold tracking-tight ${actionEnTete === undefined ? 'truncate' : 'py-1.5 leading-snug'}`}
             >
               {titre}
             </h2>
+            {actionEnTete}
             <button
               type="button"
               onClick={onFermer}

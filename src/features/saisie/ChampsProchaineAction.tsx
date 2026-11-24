@@ -54,7 +54,8 @@ export default function ChampsProchaineAction({
       <div className="flex flex-col gap-2">
         <Message genre="info">Déjà prévu : {dejaPrevu}.</Message>
         <div className="-ml-2 self-start">
-          <Bouton variante="discret" icone="ajouter" onClick={() => changer({ mode: 'planifier' })}>
+          {/* En gris : un geste rare, qui ne concurrence pas « Enregistrer ». */}
+          <Bouton variante="sobre" icone="ajouter" onClick={() => changer({ mode: 'planifier' })}>
             Ajouter une relance quand même
           </Bouton>
         </div>

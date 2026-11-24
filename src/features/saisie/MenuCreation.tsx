@@ -67,7 +67,7 @@ export default function MenuCreation({ onChoisir, onFermer }: Props) {
       onClick={(evenement) => {
         if (evenement.target === evenement.currentTarget) onFermer()
       }}
-      className="m-0 mt-auto max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-surface text-encre backdrop:bg-black/40 backdrop:backdrop-blur-[2px] md:mr-8 md:mb-8 md:ml-auto md:w-96 md:rounded-3xl lg:mr-auto lg:mb-6 lg:ml-64 md:shadow-2xl md:ring-1 md:ring-bord"
+      className="m-0 mt-auto max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-3xl bg-surface text-encre backdrop:bg-black/40 backdrop:backdrop-blur-[2px] md:mr-8 md:mb-8 md:ml-auto md:w-96 md:rounded-3xl lg:mr-auto lg:mb-6 lg:ml-68 md:shadow-2xl md:ring-1 md:ring-bord"
     >
       <div className="flex flex-col gap-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <header className="-mt-1 -mr-1 flex items-center gap-2">

@@ -62,9 +62,12 @@ export default function Journal() {
       titre="Journal"
       retour={RETOUR}
       actions={
-        <Bouton icone="ajouter" onClick={() => setSaisie(true)}>
-          Consigner
-        </Bouton>
+        // Une seule façon de créer par écran : sous 1024 px, le « + » flottant (Nouvelle activité).
+        <div className="hidden lg:block">
+          <Bouton icone="ajouter" onClick={() => setSaisie(true)}>
+            Consigner
+          </Bouton>
+        </div>
       }
     >
       <div className="grid gap-4 md:grid-cols-2">

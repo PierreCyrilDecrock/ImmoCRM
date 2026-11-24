@@ -16,6 +16,7 @@ import SelecteurBien from '../biens/SelecteurBien'
 import { nomComplet, nomDeListe, resumeContact, type Contact } from '../contacts/contacts'
 import { chercherDoublons } from '../contacts/doublons'
 import SelecteurContact from '../contacts/SelecteurContact'
+import AutreCreation from '../saisie/AutreCreation'
 import {
   brouillonDemande,
   enregistrerDemande,
@@ -35,6 +36,8 @@ type Props = {
   /** Le bien concerné, fixé quand on part de sa fiche. */
   bien?: Bien
   onFermer: () => void
+  /** Ouverte directement par le « + » : « Créer autre chose » ouvre le menu complet. */
+  onAutreChose?: () => void
 }
 
 const LEGENDE = 'mb-2 text-sm font-medium text-encre'
@@ -45,7 +48,12 @@ const LEGENDE = 'mb-2 text-sm font-medium text-encre'
  * le projet acquéreur à l'étape « Demande » et l'appel de qualification du jour, puis ouvre
  * la fiche du projet.
  */
-export default function DemandeEntrante({ contact: contactFixe, bien: bienFixe, onFermer }: Props) {
+export default function DemandeEntrante({
+  contact: contactFixe,
+  bien: bienFixe,
+  onFermer,
+  onAutreChose,
+}: Props) {
   const naviguer = useNavigate()
   const { notifier } = useNotifications()
   const aujourdhui = dateDuJour()
@@ -126,6 +134,7 @@ export default function DemandeEntrante({ contact: contactFixe, bien: bienFixe, 
       ouverte
       titre="Demande d'acquéreur"
       onFermer={onFermer}
+      actionEnTete={onAutreChose && <AutreCreation onClick={onAutreChose} />}
       pied={
         <>
           <Bouton type="submit" form="demande-entrante" pleineLargeur disabled={envoi}>

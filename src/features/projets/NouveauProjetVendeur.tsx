@@ -21,6 +21,7 @@ import { ajouterProprietaire, listerBiensDuContact } from '../biens/proprietaire
 import SelecteurBien from '../biens/SelecteurBien'
 import { nomComplet, type Contact } from '../contacts/contacts'
 import SelecteurContact from '../contacts/SelecteurContact'
+import AutreCreation from '../saisie/AutreCreation'
 import { creerProjetVendeur, projetEnCoursDuBien } from './projets-vendeurs'
 
 type Props = {
@@ -29,6 +30,8 @@ type Props = {
   /** Le bien, fixé quand on part de sa fiche. */
   bien?: Bien
   onFermer: () => void
+  /** Ouverte directement par le « + » : « Créer autre chose » ouvre le menu complet. */
+  onAutreChose?: () => void
 }
 
 /**
@@ -41,6 +44,7 @@ export default function NouveauProjetVendeur({
   contact: contactFixe,
   bien: bienFixe,
   onFermer,
+  onAutreChose,
 }: Props) {
   const naviguer = useNavigate()
   const { notifier } = useNotifications()
@@ -139,6 +143,7 @@ export default function NouveauProjetVendeur({
       ouverte
       titre="Nouveau projet vendeur"
       onFermer={onFermer}
+      actionEnTete={onAutreChose && <AutreCreation onClick={onAutreChose} />}
       pied={
         <>
           <Bouton type="submit" form="nouveau-projet-vendeur" pleineLargeur disabled={envoi}>

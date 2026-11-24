@@ -49,8 +49,9 @@ export default function RechercheGlobale({ disposition = 'bandeau' }: Props) {
   const champ = (
     <ChampRecherche
       libelle="Rechercher un contact"
-      placeholder={enColonne ? 'Rechercher' : 'Rechercher un contact'}
+      placeholder="Rechercher un contact"
       rappel={enColonne ? rappelRecherche() : undefined}
+      compact={enColonne}
       data-raccourci-recherche=""
       aria-keyshortcuts="/ Control+K Meta+K"
       valeur={saisie}

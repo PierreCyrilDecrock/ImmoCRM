@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import Bouton from '../../components/Bouton'
 import EtatChargement from '../../components/EtatChargement'
 import EtatVide from '../../components/EtatVide'
 import Etiquette from '../../components/Etiquette'
@@ -35,7 +34,6 @@ type Props = {
   vue: EtatProjetAcquereur
   onVue: (vue: EtatProjetAcquereur) => void
   aujourdhui: string
-  onCreer: () => void
 }
 
 type Tableau =
@@ -111,7 +109,7 @@ function ListeHorsPipeline({
  * recherches en cours par étape (demande, qualification, sélection, visites), puis les
  * projets à recontacter, perdus et gagnés (offre acceptée).
  */
-export default function OngletAcquereurs({ vue, onVue, aujourdhui, onCreer }: Props) {
+export default function OngletAcquereurs({ vue, onVue, aujourdhui }: Props) {
   const [tableau, setTableau] = useState<Tableau>({ phase: 'chargement' })
   const [comptes, setComptes] = useState<Record<EtatProjetAcquereur, number | null> | null>(null)
   const [version, setVersion] = useState(0)
@@ -165,15 +163,7 @@ export default function OngletAcquereurs({ vue, onVue, aujourdhui, onCreer }: Pr
       ) : tableau.phase === 'erreur' ? (
         <Message genre="erreur">Le pipeline n'a pas pu être lu. {tableau.message}</Message>
       ) : tableau.projets.length === 0 ? (
-        <EtatVide
-          icone="pipelines"
-          titre="Aucune recherche en cours"
-          action={
-            <Bouton icone="ajouter" onClick={onCreer}>
-              Demande entrante
-            </Bouton>
-          }
-        >
+        <EtatVide icone="pipelines" titre="Aucune recherche en cours">
           Un projet acquéreur est une recherche. Il naît d'une demande (appel ou portail), saisie
           ici en un écran, ou depuis la fiche d'un contact, rubrique « Projets d'achat ».
         </EtatVide>

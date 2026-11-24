@@ -67,6 +67,7 @@ export default function Composants() {
           <Bouton>Principal</Bouton>
           <Bouton variante="secondaire">Secondaire</Bouton>
           <Bouton variante="discret">Discret</Bouton>
+          <Bouton variante="sobre">Sobre</Bouton>
           <Bouton variante="danger">Danger</Bouton>
           <Bouton icone="ajouter">Avec dessin</Bouton>
           <Bouton disabled>Désactivé</Bouton>

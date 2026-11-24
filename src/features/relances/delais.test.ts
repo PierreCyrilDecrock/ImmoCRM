@@ -3,6 +3,7 @@ import {
   ajouterDelai,
   CHOIX_DELAIS,
   DELAIS_PAR_DEFAUT,
+  memesDelais,
   delaisLisibles,
   libelleDelai,
   lireDelai,
@@ -135,5 +136,12 @@ describe('delaisLisibles', () => {
       froid: '3m',
       veille: '6m',
     })
+  })
+})
+
+describe('memesDelais', () => {
+  it('compare chaque température', () => {
+    expect(memesDelais(DELAIS_PAR_DEFAUT, { ...DELAIS_PAR_DEFAUT })).toBe(true)
+    expect(memesDelais(DELAIS_PAR_DEFAUT, { ...DELAIS_PAR_DEFAUT, froid: '2m' })).toBe(false)
   })
 })
