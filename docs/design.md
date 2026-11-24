@@ -335,6 +335,17 @@ Règles qui s'ajoutent aux principes, dès maintenant, pour tout nouvel écran :
 7. **Chaque groupe de pastilles porte son nom.**
 8. **Un contenu coupé se signale par un fondu.**
 
+## Corrections prévues (phase F)
+
+La [revue de design n° 2](revue-design-2.md) du 24 novembre 2026 a relevé 16 propositions, faites par les étapes F.1 à F.6 du plan. Elles modifient des composants décrits plus haut : `ListeTaches` et la page Tâches (onglet « À faire »), `Navigation` (pastille chiffrée au téléphone), l'en-tête d'Aujourd'hui, `TroisActions`, `LigneRendezVous`, `BlocJournee`, `LigneAlerte`, la liste des biens (`LigneListe`), `LigneContact`, `BarreRecherche` et `Page` (loupe d'en-tête), `BarreEtapes`, `SectionTaches`, les fiches Projet et Bien, `SectionJournal` et `HistoriqueParJour`, `IdentiteContact`, `FormulaireContact`, `CartePipeline`, `TableauPipeline` et `BoutonCreer`. Chaque étape met à jour leur description ici.
+
+Règles qui s'ajoutent aux huit de la phase E, dès maintenant, pour tout nouvel écran :
+
+9. **Un compteur mène à ce qu'il compte.**
+10. **Une absence se dit calmement** : rouge et orange pour un vrai retard ou un vrai risque, gris pour « rien de prévu », avec le geste pour y remédier.
+11. **Le chiffre qui sert à décider reste visible** : prix, retard, heure ne sont jamais coupés ni remplacés par une pastille.
+12. **Une tâche n'apparaît qu'une fois par écran.**
+
 ## Composants prévus (phase D)
 
 Les composants montrés par les maquettes de la version 3 (canevas « ImmoCRM — nouveau style ») sont tous construits : ceux de D.1 sont décrits dans « Gestes rapides », ceux de D.2 dans « Structure » et « Saisie rapide », ceux de D.3 et D.4 dans « Écran Aujourd'hui », ceux de D.5, D.6 et D.7 dans « Fiches ». L'étape D.7 a repris ces composants pour les fiches Bien et Projet ; elle n'ajoute que ce que ces fiches demandaient en plus : `PhotoPrincipale` (photo et galerie), `ProchaineTacheFiche` et `CarteProchaineTache` (la carte commune avec `ProchaineAction`), `LiensProjet`, les étapes à toucher de `BarreEtapes` (`choix`), et les crochets communs de `src/lib/fiche.ts`.

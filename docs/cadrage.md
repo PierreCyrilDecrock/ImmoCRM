@@ -146,6 +146,17 @@ Une revue de design, faite le 23 novembre 2026 après l'étape D.7, a relevé 19
 | Fiche Contact | L'historique dans le premier écran du téléphone ; des groupes de pastilles nommés ; une fiche plus large sur ordinateur | E.6 |
 | Fiche Projet | L'étape écrite une fois, les critères en liste, « Passer à … » en action principale ; des onglets coupés signalés | E.7 |
 
+Une deuxième revue, faite le 24 novembre 2026 une fois la phase E terminée, a relevé 16 propositions ([revue-design-2.md](revue-design-2.md)). La phase F du plan (étapes F.1 à F.6) les réalise avant la recette D.8, sans rien ajouter au périmètre :
+
+| Écran ou geste | Ce que la proposition apporte | Étape |
+| --- | --- | --- |
+| Tâches et navigation | Les retards en tête de la page Tâches, là où mène la pastille rouge ; le nombre de retards affiché aussi sur téléphone | F.1 |
+| Aujourd'hui | La journée dans le premier écran du téléphone : compteurs à toucher au lieu d'une phrase, « Trois actions » repliées le matin, titres d'agenda lisibles, aucune tâche en double, contacts sans suite en une ligne | F.2 |
+| Listes | Le prix et l'adresse entière de chaque bien au téléphone ; la température toujours à sa place et le retard en mots dans la liste des contacts ; une seule recherche par écran | F.3 |
+| Fiches Projet et Bien | Une seule invitation à planifier, sur un ton juste ; une frise lisible au téléphone et des critères qu'on renseigne d'un toucher ; la prochaine tâche montrée une seule fois | F.4 |
+| Fiches | L'historique filtré par pastilles ; un en-tête de fiche Contact sans ligne orpheline ; le prénom en premier dans le formulaire | F.5 |
+| Pipelines et ordinateur | La valeur et le jour sur chaque carte, le total des colonnes ; « Créer » en blanc pour laisser le bleu à la page | F.6 |
+
 Quatre règles valent pour tous les écrans :
 
 1. Chaque geste rapide a un équivalent visible : glisser une ligne n'est jamais le seul chemin.
@@ -242,7 +253,7 @@ La première version doit être utilisable tous les jours avec six briques seule
 | V3 — Le pilotage | Décider avec des chiffres | Tableau de bord, objectifs, suivi des sources, zones et campagnes de prospection, carte du secteur | La revue du vendredi se fait entièrement dans le CRM |
 | V4 — Le confort | Gagner du temps | Notes vocales transcrites, résumé automatique d'une fiche avant un appel, envois groupés, suivi des commissions et des frais | Moins de 15 minutes de saisie par jour |
 
-Entre la V1 et la V2, la phase D modernise l'interface et accélère les gestes quotidiens, puis la phase E en corrige le design après revue (voir « L'interface »), sans changer ce périmètre.
+Entre la V1 et la V2, la phase D modernise l'interface et accélère les gestes quotidiens, puis les phases E et F en corrigent le design après deux revues (voir « L'interface »), sans changer ce périmètre.
 
 Ce qui est volontairement exclu : la rédaction des mandats et compromis, la diffusion des annonces sur les portails, la signature électronique, la facturation, ainsi que la location et la gestion locative. D'autres outils couvrent les quatre premiers points, et les refaire alourdirait le projet pour peu de valeur.
 

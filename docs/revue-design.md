@@ -4,6 +4,8 @@ Revue de l'interface faite après l'étape D.7 (version 1.0.0), avec un regard d
 
 Les captures « avant » et les maquettes « après » sont dans l'artefact « Revue d'interface ImmoCRM » (privé). Si une session a besoin de les voir, collez-lui son lien.
 
+Une [deuxième revue](revue-design-2.md), faite le 24 novembre 2026 une fois la phase E terminée, ajoute 16 propositions (phase F) et les règles 9 à 12.
+
 ## Comment la revue a été faite
 
 L'application a été lancée en local sur un faux serveur qui rejoue des données fictives (11 contacts, 2 biens, 3 projets, 14 tâches), l'heure figée à 10 h 20. Onze écrans ont été capturés au téléphone (390 px), à la tablette (820 px) et à l'ordinateur (1440 px), en clair et en sombre, puis relus un par un.
