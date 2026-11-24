@@ -1,22 +1,17 @@
 import LigneListe from '../../components/LigneListe'
 import type { EtatParcours } from '../../lib/parcours'
-import PastilleRetard from '../taches/PastilleRetard'
 import { initialesDe } from '../saisie/recents'
 import { nomComplet, nomDeListe, type Contact } from './contacts'
 import InitialesRole from './InitialesRole'
-import {
-  detailLigneContact,
-  detailSansAction,
-  repereContact,
-  rolesDuContact,
-  teinteRole,
-} from './ligne-contact'
+import { ligneGriseContact, repereContact, rolesDuContact, teinteRole } from './ligne-contact'
 import PuceTemperature from './PuceTemperature'
 
 /**
- * Une ligne de la liste : les initiales colorées selon le rôle, « Camille **Fictif** », le
- * rôle et le dernier échange dessous ; à droite, le retard de la prochaine action, sinon la
- * température. Le téléphone n'est plus affiché : la recherche le trouve toujours.
+ * Une ligne de la liste : les initiales colorées selon le rôle, « Camille **Fictif** » et,
+ * à droite du nom, toujours la température (rien si elle n'est pas renseignée). Dessous, le
+ * rôle et le dernier échange, ou, si la prochaine action est passée, le retard en mots et en
+ * rouge : « Acquéreur · relance en retard de 3 j ». Le téléphone n'est plus affiché : la
+ * recherche le trouve toujours.
  */
 export default function LigneContact({
   contact,
@@ -35,7 +30,8 @@ export default function LigneContact({
   etat?: EtatParcours
 }) {
   const nom = nomDeListe(contact)
-  const repere = repereContact(contact, aujourdhui)
+  const repere = repereContact(contact)
+  const grise = ligneGriseContact(contact, aujourdhui, jamaisContacte, sansAction)
   return (
     <LigneListe
       debut={
@@ -52,14 +48,25 @@ export default function LigneContact({
         </>
       }
       detail={
-        sansAction
-          ? detailSansAction(contact, aujourdhui, jamaisContacte)
-          : detailLigneContact(contact, aujourdhui, jamaisContacte)
+        grise.retard === null ? (
+          grise.debut
+        ) : (
+          // Le rôle cède la place si la ligne est trop étroite ; le retard ne se coupe jamais.
+          <span className="flex min-w-0">
+            <span className="min-w-0 truncate">{grise.debut}</span>
+            {/* Le point reste avec le retard : la coupure du rôle ne le mange pas. */}
+            <span className="shrink-0 whitespace-pre">
+              {' · '}
+              <span className="font-medium text-danger">
+                <span aria-hidden="true">{grise.retard.texte}</span>
+                <span className="sr-only">{grise.retard.annonce}</span>
+              </span>
+            </span>
+          </span>
+        )
       }
       finTitre={
-        repere === null ? undefined : repere.genre === 'retard' ? (
-          <PastilleRetard texte={repere.texte} annonce={repere.annonce} />
-        ) : (
+        repere === null ? undefined : (
           <PuceTemperature temperature={repere.temperature} texte={repere.texte} />
         )
       }

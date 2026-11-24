@@ -5,13 +5,11 @@ import ChampRecherche from '../components/ChampRecherche'
 import ChampSaisie from '../components/ChampSaisie'
 import EtatChargement from '../components/EtatChargement'
 import EtatVide from '../components/EtatVide'
-import LigneListe from '../components/LigneListe'
-import PastilleStatut from '../features/biens/PastilleStatut'
 import Liste from '../components/Liste'
 import Message from '../components/Message'
 import Page from '../components/Page'
 import SuiteListe from '../components/SuiteListe'
-import { resumeBien, STATUTS_BIEN, TYPES_BIEN, CATEGORIES_BIEN } from '../features/biens/biens'
+import { STATUTS_BIEN, TYPES_BIEN, CATEGORIES_BIEN } from '../features/biens/biens'
 import {
   FILTRES_BIENS_VIDES,
   filtresBiensMemorises,
@@ -23,9 +21,11 @@ import {
 } from '../features/biens/filtres'
 import NouveauBien from '../features/biens/NouveauBien'
 import { useCreationDeLaPage } from '../features/saisie/creation-page'
-import { useListeBiens } from '../features/biens/liste-biens'
+import { useListeBiens } from '../features/biens/lecture-biens'
 import { memoriserParcours, type EtatParcours } from '../lib/parcours'
 import { useVignettesBiens } from '../features/biens/vignettes-biens'
+import LigneBien from '../features/biens/LigneBien'
+import { useTailleEcran } from '../lib/ecran'
 import { accorder } from '../lib/nombres'
 
 /**
@@ -44,6 +44,8 @@ export default function Biens() {
   const restreinte = listeBiensRestreinte(filtres)
   const nbFiltres = nombreFiltresBiens(filtres)
   const filtresSaisis = nbFiltres > 0 || filtres.prixMin !== '' || filtres.prixMax !== ''
+  // L'ordinateur garde sa ligne d'un seul tenant ; ailleurs, le prix et l'adresse se lisent.
+  const ordinateur = useTailleEcran() === 'ordinateur'
   // Sur téléphone et tablette, le « + » crée un bien.
   useCreationDeLaPage('bien')
 
@@ -230,13 +232,11 @@ export default function Biens() {
           )}
           <Liste>
             {liste.lignes.map((bien) => (
-              <LigneListe
+              <LigneBien
                 key={bien.id}
-                icone="biens"
-                vignette={vignettes.get(bien.id) ?? null}
-                titre={bien.adresse}
-                detail={resumeBien(bien)}
-                fin={<PastilleStatut statut={bien.statut} />}
+                bien={bien}
+                vignette={vignettes.get(bien.id)}
+                ordinateur={ordinateur}
                 vers={`/biens/${bien.id}`}
                 etat={etatLien}
               />

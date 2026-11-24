@@ -5,8 +5,23 @@ import Icone, { type NomIcone } from './Icone'
 type Props = {
   /** Première ligne ; un texte, ou un nom mis en forme (« Camille **Fictif** »). */
   titre: ReactNode
-  /** Seconde ligne, plus discrète. */
-  detail?: string
+  /**
+   * L'adresse d'un bien : le titre peut passer sur deux lignes (puis « … ») au lieu d'être
+   * coupé à la première, pour se lire en entier au téléphone.
+   */
+  titreSurDeuxLignes?: boolean
+  /**
+   * Seconde ligne, plus discrète. Un texte, ou un contenu mis en forme (le prix en encre et
+   * en chiffres alignés, un retard en rouge) ; coupée par « … » si elle dépasse.
+   */
+  detail?: ReactNode
+  /**
+   * Élément court à droite de la seconde ligne, sur sa ligne (la pastille du statut d'un
+   * bien). Il ne se coupe jamais : c'est le détail qui cède la place.
+   */
+  finDetail?: ReactNode
+  /** Troisième ligne, en gris (la commune d'un bien). */
+  sousDetail?: string
   /** Dessin affiché à gauche. */
   icone?: NomIcone
   /** Élément affiché à gauche à la place du dessin (les initiales d'un contact). */
@@ -46,7 +61,10 @@ const CLASSES_ACTIVE =
 /** Ligne d'une `Liste`. Toute la ligne est touchable si elle a `vers` ou `onAction`. */
 export default function LigneListe({
   titre,
+  titreSurDeuxLignes = false,
   detail,
+  finDetail,
+  sousDetail,
   icone,
   debut,
   vignette,
@@ -57,6 +75,7 @@ export default function LigneListe({
   etat,
   onAction,
 }: Props) {
+  const coupeTitre = titreSurDeuxLignes ? 'line-clamp-2 break-words' : 'truncate'
   const contenu = (
     <>
       {debut !== undefined ? (
@@ -75,17 +94,26 @@ export default function LigneListe({
       )}
       <span className="min-w-0 flex-1">
         {finTitre === undefined ? (
-          <span className="block truncate text-base font-medium text-encre">{titre}</span>
+          <span className={`block text-base font-medium text-encre ${coupeTitre}`}>{titre}</span>
         ) : (
           <span className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-base font-medium text-encre">
+            <span className={`min-w-0 flex-1 text-base font-medium text-encre ${coupeTitre}`}>
               {titre}
             </span>
             {finTitre}
           </span>
         )}
-        {detail !== undefined && (
-          <span className="block truncate text-sm text-encre-douce">{detail}</span>
+        {detail !== undefined &&
+          (finDetail === undefined ? (
+            <span className="block truncate text-sm text-encre-douce">{detail}</span>
+          ) : (
+            <span className="mt-0.5 flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-sm text-encre-douce">{detail}</span>
+              <span className="shrink-0">{finDetail}</span>
+            </span>
+          ))}
+        {sousDetail !== undefined && (
+          <span className="block truncate text-sm text-encre-douce">{sousDetail}</span>
         )}
       </span>
       {fin !== undefined && <span className="shrink-0 text-sm text-encre-douce">{fin}</span>}

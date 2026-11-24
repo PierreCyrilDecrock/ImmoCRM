@@ -45,7 +45,7 @@ import {
   prixEtSurface,
   type OngletBien,
 } from '../features/biens/fiche-bien'
-import { lirePageBiens } from '../features/biens/liste-biens'
+import { lirePageBiens } from '../features/biens/lecture-biens'
 import PhotoPrincipale from '../features/biens/PhotoPrincipale'
 import PhotosBien from '../features/biens/PhotosBien'
 import ProprietairesBien, { type EtatProprietaires } from '../features/biens/ProprietairesBien'

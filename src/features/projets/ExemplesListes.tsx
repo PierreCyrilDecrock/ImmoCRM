@@ -4,8 +4,10 @@ import Liste from '../../components/Liste'
 import Onglets from '../../components/Onglets'
 import TableauPipeline from '../../components/TableauPipeline'
 import { ajouterJours } from '../../lib/dates'
+import { useTailleEcran } from '../../lib/ecran'
 import { bienEssai } from '../biens/bien-essai'
 import { STATUTS_BIEN } from '../biens/biens'
+import LigneBien from '../biens/LigneBien'
 import PastilleStatut from '../biens/PastilleStatut'
 import { contactEssai } from '../contacts/contact-essai'
 import LigneContact from '../contacts/LigneContact'
@@ -23,9 +25,10 @@ const ETAPES_EXEMPLE: readonly { etape: EtapeExemple; libelle: string; critere: 
 ]
 
 /**
- * Vitrine des listes et des pipelines (étape E.5), avec des données inventées : des lignes de
- * contact (initiales, prénom et nom, dernier échange, retard ou température), les statuts
- * des biens, les deux formes d'onglets des pipelines, et un tableau dont deux cartes du même
+ * Vitrine des listes et des pipelines (étapes E.5 et F.3), avec des données inventées : des
+ * lignes de contact (initiales, prénom et nom, température à droite, dernier échange ou
+ * retard en rouge dessous), des lignes de bien (prix, type court et surface, statut), les
+ * statuts des biens, les deux formes d'onglets des pipelines, et un tableau dont deux cartes du même
  * vendeur se distinguent par leur adresse (au téléphone, les étapes vides sur une ligne).
  */
 export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
@@ -41,7 +44,7 @@ export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
       roles: ['vendeur'],
       collecte_date: avant(40),
       dernier_contact_le: avant(7),
-      prochaine_action_le: avant(2),
+      prochaine_action_le: avant(3),
       temperature: 'chaud',
     }),
     contactEssai({
@@ -69,6 +72,40 @@ export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
       collecte_date: avant(5),
       dernier_contact_le: avant(5),
       temperature: 'froid',
+    }),
+  ]
+
+  const ordinateur = useTailleEcran() === 'ordinateur'
+  const biens = [
+    bienEssai({
+      id: 'exemple-b1',
+      adresse: '12 rue de l’Exemple, résidence des Tilleuls imaginaires',
+      code_postal: '00000',
+      ville: 'Villefictive',
+      prix: 285000,
+      pieces: 3,
+      surface: 64,
+      statut: 'en_mandat',
+    }),
+    bienEssai({
+      id: 'exemple-b2',
+      adresse: '3 impasse Inventée',
+      code_postal: '00000',
+      ville: 'Fictiveville',
+      type: 'maison',
+      surface: 118,
+      statut: 'en_estimation',
+    }),
+    bienEssai({
+      id: 'exemple-b3',
+      adresse: 'Chemin du Spécimen',
+      code_postal: '00000',
+      ville: 'Essai-sur-Mer',
+      type: 'terrain',
+      categorie: null,
+      prix: 95000,
+      surface_terrain: 1200,
+      statut: 'sous_offre',
     }),
   ]
 
@@ -123,6 +160,21 @@ export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
               aujourdhui={aujourdhui}
               // Paul Inventé n'a rien au journal : « Jamais contacté ».
               jamaisContacte={contact.id === 'exemple-l4'}
+            />
+          ))}
+        </Liste>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h3 className="text-sm font-medium text-encre-douce">Liste des biens</h3>
+        <Liste>
+          {biens.map((bien) => (
+            <LigneBien
+              key={bien.id}
+              bien={bien}
+              vignette={undefined}
+              ordinateur={ordinateur}
+              vers="/plus/composants"
             />
           ))}
         </Liste>
