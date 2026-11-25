@@ -7,6 +7,7 @@ import ChampChoix from '../components/ChampChoix'
 import ChampEtiquettes from '../components/ChampEtiquettes'
 import ChampSaisie from '../components/ChampSaisie'
 import ChampTexteLong from '../components/ChampTexteLong'
+import ChoixIllustre from '../components/ChoixIllustre'
 import ChoixMultiple from '../components/ChoixMultiple'
 import ChoixSegmente from '../components/ChoixSegmente'
 import EtatChargement from '../components/EtatChargement'
@@ -25,6 +26,7 @@ import NavigationFiche from '../components/NavigationFiche'
 import { useNotifications } from '../components/notifications-contexte'
 import Page from '../components/Page'
 import Onglets from '../components/Onglets'
+import Volet from '../components/Volet'
 import AnneauProgression from '../features/aujourdhui/AnneauProgression'
 import BlocJournee from '../features/aujourdhui/BlocJournee'
 import ExemplesHistorique from '../features/activites/ExemplesHistorique'
@@ -50,6 +52,8 @@ export default function Composants() {
   const [roles, setRoles] = useState<string[]>(['vendeur'])
   const [etiquettes, setEtiquettes] = useState(['investisseur'])
   const [onglet, setOnglet] = useState('a_faire')
+  const [voletOuvert, setVoletOuvert] = useState(true)
+  const [densite, setDensite] = useState<'serree' | 'normale' | 'aeree'>('normale')
   const [ongletFiche, setOngletFiche] = useState('activite')
   const [temperature, setTemperature] = useState<'froid' | 'tiede' | 'chaud'>('tiede')
   const aujourdhui = dateDuJour()
@@ -226,6 +230,38 @@ export default function Composants() {
         </div>
       </Carte>
 
+      <Carte titre="Volet et choix illustré">
+        <Volet
+          titre="Densité"
+          resume={densite === 'serree' ? 'Serrée' : densite === 'aeree' ? 'Aérée' : 'Normale'}
+          ouvert={voletOuvert}
+          onBasculer={() => setVoletOuvert((o) => !o)}
+        >
+          <ChoixIllustre
+            libelle="Densité"
+            valeur={densite}
+            onChange={setDensite}
+            options={[
+              {
+                valeur: 'serree',
+                libelle: 'Serrée',
+                illustration: <span className="h-3 w-6 rounded-sm border-2 border-current" />,
+              },
+              {
+                valeur: 'normale',
+                libelle: 'Normale',
+                illustration: <span className="h-4 w-6 rounded-sm border-2 border-current" />,
+              },
+              {
+                valeur: 'aeree',
+                libelle: 'Très\naérée',
+                illustration: <span className="h-5 w-6 rounded-sm border-2 border-current" />,
+              },
+            ]}
+          />
+        </Volet>
+      </Carte>
+
       <Carte titre="Liens d'action">
         <div className="flex gap-2 md:max-w-md">
           <LienAction libelle="Appeler" icone="telephone" href="tel:+33639980000" />
@@ -332,7 +368,7 @@ export default function Composants() {
               return exemple === null ? null : (
                 <div key={faites} className="max-w-sm">
                   <div className="flex min-h-11 items-center justify-between gap-3">
-                    <p className="text-[1.75rem] leading-tight font-bold tracking-tight text-encre">
+                    <p className="text-titre leading-tight font-bold tracking-tight text-encre">
                       Bonjour Alex
                     </p>
                     {exemple.anneau && <AnneauProgression progression={exemple} />}

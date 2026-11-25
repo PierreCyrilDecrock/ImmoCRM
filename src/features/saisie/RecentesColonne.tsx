@@ -18,7 +18,7 @@ function Vignette({ fiche }: { fiche: FicheRecente }) {
   return (
     <span
       aria-hidden="true"
-      className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-semibold ${
+      className={`flex size-7 shrink-0 items-center justify-center rounded-full text-mini font-semibold ${
         initiales === ''
           ? 'bg-surface text-encre-douce ring-1 ring-bord'
           : 'bg-accent-doux text-accent-fort'

@@ -388,7 +388,7 @@ export default function FicheBien() {
       {grande && etiquettes}
       <h1
         className={`leading-tight font-bold tracking-tight break-words text-encre ${
-          grande ? 'text-2xl' : 'text-[1.375rem] md:text-[1.75rem]'
+          grande ? 'text-2xl' : 'text-titre-fiche md:text-titre'
         }`}
       >
         {bien.adresse}

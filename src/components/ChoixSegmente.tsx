@@ -74,7 +74,7 @@ export default function ChoixSegmente<V extends string>({
               if (!choisie) onChange(option.valeur)
             }}
             onKeyDown={(evenement) => surTouche(evenement, rang)}
-            className={`min-h-11 flex-1 rounded-lg px-3 text-[0.9375rem] whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed ${
+            className={`min-h-11 flex-1 rounded-lg px-3 text-moyen whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed ${
               choisie
                 ? 'bg-surface font-semibold text-encre shadow-sm ring-1 ring-bord'
                 : 'font-medium text-encre-douce hover:text-encre disabled:hover:text-encre-douce'

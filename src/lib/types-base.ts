@@ -894,6 +894,7 @@ export type Database = {
       }
       reglages: {
         Row: {
+          apparence: Json
           created_at: string
           dernier_export_le: string | null
           derniere_sauvegarde_le: string | null
@@ -907,6 +908,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          apparence?: Json
           created_at?: string
           dernier_export_le?: string | null
           derniere_sauvegarde_le?: string | null
@@ -920,6 +922,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          apparence?: Json
           created_at?: string
           dernier_export_le?: string | null
           derniere_sauvegarde_le?: string | null

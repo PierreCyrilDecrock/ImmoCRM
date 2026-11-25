@@ -45,9 +45,9 @@ function classesOnglet(forme: keyof typeof CLASSES_GROUPE, actif: boolean): stri
   }
   if (forme === 'pastilles') {
     // 44 px de haut pour le doigt ; la pastille dessinée est plus petite (30 px, texte de 13 px).
-    return `${commun} group/pastille min-h-11 rounded-full text-[0.8125rem]`
+    return `${commun} group/pastille min-h-11 rounded-full text-petit`
   }
-  return `${commun} min-h-11 rounded-lg px-3.5 text-[0.9375rem] ${
+  return `${commun} min-h-11 rounded-lg px-3.5 text-moyen ${
     actif
       ? 'bg-surface font-semibold text-encre shadow-sm ring-1 ring-bord'
       : 'font-medium text-encre-douce hover:text-encre'

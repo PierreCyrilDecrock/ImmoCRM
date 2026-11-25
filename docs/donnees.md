@@ -383,6 +383,12 @@ L'offre gratuite de Supabase ne sauvegarde rien. Deux mécanismes s'en chargent 
 
 Conséquences pour toute nouvelle table : elle doit avoir une colonne `id` (tri de l'export) et `user_id` (rattachement lors d'une restauration), comme le veulent déjà les conventions ci-dessus. Les fichiers du stockage (photos) ne sont dans aucune sauvegarde.
 
+### Apparence
+
+La page Apparence (menu Plus) garde les **thèmes du compte** dans la colonne `apparence` de `reglages` (migration `0018_apparence`) : un objet JSON `{ theme_choisi, themes: [{ id, nom, couleurs: { clair, sombre }, police, taille, arrondi }] }`, borné à 64 Ko par une contrainte. C'est l'exception à la règle « une valeur choisie dans une liste fermée est une colonne de texte » : un thème est un petit ensemble de réglages qu'on lit et qu'on écrit d'un bloc, une ligne par compte. Le contrôle se fait à la lecture (`lireApparenceCompte`, `src/features/apparence/themes.ts`) : une couleur qui n'est pas « #rrggbb », une police, une taille ou un arrondi inconnus sont remplacés par la valeur d'origine ; un thème choisi qui n'existe plus ramène à « Standard ». Lecture et écriture : `lireApparence` et `enregistrerApparence` (`src/features/reglages/reglages.ts`, par `lister` et `enregistrerUnique`).
+
+Le **mode** (auto, clair, sombre) et le **zoom** sont propres à chaque appareil : ils vivent dans la mémoire du navigateur (`immocrm.apparence.appareil`), comme le dernier thème en service (`immocrm.apparence.theme`), gardé pour l'afficher dès le démarrage. Rien de cela n'est une donnée de client. La colonne est dans l'export complet et les sauvegardes avec le reste de `reglages`.
+
 ### Types TypeScript
 
 `src/lib/types-base.ts` décrit les tables. Il est **généré** à partir du projet de test, jamais écrit à la main. Après chaque migration, Claude Code :

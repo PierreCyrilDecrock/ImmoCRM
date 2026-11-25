@@ -84,7 +84,7 @@ function EtapesVides<E extends string>({
                 className="flex min-h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <span
-                  className={`inline-flex min-h-[1.875rem] items-center gap-1 rounded-full px-2.5 text-[0.8125rem] whitespace-nowrap ${
+                  className={`inline-flex min-h-[1.875rem] items-center gap-1 rounded-full px-2.5 text-petit whitespace-nowrap ${
                     ouverte
                       ? 'bg-encre font-semibold text-fond'
                       : 'bg-surface font-medium text-encre ring-1 ring-bord-fort/40 ring-inset'

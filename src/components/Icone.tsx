@@ -61,6 +61,19 @@ const TRACES = {
   retour: <path d="m15 5-7 7 7 7" />,
   fermer: <path d="M6 6l12 12M18 6 6 18" />,
   ajouter: <path d="M12 5v14M5 12h14" />,
+  moins: <path d="M5 12h14" />,
+  retablir: (
+    <>
+      <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+      <path d="M4 4v4.5h4.5" />
+    </>
+  ),
+  cadenas: (
+    <>
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+    </>
+  ),
   succes: (
     <>
       <circle cx="12" cy="12" r="9" />

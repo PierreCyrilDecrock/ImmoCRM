@@ -107,7 +107,7 @@ export default function Page({
           enTete
         ) : (
           <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <h1 className="min-w-0 text-[1.75rem] leading-tight font-bold tracking-tight break-words text-encre md:text-4xl">
+            <h1 className="min-w-0 text-titre leading-tight font-bold tracking-tight break-words text-encre md:text-4xl">
               {titre}
             </h1>
             {/* La loupe suit les actions (celles-ci ne s'affichent que sur ordinateur, sans loupe). */}
