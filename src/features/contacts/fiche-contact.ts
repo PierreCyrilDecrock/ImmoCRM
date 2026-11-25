@@ -1,7 +1,9 @@
-import { formaterDate } from '../../lib/dates'
+import { depuisQuand, ecartJours, formaterDate } from '../../lib/dates'
 import type { TailleEcran } from '../../lib/ecran'
 import { ongletDemande } from '../../lib/fiche'
+import { libelleTypeActivite, type Activite } from '../activites/activites'
 import { libelleTemperature, type Contact, type Temperature } from './contacts'
+import { ilYaCourt } from './jamais-contactes'
 
 /**
  * Fiche Contact (étape D.5) : les onglets et les petites phrases du profil. Règles pures, testées ; l'affichage est dans `src/pages/FicheContact.tsx`.
@@ -79,5 +81,46 @@ export function puceTemperatureFiche(temperature: Temperature | null): {
     texte,
     couleur: COULEURS_TEMPERATURE[temperature],
     annonce: `Température : ${texte.toLowerCase()}, changer`,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// En-tête : le dernier échange (revue de design n° 2, proposition 14)
+// ---------------------------------------------------------------------------
+
+/** Ce qu'a été le dernier échange, en deux ou trois mots : « Appel joint », « Visite ». */
+const APPELS: Record<string, string> = {
+  joint: 'Appel joint',
+  messagerie: 'Appel en messagerie',
+  pas_de_reponse: 'Appel sans réponse',
+  rappeler: 'Appel, à rappeler',
+}
+
+function quoiDernierEchange(activite: Pick<Activite, 'type' | 'resultat'>): string {
+  if (activite.type === 'appel') return APPELS[activite.resultat ?? ''] ?? 'Appel'
+  if (activite.type === 'autre') return 'Échange'
+  return libelleTypeActivite(activite.type)
+}
+
+const INSECABLE = '\u00a0'
+
+/**
+ * Le dernier échange, en une ligne courte sous le nom : « Appel joint · il y a 7 j »,
+ * « Visite · hier » ; « Jamais contacté » sans aucun échange (à n'appeler qu'avec une lecture
+ * réussie). Le point reste collé à ce qui le précède et l'ancienneté ne se coupe pas : si la
+ * ligne doit se couper, aucune ne commence par un point. `annonce` est la phrase entière, pour
+ * les lecteurs d'écran (« Dernier échange : appel joint, il y a 7 jours »).
+ */
+export function dernierEchangeCourt(
+  activite: Pick<Activite, 'type' | 'resultat' | 'date_activite'> | null,
+  aujourdhui: string,
+): { texte: string; annonce: string } {
+  if (activite === null) return { texte: 'Jamais contacté', annonce: 'Jamais contacté' }
+  const jours = Math.max(0, ecartJours(activite.date_activite, aujourdhui))
+  const quoi = quoiDernierEchange(activite)
+  const quand = ilYaCourt(jours).replaceAll(' ', INSECABLE)
+  return {
+    texte: `${quoi}${INSECABLE}· ${quand}`,
+    annonce: `Dernier échange : ${quoi.toLocaleLowerCase('fr')}, ${depuisQuand(jours)}`,
   }
 }

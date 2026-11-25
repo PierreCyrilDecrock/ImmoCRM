@@ -27,6 +27,7 @@ import Page from '../components/Page'
 import Onglets from '../components/Onglets'
 import AnneauProgression from '../features/aujourdhui/AnneauProgression'
 import BlocJournee from '../features/aujourdhui/BlocJournee'
+import ExemplesHistorique from '../features/activites/ExemplesHistorique'
 import ExemplesJournee from '../features/aujourdhui/ExemplesJournee'
 import { progression } from '../features/aujourdhui/maintenant'
 import { videAutresTaches } from '../features/aujourdhui/ordre-journee'
@@ -482,6 +483,10 @@ export default function Composants() {
             }}
           />
         </div>
+      </Carte>
+
+      <Carte titre="Historique et journal">
+        <ExemplesHistorique aujourdhui={aujourdhui} />
       </Carte>
 
       <Carte titre="Fiche Projet : rien de prévu">

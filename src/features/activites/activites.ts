@@ -4,6 +4,7 @@ import {
   archiver,
   creer,
   listerPage,
+  listerValeurs,
   modifier,
   type Creation,
   type Filtre,
@@ -426,6 +427,25 @@ export async function lirePageActivites(
   const lignes = await completerActivites(client, page.donnees.lignes)
   if (!lignes.ok) return lignes
   return { ok: true, donnees: { lignes: lignes.donnees, total: page.donnees.total } }
+}
+
+/** Au plus autant de types lus pour compter les pastilles de l'historique (une requête). */
+export const BORNE_TYPES_ACTIVITES = 1000
+
+/**
+ * Les types des activités qui répondent au critère (son type de côté), les plus récentes
+ * d'abord, au plus `BORNE_TYPES_ACTIVITES` : une seule requête bornée, qui ne lit qu'une
+ * colonne, pour chiffrer les pastilles « Appels 3 » de l'historique et du journal.
+ */
+export function lireTypesActivites(
+  client: SupabaseClient,
+  critere: CritereJournal,
+): Promise<Resultat<string[]>> {
+  return listerValeurs(client, 'activites', 'type', {
+    filtres: conditionsJournal({ ...critere, type: '' }),
+    tri: TRI_JOURNAL,
+    limite: BORNE_TYPES_ACTIVITES,
+  })
 }
 
 /**

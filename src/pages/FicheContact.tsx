@@ -13,7 +13,6 @@ import ProfilFiche from '../components/ProfilFiche'
 import SectionProjetsAcquereurs from '../features/acquereurs/SectionProjetsAcquereurs'
 import SectionJournal from '../features/activites/SectionJournal'
 import { cartesDeLAppareil } from '../features/aujourdhui/journee'
-import { dernierEchange } from '../features/aujourdhui/ordre-journee'
 import { listerBiensDuContact, type BienDuContact } from '../features/biens/proprietaires'
 import ActionsContact from '../features/contacts/ActionsContact'
 import AvertissementAppel from '../features/contacts/AvertissementAppel'
@@ -34,6 +33,7 @@ import {
 } from '../features/contacts/contacts'
 import { sansCoordonnees } from '../features/contacts/coordonnees'
 import {
+  dernierEchangeCourt,
   LIBELLES_ONGLETS,
   ligneAccord,
   ongletsContact,
@@ -213,7 +213,7 @@ export default function FicheContact() {
   const ligneDernier =
     compteurs === null || compteurs.dernier === undefined
       ? undefined
-      : dernierEchange(compteurs.dernier, aujourdhui)
+      : dernierEchangeCourt(compteurs.dernier, aujourdhui)
 
   /** La fiche relue ou renvoyée par un enregistrement (température, archivage). */
   function remplacerContact(suivant: Contact) {
@@ -436,7 +436,7 @@ export default function FicheContact() {
         {messages}
         <div className={GRILLE_FICHE}>
           <ProfilFiche libelle={`Profil de ${nomComplet(contact)}`}>
-            <IdentiteContact contact={contact} taille="grande" sousTitre={ligneDernier} />
+            <IdentiteContact contact={contact} taille="grande" dernierEchange={ligneDernier} />
             {temperature}
             <ActionsContact
               contact={contact}
@@ -497,7 +497,7 @@ export default function FicheContact() {
             <IdentiteContact
               contact={contact}
               taille="compacte"
-              sousTitre={ligneDernier}
+              dernierEchange={ligneDernier}
               apresRoles={temperature}
             />
           </div>

@@ -3,7 +3,11 @@ import { useRef, type KeyboardEvent } from 'react'
 type Props<V extends string> = {
   /** Nom du choix, lu par les lecteurs d'écran (« Température »). */
   libelle: string
-  options: readonly { valeur: V; libelle: string }[]
+  /**
+   * `annonce` : le choix dit en entier, quand le libellé est abrégé (« 7 j » : « 7 derniers
+   * jours », « — » : « Non précisée ») ; lu par les lecteurs d'écran et montré en info-bulle.
+   */
+  options: readonly { valeur: V; libelle: string; annonce?: string }[]
   /** Le choix actuel ; `null` : aucun n'est allumé. */
   valeur: V | null
   onChange: (valeur: V) => void
@@ -62,6 +66,8 @@ export default function ChoixSegmente<V extends string>({
             type="button"
             role="radio"
             aria-checked={choisie}
+            aria-label={option.annonce}
+            title={option.annonce}
             tabIndex={atteignable ? 0 : -1}
             disabled={desactive}
             onClick={() => {

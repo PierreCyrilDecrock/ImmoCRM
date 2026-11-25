@@ -8,6 +8,7 @@ import {
   lire,
   lister,
   listerPage,
+  listerValeurs,
   modifier,
   nombreEcrituresEnCours,
   restaurer,
@@ -285,6 +286,35 @@ describe('supprimer', () => {
     const resultat = await supprimer(client, 'biens_photos', 'p1')
     expect(resultat.ok).toBe(false)
     if (!resultat.ok) expect(resultat.erreur.genre).toBe('introuvable')
+  })
+})
+
+describe('listerValeurs', () => {
+  it('lit une seule colonne, filtrée, triée et bornée, sans les valeurs vides', async () => {
+    const { client, appels } = fauxClient({
+      data: [{ type: 'appel' }, { type: 'note' }, { type: null }],
+      error: null,
+    })
+    const resultat = await listerValeurs(client, 'activites', 'type', {
+      filtres: [{ colonne: 'contact_id', genre: 'egal', valeur: 'c1' }],
+      tri: [{ colonne: 'date_activite', croissant: false }],
+      limite: 500,
+    })
+    expect(resultat).toEqual({ ok: true, donnees: ['appel', 'note'] })
+    expect(appels).toEqual([
+      ['from', 'activites'],
+      ['select', 'type'],
+      ['is', 'archived_at', null],
+      ['eq', 'contact_id', 'c1'],
+      ['order', 'date_activite', { ascending: false }],
+      ['limit', 500],
+    ])
+  })
+
+  it('ne demande jamais plus de 1 000 lignes', async () => {
+    const { client, appels } = fauxClient({ data: [], error: null })
+    await listerValeurs(client, 'activites', 'type', { tri: [{ colonne: 'id' }], limite: 5000 })
+    expect(appels).toContainEqual(['limit', 1000])
   })
 })
 

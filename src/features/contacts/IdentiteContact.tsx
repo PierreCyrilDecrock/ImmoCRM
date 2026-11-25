@@ -8,8 +8,12 @@ type Props = {
   contact: Contact
   /** `grande` : en tête du profil sur ordinateur ; `compacte` : en-tête de la fiche ailleurs. */
   taille: 'grande' | 'compacte'
-  /** Une ligne sous les rôles (« Dernier échange il y a 8 jours · appel »). */
-  sousTitre?: string
+  /**
+   * Le dernier échange, sur une ligne courte sous les rôles (« Appel joint · il y a 7 j »,
+   * « Jamais contacté » ; `dernierEchangeCourt`), et la phrase entière pour les lecteurs
+   * d'écran.
+   */
+  dernierEchange?: { texte: string; annonce: string }
   /** À droite des rôles : la puce de température, sur téléphone et tablette (étape E.6). */
   apresRoles?: ReactNode
 }
@@ -17,12 +21,14 @@ type Props = {
 /**
  * Qui est ce contact, d'un coup d'œil : ses initiales dans une pastille ronde, son nom (le
  * titre de la page) et ses rôles (« Prospect » sans rôle), « Archivé » s'il l'est ; sur
- * téléphone et tablette, la température à côté des rôles.
+ * téléphone et tablette, la température à côté des rôles. Les initiales sont alignées en
+ * haut, à la hauteur du nom (revue de design n° 2, proposition 14), et non centrées sur les
+ * trois lignes.
  */
-export default function IdentiteContact({ contact, taille, sousTitre, apresRoles }: Props) {
+export default function IdentiteContact({ contact, taille, dernierEchange, apresRoles }: Props) {
   const grande = taille === 'grande'
   return (
-    <div className={`flex min-w-0 items-center ${grande ? 'gap-4' : 'gap-3'}`}>
+    <div className={`flex min-w-0 items-start ${grande ? 'gap-4' : 'gap-3'}`}>
       <span
         aria-hidden="true"
         className={`flex shrink-0 items-center justify-center rounded-full bg-accent-doux font-semibold text-accent-fort ${
@@ -44,8 +50,11 @@ export default function IdentiteContact({ contact, taille, sousTitre, apresRoles
           {apresRoles}
           {contact.archived_at !== null && <Etiquette genre="alerte">Archivé</Etiquette>}
         </p>
-        {sousTitre !== undefined && sousTitre !== '' && (
-          <p className="text-sm text-encre-douce">{sousTitre}</p>
+        {dernierEchange !== undefined && (
+          <p className="text-sm text-encre-douce">
+            <span aria-hidden="true">{dernierEchange.texte}</span>
+            <span className="sr-only">{dernierEchange.annonce}</span>
+          </p>
         )}
       </div>
     </div>

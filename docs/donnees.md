@@ -98,6 +98,7 @@ Toutes les pages passent par `src/lib/donnees.ts`. Aucune page n'appelle Supabas
 | --- | --- |
 | `lister(client, table, options)` | Lit les lignes ; écarte les archivées sauf `archives: 'avec'` ou `'seulement'` ; tri et limite facultatifs |
 | `listerPage(client, table, options)` | Lit une page de lignes filtrées et triées par la base, avec le total si demandé : pour toute liste qui peut grossir. Filtres possibles : `egal`, `contient`, `comprend` (tableau), `parmi` (liste de valeurs), `min` et `max` (nombres ou dates `AAAA-MM-JJ`), `vide` (colonne sans valeur), `nonVide` (colonne renseignée) |
+| `listerValeurs(client, table, colonne, options)` | Lit une seule colonne des lignes filtrées et triées (mêmes filtres que `listerPage`), au plus `limite` lignes (1 000 au plus) : une requête légère pour compter des valeurs sans lire des lignes entières (les nombres des pastilles « Appels 3 » de l'historique, quand le fil n'est pas déjà lu en entier) |
 | `compter(client, table, options)` | Compte les lignes qui remplissent les conditions (mêmes filtres que `listerPage`), sans en lire aucune : une seule requête légère (pastille des tâches en retard) |
 | `lire(client, table, id)` | Lit une ligne |
 | `creer(client, table, valeurs)` | Crée une ligne et la renvoie complète |

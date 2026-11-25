@@ -1,62 +1,52 @@
 import { describe, expect, it } from 'vitest'
-import { bornesPeriode, estPeriode, libelleJourActivite, PERIODES } from './periodes'
+import {
+  bornesPeriode,
+  estPeriode,
+  libelleJourActivite,
+  PERIODE_PAR_DEFAUT,
+  PERIODES,
+} from './periodes'
 
 const MARDI = '2026-11-17'
 
 describe('bornesPeriode', () => {
-  it('donne des bornes incluses, jusqu’à aujourd’hui', () => {
+  it('compte aujourd’hui dans chaque période', () => {
     expect(bornesPeriode('tout', MARDI)).toEqual({})
-    expect(bornesPeriode('aujourdhui', MARDI)).toEqual({ min: MARDI, max: MARDI })
-    expect(bornesPeriode('hier', MARDI)).toEqual({ min: '2026-11-16', max: '2026-11-16' })
     expect(bornesPeriode('sept_jours', MARDI)).toEqual({ min: '2026-11-11', max: MARDI })
     expect(bornesPeriode('trente_jours', MARDI)).toEqual({ min: '2026-10-19', max: MARDI })
-    expect(bornesPeriode('mois', MARDI)).toEqual({ min: '2026-11-01', max: MARDI })
-    expect(bornesPeriode('annee', MARDI)).toEqual({ min: '2026-01-01', max: MARDI })
+    expect(bornesPeriode('trois_mois', MARDI)).toEqual({ min: '2026-08-18', max: MARDI })
   })
 
-  it('« le mois dernier » va du premier au dernier jour du mois précédent', () => {
-    expect(bornesPeriode('mois_dernier', MARDI)).toEqual({ min: '2026-10-01', max: '2026-10-31' })
-    expect(bornesPeriode('mois_dernier', '2027-03-31')).toEqual({
-      min: '2027-02-01',
-      max: '2027-02-28',
-    })
-    expect(bornesPeriode('mois_dernier', '2027-01-15')).toEqual({
-      min: '2026-12-01',
-      max: '2026-12-31',
-    })
-  })
-
-  it('le 1er janvier, « hier » et « 7 derniers jours » remontent dans l’année précédente', () => {
-    expect(bornesPeriode('hier', '2027-01-01')).toEqual({ min: '2026-12-31', max: '2026-12-31' })
+  it('passe les changements de mois et d’année', () => {
     expect(bornesPeriode('sept_jours', '2027-01-01')).toEqual({
       min: '2026-12-26',
       max: '2027-01-01',
     })
+    expect(bornesPeriode('trois_mois', '2027-02-15')).toEqual({
+      min: '2026-11-16',
+      max: '2027-02-15',
+    })
   })
+})
 
-  it('« dates choisies » : côté vide ouvert, dates inversées remises dans l’ordre', () => {
-    expect(bornesPeriode('dates', MARDI, { du: '2026-11-01', au: '2026-11-10' })).toEqual({
-      min: '2026-11-01',
-      max: '2026-11-10',
-    })
-    expect(bornesPeriode('dates', MARDI, { du: '2026-11-10', au: '2026-11-01' })).toEqual({
-      min: '2026-11-01',
-      max: '2026-11-10',
-    })
-    expect(bornesPeriode('dates', MARDI, { du: '2026-11-05', au: '' })).toEqual({
-      min: '2026-11-05',
-    })
-    expect(bornesPeriode('dates', MARDI, { du: 'n’importe quoi', au: '2026-11-05' })).toEqual({
-      max: '2026-11-05',
-    })
-    expect(bornesPeriode('dates', MARDI)).toEqual({})
+describe('PERIODES', () => {
+  it('propose quatre périodes courtes, chacune dite en entier', () => {
+    expect(PERIODES.map((option) => option.libelle)).toEqual(['7 j', '30 j', '3 mois', 'Tout'])
+    expect(PERIODES.map((option) => option.annonce)).toEqual([
+      '7 derniers jours',
+      '30 derniers jours',
+      '3 derniers mois',
+      'Tout le journal',
+    ])
+    expect(estPeriode(PERIODE_PAR_DEFAUT)).toBe(true)
   })
 })
 
 describe('estPeriode', () => {
-  it('reconnaît les périodes de la liste', () => {
+  it('reconnaît les périodes proposées', () => {
     for (const option of PERIODES) expect(estPeriode(option.valeur)).toBe(true)
     expect(estPeriode('semaine')).toBe(false)
+    expect(estPeriode('dates')).toBe(false)
   })
 })
 

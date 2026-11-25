@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Carte from '../../components/Carte'
-import ChampChoix from '../../components/ChampChoix'
 import Icone from '../../components/Icone'
 import Message from '../../components/Message'
 import SuiteListe from '../../components/SuiteListe'
@@ -16,16 +15,19 @@ import {
   type FicheOrigine,
 } from '../liens/fiche-origine'
 import {
-  estTypeActivite,
   lirePageActivites,
+  lireTypesActivites,
   TAILLE_PAGE_ACTIVITES,
   TYPES_ACTIVITE,
   type ActiviteAffichee,
   type CritereJournal,
   type TypeActivite,
 } from './activites'
+import { useComptesTypes } from './comptes-types'
 import FilActivites from './FilActivites'
+import FiltreTypes from './FiltreTypes'
 import FormulaireActivite from './FormulaireActivite'
+import { filtreTypes } from './historique'
 import HistoriqueParJour from './HistoriqueParJour'
 
 type Props = FicheOrigine & {
@@ -50,10 +52,18 @@ const lirePage: LecteurPage<ActiviteAffichee> = (cle, debut, compter) => {
   return lirePageActivites(exigerSupabase(), { critere, debut, compter })
 }
 
+/** Lit les types du fil décrit par la clé, pour chiffrer les pastilles (une requête bornée). */
+function lireTypes(cle: string) {
+  const [critere] = JSON.parse(cle) as [CritereJournal, number]
+  return lireTypesActivites(exigerSupabase(), critere)
+}
+
 /**
  * Rubrique « Journal » d'une fiche Contact ou Bien. En haut, un bouton par type : un toucher
  * ouvre la saisie, le curseur déjà dans le texte. En dessous, le fil des activités liées à la
- * fiche, du plus récent au plus ancien, filtrable par type.
+ * fiche, du plus récent au plus ancien, filtrable par type : une rangée de pastilles
+ * (« Tout 5 », « Appels 3 »…, seulement les types présents), à partir de quatre échanges.
+ * Vide, la rubrique se résume à une phrase, sans filtre ni lien vers le journal.
  */
 export default function SectionJournal(props: Props) {
   const [type, setType] = useState<TypeActivite | ''>('')
@@ -61,15 +71,22 @@ export default function SectionJournal(props: Props) {
   const [saisie, setSaisie] = useState<TypeActivite | null>(null)
   const aujourdhui = dateDuJour()
   const masquer = masqueDeFiche(props)
-  const critere: CritereJournal = {
-    lien: lienDeFiche(props),
-    type,
-  }
+  const lecture = version + (props.version ?? 0)
+  const critereTout: CritereJournal = { lien: lienDeFiche(props), type: '' }
   const fil = useListePaginee(
-    JSON.stringify([critere, version + (props.version ?? 0)]),
+    JSON.stringify([{ ...critereTout, type }, lecture]),
     lirePage,
     TAILLE_PAGE_ACTIVITES,
   )
+  // La clé du fil sur « Tout » : les nombres des pastilles ne dépendent pas du type choisi.
+  const comptes = useComptesTypes(
+    JSON.stringify([critereTout, lecture]),
+    type === '',
+    fil,
+    lireTypes,
+  )
+  const pastilles = filtreTypes(comptes, type)
+  const vide = type === '' && !fil.chargement && fil.erreur === null && fil.lignes.length === 0
 
   const relire = props.onChangement ?? (() => setVersion((v) => v + 1))
   const historique = props.historique === true
@@ -96,18 +113,9 @@ export default function SectionJournal(props: Props) {
           </div>
         )}
 
-        <div className="md:max-w-xs">
-          <ChampChoix
-            libelle="Afficher"
-            options={TYPES_ACTIVITE}
-            optionVide="Tous les types"
-            value={type}
-            onChange={(evenement) => {
-              const valeur = evenement.target.value
-              setType(estTypeActivite(valeur) ? valeur : '')
-            }}
-          />
-        </div>
+        {pastilles !== null && (
+          <FiltreTypes pastilles={pastilles} valeur={type} onChange={setType} />
+        )}
 
         {fil.chargement ? (
           <p className="text-sm text-encre-douce">Chargement…</p>
@@ -151,12 +159,14 @@ export default function SectionJournal(props: Props) {
           </div>
         )}
 
-        <Link
-          to="/plus/journal"
-          className="inline-flex min-h-11 items-center self-start text-sm font-medium text-accent underline-offset-2 hover:underline"
-        >
-          Tout le journal
-        </Link>
+        {!vide && !fil.chargement && (
+          <Link
+            to="/plus/journal"
+            className="inline-flex min-h-11 items-center self-start text-sm font-medium text-accent underline-offset-2 hover:underline"
+          >
+            Tout le journal
+          </Link>
+        )}
       </div>
 
       {saisie !== null && (
