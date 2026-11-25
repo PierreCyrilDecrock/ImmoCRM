@@ -470,18 +470,17 @@ describe('carte d’un projet d’achat', () => {
     })
     const lignes = lignesCarteAcquereur({ acquereur: 'Manon Essai', coAcquereur: null }, projet)
     expect(lignes.titre).toBe('Manon Essai')
-    expect(lignes.sousTitre).toMatch(/^Jusqu’à 280\s000\s€$/)
+    // Le budget n'est pas répété : la ligne de valeur le dit (`valeurAcquereur`).
     expect(lignes.criteres).toBe('Maison · Villefictive · 3 p. min.')
   })
 
-  it('nomme le co-acquéreur, et dit quand le budget manque', () => {
+  it('nomme le co-acquéreur', () => {
     const projet = projetAcquereurEssai({ budget_min: null, budget_max: null })
     const lignes = lignesCarteAcquereur(
       { acquereur: 'Manon Essai', coAcquereur: 'Paul Essai' },
       projet,
     )
     expect(lignes.titre).toBe('Manon Essai et Paul Essai')
-    expect(lignes.sousTitre).toBe('Budget à préciser')
     expect(lignesCarteAcquereur({ acquereur: null, coAcquereur: null }, projet).titre).toBe(
       'Contact introuvable',
     )

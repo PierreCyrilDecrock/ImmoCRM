@@ -11,10 +11,30 @@ import LigneBien from '../biens/LigneBien'
 import PastilleStatut from '../biens/PastilleStatut'
 import { contactEssai } from '../contacts/contact-essai'
 import LigneContact from '../contacts/LigneContact'
-import { actionPipeline, titresCarteVendeur } from './carte-pipeline'
+import {
+  actionPipeline,
+  ligneAnciennete,
+  montantVendeur,
+  titresCarteVendeur,
+  totalColonne,
+  valeurVendeur,
+} from './carte-pipeline'
 
 type EtapeExemple = 'premier_contact' | 'decouverte' | 'estimation' | 'suivi' | 'mandat_signe'
-type CarteExemple = { id: string; etape: EtapeExemple; adresse: string; retard: number | null }
+type CarteExemple = {
+  id: string
+  etape: EtapeExemple
+  adresse: string
+  /** Écart de la relance avec aujourd'hui, en jours (négatif : en retard). */
+  relance: number
+  /** Jours passés à l'étape. */
+  depuis: number
+  montants: {
+    prix_espere: number | null
+    estimation_basse: number | null
+    estimation_haute: number | null
+  }
+}
 
 const ETAPES_EXEMPLE: readonly { etape: EtapeExemple; libelle: string; critere: string }[] = [
   { etape: 'premier_contact', libelle: 'Premier contact', critere: 'Source identifiée' },
@@ -25,11 +45,14 @@ const ETAPES_EXEMPLE: readonly { etape: EtapeExemple; libelle: string; critere: 
 ]
 
 /**
- * Vitrine des listes et des pipelines (étapes E.5 et F.3), avec des données inventées : des
- * lignes de contact (initiales, prénom et nom, température à droite, dernier échange ou
+ * Vitrine des listes et des pipelines (étapes E.5, F.3 et F.6), avec des données inventées :
+ * des lignes de contact (initiales, prénom et nom, température à droite, dernier échange ou
  * retard en rouge dessous), des lignes de bien (prix, type court et surface, statut), les
- * statuts des biens, les deux formes d'onglets des pipelines, et un tableau dont deux cartes du même
- * vendeur se distinguent par leur adresse (au téléphone, les étapes vides sur une ligne).
+ * statuts des biens, les deux formes d'onglets des pipelines, et un tableau dont deux cartes
+ * du même vendeur se distinguent par leur adresse (au téléphone, les étapes vides sur une
+ * ligne). Les cartes disent leur valeur (prix espéré, estimation, « Prix à connaître »), leur
+ * relance en mots derrière une horloge (en retard, aujourd'hui, dans deux jours) et une
+ * ancienneté qui traîne, en orange ; sur ordinateur, chaque colonne a son total.
  */
 export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
   const [pipeline, setPipeline] = useState('vendeurs')
@@ -110,14 +133,38 @@ export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
   ]
 
   const vendeur = contactEssai({ prochaine_action_le: avant(1) })
+  const sansMontant = { prix_espere: null, estimation_basse: null, estimation_haute: null }
   const cartes: CarteExemple[] = [
-    { id: 'exemple-p1', etape: 'estimation', adresse: '12 rue Imaginaire', retard: 1 },
-    { id: 'exemple-p2', etape: 'suivi', adresse: '3 impasse Inventée', retard: null },
+    {
+      id: 'exemple-p1',
+      etape: 'estimation',
+      adresse: '12 rue Imaginaire',
+      relance: -1,
+      depuis: 12,
+      montants: { ...sansMontant, prix_espere: 300_000 },
+    },
+    {
+      id: 'exemple-p3',
+      etape: 'estimation',
+      adresse: '8 allée du Modèle',
+      relance: 0,
+      depuis: 40,
+      montants: sansMontant,
+    },
+    {
+      id: 'exemple-p2',
+      etape: 'suivi',
+      adresse: '3 impasse Inventée',
+      relance: 2,
+      depuis: 5,
+      montants: { prix_espere: 480_000, estimation_basse: 410_000, estimation_haute: 440_000 },
+    },
   ]
-  const colonnes = ETAPES_EXEMPLE.map((etape) => ({
-    ...etape,
-    projets: cartes.filter((carte) => carte.etape === etape.etape),
-  }))
+  const colonnes = ETAPES_EXEMPLE.map((etape) => {
+    const projets = cartes.filter((carte) => carte.etape === etape.etape)
+    const total = totalColonne(projets.map((carte) => montantVendeur(carte.montants)))
+    return { ...etape, total, projets }
+  })
 
   function carte(exemple: CarteExemple, options: { estompee: boolean }) {
     const { titre, sousTitre } = titresCarteVendeur(
@@ -127,10 +174,7 @@ export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
     const action = actionPipeline(
       {
         prochaine: null,
-        contact:
-          exemple.retard === null
-            ? { prochaine_action_le: ajouterJours(aujourdhui, 2) }
-            : { prochaine_action_le: avant(exemple.retard) },
+        contact: { prochaine_action_le: ajouterJours(aujourdhui, exemple.relance) },
         projet: { etat: 'actif' },
       },
       aujourdhui,
@@ -140,8 +184,9 @@ export default function ExemplesListes({ aujourdhui }: { aujourdhui: string }) {
         vers="/plus/composants"
         titre={titre}
         sousTitre={sousTitre}
+        valeur={valeurVendeur(exemple.montants)}
         details={[]}
-        etape={{ texte: 'Depuis 12 jours', alerte: false }}
+        etape={ligneAnciennete(avant(exemple.depuis), aujourdhui)}
         action={action}
         estompee={options.estompee}
       />

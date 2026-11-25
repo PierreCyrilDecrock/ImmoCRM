@@ -172,27 +172,22 @@ export function resumeRecherche(
 }
 
 /**
- * Carte d'un projet d'achat : l'acquéreur en titre (et son co-acquéreur), le budget dessous
- * (« Jusqu’à 280 000 € », ou « Budget à préciser »), puis le reste de la recherche sans le
- * budget, pour ne pas l'écrire deux fois.
+ * Carte d'un projet d'achat : l'acquéreur en titre (et son co-acquéreur), puis le reste de la
+ * recherche sans le budget, que la ligne de valeur dit déjà (« Budget 200 – 300 k€ »,
+ * `valeurAcquereur`) : il n'est pas écrit deux fois.
  */
 export function lignesCarteAcquereur(
   noms: { acquereur: string | null; coAcquereur: string | null },
   projet: Parameters<typeof resumeRecherche>[0],
-): { titre: string; sousTitre: string; criteres: string } {
+): { titre: string; criteres: string } {
   const titre =
     noms.acquereur === null
       ? 'Contact introuvable'
       : noms.coAcquereur === null
         ? noms.acquereur
         : `${noms.acquereur} et ${noms.coAcquereur}`
-  const budget = libelleBudget(projet.budget_min, projet.budget_max)
   return {
     titre,
-    sousTitre:
-      budget === ''
-        ? 'Budget à préciser'
-        : budget.charAt(0).toLocaleUpperCase('fr') + budget.slice(1),
     criteres: resumeRecherche({ ...projet, budget_min: null, budget_max: null }),
   }
 }

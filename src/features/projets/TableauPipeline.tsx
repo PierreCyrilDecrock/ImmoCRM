@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import TableauPipeline from '../../components/TableauPipeline'
 import { memoriserParcours } from '../../lib/parcours'
-import { titresCarteVendeur } from './carte-pipeline'
+import { montantVendeur, titresCarteVendeur, totalColonne } from './carte-pipeline'
 import CarteProjet from './CarteProjet'
 import {
   estEtapeVendeur,
@@ -27,7 +27,9 @@ export default function TableauPipelineVendeur({ projets, aujourdhui, onDeposer,
       libelle: etape,
       critere: '',
     }
-    return { etape, libelle, critere, projets: dansEtape }
+    // Sur ordinateur, sous le titre : « 2 · 720 k€ », la somme des montants des cartes.
+    const total = totalColonne(dansEtape.map((affiche) => montantVendeur(affiche.projet)))
+    return { etape, libelle, critere, total, projets: dansEtape }
   })
   // Chaque colonne est gardée pour l'onglet : la fiche d'un projet passe au précédent ou au
   // suivant de sa colonne, dans l'ordre affiché.

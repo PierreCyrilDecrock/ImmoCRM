@@ -3,8 +3,7 @@ import CartePipeline from '../../components/CartePipeline'
 import { formaterJourCourt } from '../../lib/dates'
 import { accorder } from '../../lib/nombres'
 import { nomComplet } from '../contacts/contacts'
-import { actionPipeline } from '../projets/carte-pipeline'
-import { ancienneteEtape, etapeQuiTraine } from '../projets/pipeline-vendeur'
+import { actionPipeline, ligneAnciennete, valeurAcquereur } from '../projets/carte-pipeline'
 import { lignesCarteAcquereur, resumeOrigine } from './pipeline-acquereur'
 import type { ProjetAcquereurAffiche } from './projets-acquereurs'
 
@@ -17,7 +16,8 @@ type Props = {
 }
 
 /**
- * Carte d'un projet acquéreur : l'acquéreur en titre, son budget dessous, puis ce qu'il
+ * Carte d'un projet acquéreur : l'acquéreur en titre, son budget dessous (« Budget 200 –
+ * 300 k€ »), puis ce qu'il
  * cherche (ou l'origine de la demande tant que la recherche n'est pas précisée), la
  * sélection, l'ancienneté dans l'étape et la prochaine action.
  */
@@ -28,7 +28,7 @@ export default function CarteProjetAcquereur({
   estompee = false,
 }: Props) {
   const { projet, contact, coAcquereur, bienOrigine, nbProposes } = affiche
-  const { titre, sousTitre, criteres } = lignesCarteAcquereur(
+  const { titre, criteres } = lignesCarteAcquereur(
     {
       acquereur: contact === null ? null : nomComplet(contact),
       coAcquereur: coAcquereur === null ? null : nomComplet(coAcquereur),
@@ -49,15 +49,13 @@ export default function CarteProjetAcquereur({
           texte: `Offre acceptée · ${formaterJourCourt(projet.offre_le, aujourdhui)}`,
           alerte: false,
         }
-      : {
-          texte: ancienneteEtape(projet.etape_le, aujourdhui),
-          alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
-        }
+      : ligneAnciennete(projet.etape_le, aujourdhui)
   return (
     <CartePipeline
       vers={`/pipelines/acquereurs/${projet.id}`}
       titre={titre}
-      sousTitre={sousTitre}
+      sousTitre=""
+      valeur={valeurAcquereur(projet)}
       details={details}
       etape={etape}
       action={actionPipeline(affiche, aujourdhui)}

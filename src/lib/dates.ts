@@ -160,6 +160,22 @@ export function formaterJourSemaine(date: string, aujourdhui: string = dateDuJou
   return format.format(new Date(versInstant(date)))
 }
 
+const JOUR_NOM = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', timeZone: 'UTC' })
+
+/**
+ * Un jour proche dit en mots : « aujourd’hui », « demain », puis le nom du jour jusqu'à six
+ * jours (« jeudi » : on ne peut pas le confondre avec celui de la semaine suivante), et la
+ * date abrégée au-delà (« ven. 4 déc. »), comme pour un jour passé. Vide si illisible.
+ */
+export function jourEnMots(date: string, aujourdhui: string = dateDuJour()): string {
+  if (!estDateValide(date)) return ''
+  const ecart = ecartJours(aujourdhui, date)
+  if (ecart === 0) return 'aujourd’hui'
+  if (ecart === 1) return 'demain'
+  if (ecart > 1 && ecart <= 6) return JOUR_NOM.format(new Date(versInstant(date)))
+  return formaterJourCourt(date, aujourdhui)
+}
+
 const JOUR_LONG_SEMAINE = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long',
   day: 'numeric',

@@ -4,7 +4,9 @@ import {
   formaterNombre,
   formaterPoids,
   formaterPrix,
+  montantCourt,
   formaterSurface,
+  fourchetteCourte,
   lireNombre,
 } from './nombres'
 
@@ -73,5 +75,30 @@ describe('formaterPoids', () => {
 
   it('ne montre jamais « 1 000 Ko »', () => {
     expect(lisible(formaterPoids(999_800))).toBe('1 Mo')
+  })
+})
+
+describe('montants courts', () => {
+  it('écrit un montant en €, en k€ ou en M€, arrondi', () => {
+    expect(lisible(montantCourt(850))).toBe('850 €')
+    expect(lisible(montantCourt(415_000))).toBe('415 k€')
+    expect(lisible(montantCourt(412_600))).toBe('413 k€')
+    expect(lisible(montantCourt(999_600))).toBe('1 M€')
+    expect(lisible(montantCourt(1_250_000))).toBe('1,25 M€')
+  })
+
+  it('garde l’unité avec son nombre', () => {
+    expect(montantCourt(720_000)).toBe('720\u00a0k€')
+  })
+
+  it('écrit une fourchette avec une seule unité', () => {
+    expect(lisible(fourchetteCourte(410_000, 440_000))).toBe('410 – 440 k€')
+    expect(lisible(fourchetteCourte(440_000, 410_000))).toBe('410 – 440 k€')
+    expect(lisible(fourchetteCourte(1_200_000, 1_500_000))).toBe('1,2 – 1,5 M€')
+  })
+
+  it('écrit les deux unités quand elles diffèrent, un seul montant s’ils sont égaux', () => {
+    expect(lisible(fourchetteCourte(850_000, 1_200_000))).toBe('850 k€ – 1,2 M€')
+    expect(lisible(fourchetteCourte(300_000, 300_400))).toBe('300 k€')
   })
 })
