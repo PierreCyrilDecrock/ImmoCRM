@@ -4,7 +4,7 @@ import Bouton from '../../components/Bouton'
 import LienBouton from '../../components/LienBouton'
 import LigneGlissable from '../../components/LigneGlissable'
 import { VISIBLE_AU_SURVOL } from '../../components/survol'
-import { nomComplet } from '../contacts/contacts'
+import { deNom, nomComplet } from '../contacts/contacts'
 import { initialesDe } from '../saisie/recents'
 import ReportsRapides from '../taches/ReportsRapides'
 import BoutonAppel from './BoutonAppel'
@@ -13,7 +13,7 @@ import type { Relance } from './lecture-journee'
 import { rolesDuContact, teinteRole } from '../contacts/ligne-contact'
 import PastilleRetard from '../taches/PastilleRetard'
 import { pastilleRetard } from '../taches/retards'
-import { dernierEchange } from './ordre-journee'
+import { dernierEchange, motifRelance } from './ordre-journee'
 
 type Props = {
   relance: Relance
@@ -91,13 +91,13 @@ export default function LigneRelance({
         role={role ?? undefined}
       />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-base font-semibold text-encre">{nom}</span>
+        <span className="line-clamp-2 text-base font-semibold break-words text-encre">{nom}</span>
         <span className="flex min-w-0 items-baseline gap-1.5 text-sm text-encre-douce">
           <span className="sr-only">{role === null ? ', ' : `, ${role}, `}</span>
           <span
-            className={`min-w-0 truncate ${survol && echange !== null ? 'md:max-w-[60%] md:shrink-0' : ''}`}
+            className={`min-w-0 ${survol && echange !== null ? 'truncate md:max-w-[60%] md:shrink-0' : 'line-clamp-2 break-words'}`}
           >
-            {tache.titre}
+            {contact === null ? tache.titre : motifRelance(tache, nom)}
           </span>
           {survol && echange !== null && (
             // À la souris, la place ne manque pas : le dernier échange suit le motif.
@@ -215,7 +215,7 @@ export default function LigneRelance({
                   icone="contacts"
                   variante="discret"
                   vers={`/contacts/${contact.id}`}
-                  aria-label={`Ouvrir la fiche de ${nom}`}
+                  aria-label={`Ouvrir la fiche ${deNom(nom)}`}
                 >
                   Fiche
                 </LienBouton>

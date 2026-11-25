@@ -155,6 +155,15 @@ export function nomComplet(contact: Identite): string {
   return assembler(contact.prenom, contact.nom)
 }
 
+/**
+ * « de » devant un nom, élidé devant une voyelle ou un h : « d'Alix Demandeur », « d'Hugo
+ * Imaginaire », « de Camille Fictif » (recette D.8).
+ */
+export function deNom(nom: string): string {
+  const premiere = nom.trim().normalize('NFD').charAt(0).toLowerCase()
+  return 'aeiouyh'.includes(premiere) && premiere !== '' ? `d'${nom.trim()}` : `de ${nom.trim()}`
+}
+
 /** Nom avec la civilité, pour l'en-tête de la fiche : « Mme Camille Fictif ». */
 export function nomAvecCivilite(contact: Identite): string {
   if (contact.type === 'societe') return contact.raison_sociale

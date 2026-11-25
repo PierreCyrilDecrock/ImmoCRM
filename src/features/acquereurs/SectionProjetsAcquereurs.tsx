@@ -110,6 +110,7 @@ export default function SectionProjetsAcquereurs({
                         : recherche
                     }
                     // L'étape d'un projet en cours est dans la frise dessous : pas deux fois.
+                    detailSurDeuxLignes
                     detail={[
                       role,
                       dansLePipeline && projet.etat === 'actif' ? '' : detailEtatAcquereur(projet),

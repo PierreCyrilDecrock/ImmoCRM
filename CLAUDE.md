@@ -9,7 +9,7 @@ ImmoCRM est le CRM personnel d'un mandataire immobilier : un seul utilisateur, s
 Documents de référence :
 
 - [docs/cadrage.md](docs/cadrage.md) — ce que l'outil doit faire (référence fonctionnelle).
-- [docs/plan-developpement.md](docs/plan-developpement.md) — les 66 étapes de construction et leurs prompts (dont la phase D, l'interface version 3, et les phases E et F, les corrections de design, à faire avant la version 2).
+- [docs/plan-developpement.md](docs/plan-developpement.md) — les 66 étapes de construction et leurs prompts (dont la phase D, l'interface version 3, et les phases E et F, les corrections de design, livrées avant la version 2).
 - [docs/avancement.md](docs/avancement.md) — où en est le projet, étape par étape.
 - [docs/design.md](docs/design.md) — les composants d'interface disponibles, à réutiliser dans chaque écran.
 - [docs/revue-design.md](docs/revue-design.md) — la revue de design du 23/11/2026 : ses 19 corrections (phase E) et les règles d'interface 1 à 8 qui en découlent.
@@ -18,6 +18,7 @@ Documents de référence :
 - [docs/sauvegarde.md](docs/sauvegarde.md) — l'export, la sauvegarde automatique chiffrée et la restauration, pas à pas.
 - [docs/guide-utilisateur.md](docs/guide-utilisateur.md) — les trois rituels (matin, après chaque échange, vendredi), en une page.
 - [docs/recette-v1.md](docs/recette-v1.md) — la recette de la version 1 : ce qui est fait, les vérifications, le scénario d'une journée type.
+- [docs/recette-interface-v3.md](docs/recette-interface-v3.md) — la recette de l'interface version 3 (étape D.8) : les phases D, E et F vérifiées, les douze règles, les mesures et les écarts corrigés.
 
 ## Les trois règles du dépôt public
 

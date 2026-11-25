@@ -3,6 +3,7 @@ import { creer, modifier } from '../../lib/donnees'
 import { formaterHeure, instantDeParis } from '../../lib/dates'
 import type { Bien } from '../biens/biens'
 import {
+  deNom,
   brouillonVide,
   creerContact,
   nomComplet,
@@ -174,7 +175,7 @@ export function preparerDemande(
       },
       appel: brouillon.planifierAppel
         ? {
-            titre: `Qualifier la demande de ${nom}`.slice(0, LONGUEURS_MAX_TACHE.titre),
+            titre: `Qualifier la demande ${deNom(nom)}`.slice(0, LONGUEURS_MAX_TACHE.titre),
             echeance: aujourdhui,
           }
         : null,

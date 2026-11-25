@@ -123,8 +123,10 @@ export default function BarreEtapes({
           </span>
           <span aria-hidden="true" className="flex w-full items-start gap-2">
             <span className="min-w-0 flex-1">
+              {/* L'étape en tête, son rang dessous avec la suivante : aucune ligne ne commence
+                  ni ne finit par un point, même sur un petit téléphone (recette D.8). */}
               <span className="block text-base text-encre-douce">
-                {resume.position} · <span className="font-semibold text-encre">{resume.nom}</span>
+                <span className="font-semibold text-encre">{resume.nom}</span>
                 {anciennete !== undefined && (
                   // Le point reste collé à l'ancienneté : jamais seul en fin de ligne.
                   <span className={`whitespace-nowrap ${anciennete.alerte ? 'text-alerte' : ''}`}>
@@ -133,9 +135,15 @@ export default function BarreEtapes({
                   </span>
                 )}
               </span>
-              {resume.ensuite !== null && (
-                <span className="block text-sm text-encre-douce">{resume.ensuite}</span>
-              )}
+              <span className="block text-sm text-encre-douce">
+                {resume.position}
+                {resume.ensuite !== null && (
+                  <span className="whitespace-nowrap">
+                    {'\u00a0· '}
+                    {resume.ensuite}
+                  </span>
+                )}
+              </span>
             </span>
             <Icone nom="chevron" className="mt-0.5 size-5 shrink-0 text-encre-douce" />
           </span>

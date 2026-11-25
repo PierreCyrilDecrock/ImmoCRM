@@ -7,7 +7,7 @@ import FenetreModale from '../../components/FenetreModale'
 import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import Pastille from '../../components/Pastille'
-import { dateDuJour, formaterJourCourt, heureDuMoment } from '../../lib/dates'
+import { dateDuJour, heureDuMoment, phraseProchaineAction } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import { LONGUEUR_MAX_COMPTE_RENDU } from '../activites/activites'
 import AlerteDoublons from '../contacts/AlerteDoublons'
@@ -96,7 +96,7 @@ export default function ContactExpress({
       'succes',
       resultat.tache === null
         ? 'Contact enregistré'
-        : `Contact enregistré. Prochaine action : ${formaterJourCourt(resultat.tache.echeance, aujourdhui)}.`,
+        : `Contact enregistré. ${phraseProchaineAction(resultat.tache.echeance, aujourdhui)}`,
     )
     onFermer()
     void naviguer(`/contacts/${resultat.contact.id}`)

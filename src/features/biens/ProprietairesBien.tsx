@@ -8,7 +8,7 @@ import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import { exigerSupabase } from '../../lib/supabase'
 import BoutonAppel from '../aujourdhui/BoutonAppel'
-import { nomComplet, type Contact } from '../contacts/contacts'
+import { deNom, nomComplet, type Contact } from '../contacts/contacts'
 import SelecteurContact from '../contacts/SelecteurContact'
 import {
   ajouterProprietaire,
@@ -19,6 +19,7 @@ import {
   retirerProprietaire,
   type Proprietaire,
 } from './proprietaires'
+import { CLASSES_LIEN } from '../contacts/coordonnees'
 
 /** Les propriétaires lus par la fiche : en cours de lecture, en échec, ou la liste. */
 export type EtatProprietaires =
@@ -39,9 +40,6 @@ type Props = {
 /** Ce que la fenêtre est en train de faire : choisir un contact, puis préciser sa quote-part. */
 type Saisie =
   { etape: 'choix' } | { etape: 'part'; contact: Contact; lienId: string | null; quotePart: string }
-
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
 
 /**
  * Carte « Propriétaires » de la fiche d'un bien : la liste (chaque nom ouvre la fiche du
@@ -151,7 +149,7 @@ export default function ProprietairesBien({
               ) : (
                 <Bouton
                   variante="discret"
-                  aria-label={`Quote-part de ${nomComplet(contact)}`}
+                  aria-label={`Quote-part ${deNom(nomComplet(contact))}`}
                   onClick={() => choisir(contact)}
                 >
                   {lien.quote_part === null ? 'Quote-part' : formaterQuotePart(lien.quote_part)}

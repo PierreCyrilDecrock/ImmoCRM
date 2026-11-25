@@ -14,6 +14,7 @@ import {
   type ErreursBien,
 } from '../features/biens/biens'
 import FormulaireBien from '../features/biens/FormulaireBien'
+import { brouillonModifie } from '../lib/brouillon'
 import { exigerSupabase } from '../lib/supabase'
 
 /** Formulaire complet d'un bien, ouvert depuis sa fiche. */
@@ -22,6 +23,8 @@ export default function ModifierBien() {
   const naviguer = useNavigate()
   const { notifier } = useNotifications()
   const [brouillon, setBrouillon] = useState<BrouillonBien | null>(null)
+  // Le brouillon tel qu'à l'ouverture, pour savoir s'il y a quelque chose à enregistrer.
+  const [initial, setInitial] = useState<BrouillonBien | null>(null)
   const [erreurLecture, setErreurLecture] = useState<string | null>(null)
   const [erreurs, setErreurs] = useState<ErreursBien>({})
   const [echec, setEchec] = useState<string | null>(null)
@@ -32,8 +35,10 @@ export default function ModifierBien() {
     let actif = true
     void lireBien(exigerSupabase(), id).then((resultat) => {
       if (!actif) return
-      if (resultat.ok) setBrouillon(brouillonBienDepuis(resultat.donnees))
-      else setErreurLecture(resultat.erreur.message)
+      if (resultat.ok) {
+        setBrouillon(brouillonBienDepuis(resultat.donnees))
+        setInitial(brouillonBienDepuis(resultat.donnees))
+      } else setErreurLecture(resultat.erreur.message)
     })
     return () => {
       actif = false
@@ -89,7 +94,13 @@ export default function ModifierBien() {
         <FormulaireBien brouillon={brouillon} erreurs={erreurs} onChange={setBrouillon} />
         {echec !== null && <Message genre="erreur">{echec}</Message>}
         <div className="flex flex-col gap-2 md:flex-row-reverse md:justify-start">
-          <Bouton type="submit" pleineLargeur disabled={envoi}>
+          {/* Règle 2 : « Enregistrer » ne passe au bleu qu'une fois quelque chose modifié. */}
+          <Bouton
+            type="submit"
+            variante={brouillonModifie(initial, brouillon) ? 'principal' : 'secondaire'}
+            pleineLargeur
+            disabled={envoi}
+          >
             {envoi ? 'Enregistrement…' : 'Enregistrer'}
           </Bouton>
           <Bouton variante="secondaire" pleineLargeur onClick={() => void naviguer(retour.vers)}>

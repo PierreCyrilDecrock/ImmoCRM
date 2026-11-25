@@ -14,6 +14,7 @@ import { listerProjetsAcquereursDuContact } from '../acquereurs/projets-acquereu
 import { libelleEtape } from '../projets/pipeline-vendeur'
 import { listerProjetsVendeursLies } from '../projets/projets-vendeurs'
 import { adresseProjet, libelleGenreProjet, type LienProjet } from './lien-projet'
+import { CLASSES_LIEN } from '../contacts/coordonnees'
 
 /** Un projet choisi : son lien et, pour un projet de vente, son bien. */
 export type ChoixProjet = { lien: LienProjet; bien: Bien | null }
@@ -32,9 +33,6 @@ type Props = {
   /** Choix du projet : avec son bien, à reprendre si aucun bien n'est encore choisi. */
   onProjet: (projet: ChoixProjet | null) => void
 }
-
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
 
 /**
  * Rubrique d'un formulaire qui lie l'élément saisi (tâche, activité) à un contact et à un

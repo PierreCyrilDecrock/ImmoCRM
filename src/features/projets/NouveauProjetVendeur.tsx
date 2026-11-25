@@ -19,7 +19,7 @@ import {
 import FormulaireBien from '../biens/FormulaireBien'
 import { ajouterProprietaire, listerBiensDuContact } from '../biens/proprietaires'
 import SelecteurBien from '../biens/SelecteurBien'
-import { nomComplet, type Contact } from '../contacts/contacts'
+import { deNom, nomComplet, type Contact } from '../contacts/contacts'
 import SelecteurContact from '../contacts/SelecteurContact'
 import AutreCreation from '../saisie/AutreCreation'
 import { creerProjetVendeur, projetEnCoursDuBien } from './projets-vendeurs'
@@ -211,7 +211,7 @@ export default function NouveauProjetVendeur({
               {mode !== 'nouveau' && sesBiens.length > 0 && (
                 <>
                   <p className="text-sm text-encre-douce">
-                    {contact === null ? '' : `Biens de ${nomComplet(contact)} :`}
+                    {contact === null ? '' : `Biens ${deNom(nomComplet(contact))} :`}
                   </p>
                   <Liste>
                     {sesBiens.map((sien) => (

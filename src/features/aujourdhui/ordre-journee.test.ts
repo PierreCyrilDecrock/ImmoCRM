@@ -5,6 +5,7 @@ import type { Role } from '../contacts/contacts'
 import { tacheEssai } from '../taches/tache-essai'
 import type { Tache } from '../taches/taches'
 import {
+  motifRelance,
   comparerUrgence,
   compteurRappels,
   dernierEchange,
@@ -270,5 +271,26 @@ describe('« Autres tâches » vide parce que tout est « À préparer » (étap
     expect(
       videAutresTaches({ relances: 0, rendezVous: 0, aPreparer: { nombre: 0, pour: 'x' } }).ton,
     ).toBe('succes')
+  })
+})
+
+describe('motif d’une relance', () => {
+  const nom = 'Léa Fausse'
+  it('garde un titre qui ne répète pas le nom', () => {
+    expect(motifRelance({ titre: 'Envoyer le mandat', motif: '' }, nom)).toBe('Envoyer le mandat')
+  })
+  it('donne le motif quand le titre répète le nom', () => {
+    expect(
+      motifRelance({ titre: 'Relancer Léa Fausse', motif: 'Retour sur l’avis de valeur' }, nom),
+    ).toBe('Retour sur l’avis de valeur')
+  })
+  it('retire le nom du titre faute de motif', () => {
+    expect(motifRelance({ titre: 'Relancer léa fausse', motif: ' ' }, nom)).toBe('Relancer')
+    expect(motifRelance({ titre: 'Rappeler Léa Fausse après la visite', motif: '' }, nom)).toBe(
+      'Rappeler après la visite',
+    )
+  })
+  it('garde le titre s’il ne contient que le nom', () => {
+    expect(motifRelance({ titre: 'Léa Fausse', motif: '' }, nom)).toBe('Léa Fausse')
   })
 })

@@ -30,6 +30,7 @@ export default function Plus() {
         <LigneListe
           icone="journal"
           titre="Journal"
+          detailSurDeuxLignes
           detail="Appels, messages, visites et notes, du plus récent au plus ancien"
           vers="/plus/journal"
         />

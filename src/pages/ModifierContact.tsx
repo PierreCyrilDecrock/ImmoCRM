@@ -16,6 +16,7 @@ import {
   type ErreursContact,
 } from '../features/contacts/contacts'
 import FormulaireContact from '../features/contacts/FormulaireContact'
+import { brouillonModifie } from '../lib/brouillon'
 import { exigerSupabase } from '../lib/supabase'
 
 type Etat =
@@ -30,6 +31,8 @@ export default function ModifierContact() {
   const { notifier } = useNotifications()
   const [etat, setEtat] = useState<Etat>({ phase: 'chargement' })
   const [brouillon, setBrouillon] = useState<BrouillonContact | null>(null)
+  // Le brouillon tel qu'à l'ouverture, pour savoir s'il y a quelque chose à enregistrer.
+  const [initial, setInitial] = useState<BrouillonContact | null>(null)
   const [erreurs, setErreurs] = useState<ErreursContact>({})
   const [echec, setEchec] = useState<string | null>(null)
   const [envoi, setEnvoi] = useState(false)
@@ -56,6 +59,7 @@ export default function ModifierContact() {
         return
       }
       setBrouillon(brouillonDepuis(resultat.contact))
+      setInitial(brouillonDepuis(resultat.contact))
       setEtat({ phase: 'pret', contact: resultat.contact, recommandePar: resultat.recommandePar })
     })
     return () => {
@@ -125,7 +129,13 @@ export default function ModifierContact() {
         />
         {echec !== null && <Message genre="erreur">{echec}</Message>}
         <div className="flex flex-col gap-2 md:flex-row-reverse md:justify-start">
-          <Bouton type="submit" pleineLargeur disabled={envoi}>
+          {/* Règle 2 : « Enregistrer » ne passe au bleu qu'une fois quelque chose modifié. */}
+          <Bouton
+            type="submit"
+            variante={brouillonModifie(initial, brouillon) ? 'principal' : 'secondaire'}
+            pleineLargeur
+            disabled={envoi}
+          >
             {envoi ? 'Enregistrement…' : 'Enregistrer'}
           </Bouton>
           <Bouton variante="secondaire" pleineLargeur onClick={() => void naviguer(retour.vers)}>

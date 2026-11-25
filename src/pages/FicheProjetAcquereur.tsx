@@ -82,6 +82,7 @@ import { etatsEtapes, titrePassage } from '../lib/etapes'
 import { ligneDatesFiche, useOngletFiche, useParcoursFiche, useRaccourcisFiche } from '../lib/fiche'
 import { formaterNombre, formaterPrix } from '../lib/nombres'
 import { exigerSupabase } from '../lib/supabase'
+import { CLASSES_LIEN } from '../features/contacts/coordonnees'
 
 type Etat =
   | { phase: 'chargement' }
@@ -99,9 +100,6 @@ const RETOUR = { vers: '/pipelines', libelle: 'Pipelines' }
 const TACHES_DANS_ACTIVITE = 3
 
 const ONGLETS = ongletsProjet('acquereur')
-
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
 
 /** « mar. 17 nov. 2026 à 14 h 30 » : l'instant de réception, à l'heure de Paris. */
 function momentReception(instant: string): string {

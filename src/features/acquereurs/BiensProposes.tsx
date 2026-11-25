@@ -24,6 +24,7 @@ import {
   type Reaction,
 } from './biens-proposes'
 import PlanifierVisite from './PlanifierVisite'
+import { CLASSES_LIEN } from '../contacts/coordonnees'
 
 type Props = {
   projetId: string
@@ -32,9 +33,6 @@ type Props = {
   lectureSeule: boolean
   onChangement: () => void
 }
-
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
 
 /**
  * Rubrique « Biens proposés » d'un projet acquéreur : la sélection, la réaction de

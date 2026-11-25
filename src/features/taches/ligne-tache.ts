@@ -82,14 +82,20 @@ export type DetailLigneTache = {
   jourEnTete: boolean
   /** L'heure (« 14 h – 15 h »), écrite en gras ; vide sans heure. */
   horaire: string
-  /** Le reste, dans l'ordre : le contact, l'adresse ; la catégorie s'il n'y a ni l'un ni l'autre. */
+  /**
+   * Le reste, dans l'ordre : le contact (sauf s'il est déjà nommé dans le titre), l'adresse ;
+   * s'il n'y a ni l'un ni l'autre, le motif, sinon la catégorie.
+   */
   autres: string[]
 }
 
 /** La ligne de détail d'une tâche, morceau par morceau. */
 export function detailLigneTache(
   affichee: {
-    tache: Pick<Tache, 'echeance' | 'heure' | 'duree' | 'lieu' | 'categorie' | 'etat'>
+    tache: Pick<
+      Tache,
+      'titre' | 'motif' | 'echeance' | 'heure' | 'duree' | 'lieu' | 'categorie' | 'etat'
+    >
     contact: Parameters<typeof nomComplet>[0] | null
     bien: Pick<Bien, 'adresse' | 'complement' | 'code_postal' | 'ville'> | null
   },
@@ -105,7 +111,10 @@ export function detailLigneTache(
 ): DetailLigneTache {
   const { tache, contact, bien } = affichee
   const { aujourdhui, jourMasque = null, masquer, retardEnDuree = false } = options
-  const contactAffiche = contact === null || masquer === 'contact' ? null : nomComplet(contact)
+  const nomContact = contact === null || masquer === 'contact' ? null : nomComplet(contact)
+  // « Relancer Léa Fausse » nomme déjà le contact : la ligne ne le répète pas (règle 4).
+  const contactAffiche =
+    nomContact !== null && titreSansNom(tache.titre, nomContact) !== null ? null : nomContact
   const adresse = adresseUnique(tache.lieu, bien, masquer === 'bien')
   const autres = [contactAffiche, adresse].filter((morceau) => morceau !== null)
   const enRetard = tache.etat === 'a_faire' && tache.echeance < aujourdhui
@@ -119,6 +128,26 @@ export function detailLigneTache(
     heureEnTete: jour === null && horaire !== '',
     jourEnTete: depuis !== null,
     horaire,
-    autres: autres.length > 0 ? autres : [libelleCategorie(tache.categorie)],
+    autres:
+      autres.length > 0
+        ? autres
+        : [tache.motif.trim() !== '' ? tache.motif.trim() : libelleCategorie(tache.categorie)],
   }
+}
+
+/**
+ * Le titre sans le nom du contact qu'il cite déjà (« Relancer Léa Fausse » → « Relancer »,
+ * « Rappeler Léa Fausse après la visite » → « Rappeler après la visite »), sans tenir compte
+ * des majuscules ; `null` si le titre ne nomme pas ce contact. Règle 4 : une information
+ * n'est écrite qu'une fois.
+ */
+export function titreSansNom(titre: string, nom: string): string | null {
+  const cible = nom.trim().toLocaleLowerCase('fr')
+  if (cible === '') return null
+  const rang = titre.toLocaleLowerCase('fr').indexOf(cible)
+  if (rang < 0) return null
+  return `${titre.slice(0, rang)} ${titre.slice(rang + cible.length)}`
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([,.;:])/g, '$1')
+    .trim()
 }

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, type FocusEvent } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Bouton from '../../components/Bouton'
 import ChampRecherche from '../../components/ChampRecherche'
 import LigneListe from '../../components/LigneListe'
@@ -39,6 +39,13 @@ export default function RechercheGlobale({ disposition = 'bandeau', onFermer }: 
   const naviguer = useNavigate()
   const [saisie, setSaisie] = useState('')
   const [ouvert, setOuvert] = useState(false)
+  // Changer de page referme les résultats (la colonne de l'ordinateur, elle, reste en place).
+  const { pathname } = useLocation()
+  const [page, setPage] = useState(pathname)
+  if (page !== pathname) {
+    setPage(pathname)
+    setOuvert(false)
+  }
   const recherche = useRechercheContacts(saisie, { taille: 6 })
   const recentes = useFichesRecentes().slice(0, RECENTES_PROPOSEES)
   // Champ vide : les fiches consultées récemment, pour y revenir d'un toucher.
@@ -125,6 +132,16 @@ export default function RechercheGlobale({ disposition = 'bandeau', onFermer }: 
     </div>
   )
 
+  // Le clavier quitte la recherche (Tab) : les résultats se referment, sans quoi ils
+  // cacheraient la page et le voile avalerait le clic suivant (recette D.8).
+  function surSortie(evenement: FocusEvent<HTMLDivElement>) {
+    // Seulement vers un autre élément de la page : un toucher sur un résultat (qui ne prend pas
+    // toujours le focus, sur iPhone) ou ailleurs est l'affaire du voile.
+    const vers = evenement.relatedTarget
+    if (!(vers instanceof Node) || evenement.currentTarget.contains(vers)) return
+    setOuvert(false)
+  }
+
   return (
     <>
       {/* Voile invisible : un toucher en dehors des résultats les referme. */}
@@ -139,7 +156,7 @@ export default function RechercheGlobale({ disposition = 'bandeau', onFermer }: 
         />
       )}
       {enColonne ? (
-        <div role="search" className="relative z-20">
+        <div role="search" className="relative z-20" onBlur={surSortie}>
           {champ}
           {/* Les résultats débordent sur la page : la colonne est trop étroite pour eux. */}
           {resultats !== false && (
@@ -149,7 +166,11 @@ export default function RechercheGlobale({ disposition = 'bandeau', onFermer }: 
           )}
         </div>
       ) : (
-        <div role="search" className="relative z-20 border-b border-bord bg-surface">
+        <div
+          role="search"
+          className="relative z-20 border-b border-bord bg-surface"
+          onBlur={surSortie}
+        >
           {onFermer === undefined ? (
             <div className="mx-auto w-full max-w-5xl px-4 py-2 md:px-8">{champ}</div>
           ) : (

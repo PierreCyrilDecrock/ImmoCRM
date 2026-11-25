@@ -135,6 +135,15 @@ export function formaterJourCourt(date: string, aujourdhui: string = dateDuJour(
   return format.format(new Date(versInstant(date)))
 }
 
+/**
+ * « Prochaine action : ven. 27 nov. » en fin de phrase d'une notification, avec un seul point
+ * (« nov. » finit déjà par le sien ; « 4 janv. 2027 » non). Recette D.8.
+ */
+export function phraseProchaineAction(echeance: string, aujourdhui: string = dateDuJour()): string {
+  const jour = formaterJourCourt(echeance, aujourdhui)
+  return `Prochaine action : ${jour}${jour.endsWith('.') ? '' : '.'}`
+}
+
 const JOUR_SEMAINE = new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long',
   day: 'numeric',
