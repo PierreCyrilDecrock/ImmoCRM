@@ -225,13 +225,14 @@ function requeteFiltree<T extends NomTable>(
   archives: 'sans' | 'avec' | 'seulement',
   filtres: readonly Filtre<T>[],
   compte: 'non' | 'avec' | 'seul',
+  colonnes = '*',
 ) {
   let requete =
     compte === 'seul'
       ? client.from(table).select('id', { count: 'exact', head: true })
       : compte === 'avec'
-        ? client.from(table).select('*', { count: 'exact' })
-        : client.from(table).select('*')
+        ? client.from(table).select(colonnes, { count: 'exact' })
+        : client.from(table).select(colonnes)
   if (TABLES[table].archivable) {
     if (archives === 'sans') requete = requete.is('archived_at', null)
     if (archives === 'seulement') requete = requete.not('archived_at', 'is', null)
@@ -281,6 +282,37 @@ export async function listerPage<T extends NomTable>(
   )
   if (!resultat.ok) return resultat
   return { ok: true, donnees: { lignes: resultat.donnees, total } }
+}
+
+/**
+ * Lit une seule colonne des lignes qui remplissent les conditions, au plus `limite` lignes
+ * (1 000 au plus : la limite de Supabase). Une requête légère, pour compter des valeurs sans
+ * lire des lignes entières (les types des activités d'une fiche, par exemple). Une valeur
+ * vide (`null`) est écartée.
+ */
+export async function listerValeurs<T extends NomTable, C extends keyof Ligne<T> & string>(
+  client: SupabaseClient,
+  table: T,
+  colonne: C,
+  options: {
+    filtres?: readonly Filtre<T>[]
+    tri: readonly { colonne: keyof Ligne<T> & string; croissant?: boolean }[]
+    limite: number
+  },
+): Promise<Resultat<NonNullable<Ligne<T>[C]>[]>> {
+  const { filtres = [], tri, limite } = options
+  let requete = requeteFiltree(client, table, 'sans', filtres, 'non', colonne)
+  for (const { colonne: triee, croissant = true } of tri) {
+    requete = requete.order(triee, { ascending: croissant })
+  }
+  const resultat = await executer<Partial<Ligne<T>>[]>(requete.limit(Math.min(limite, 1000)), false)
+  if (!resultat.ok) return resultat
+  const valeurs: NonNullable<Ligne<T>[C]>[] = []
+  for (const ligne of resultat.donnees) {
+    const valeur = ligne[colonne]
+    if (valeur !== undefined && valeur !== null) valeurs.push(valeur)
+  }
+  return { ok: true, donnees: valeurs }
 }
 
 /**

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { fauxClient } from '../../lib/faux-client'
 import { bienEssai } from '../biens/bien-essai'
 import { contactEssai } from '../contacts/contact-essai'
 import { activiteEssai } from './activite-essai'
@@ -10,6 +11,7 @@ import {
   compteCommeContact,
   conditionsJournal,
   horaireActivite,
+  lireTypesActivites,
   parJour,
   preparerActivite,
   titreActivite,
@@ -227,6 +229,27 @@ describe('conditionsJournal', () => {
       { colonne: 'bien_id', genre: 'egal', valeur: 'b1' },
     ])
     expect(conditionsJournal({})).toEqual([])
+  })
+})
+
+describe('lireTypesActivites', () => {
+  it('lit les seuls types de la fiche et de la période, sans le filtre de type, en une requête bornée', async () => {
+    const { client, appels } = fauxClient({
+      data: [{ type: 'appel' }, { type: 'sms' }],
+      error: null,
+    })
+    const resultat = await lireTypesActivites(client, {
+      lien: { contactId: 'c1' },
+      type: 'visite',
+      bornes: { min: '2026-11-01' },
+    })
+    expect(resultat).toEqual({ ok: true, donnees: ['appel', 'sms'] })
+    expect(appels).toContainEqual(['select', 'type'])
+    expect(appels).toContainEqual(['eq', 'contact_id', 'c1'])
+    expect(appels).toContainEqual(['gte', 'date_activite', '2026-11-01'])
+    expect(appels).not.toContainEqual(['eq', 'type', 'visite'])
+    expect(appels).toContainEqual(['limit', 1000])
+    expect(appels.filter((appel) => appel[0] === 'from')).toHaveLength(1)
   })
 })
 

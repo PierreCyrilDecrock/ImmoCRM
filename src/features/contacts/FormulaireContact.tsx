@@ -6,6 +6,7 @@ import ChampEtiquettes from '../../components/ChampEtiquettes'
 import ChampSaisie from '../../components/ChampSaisie'
 import ChampTexteLong from '../../components/ChampTexteLong'
 import ChoixMultiple from '../../components/ChoixMultiple'
+import ChoixSegmente from '../../components/ChoixSegmente'
 import { dateDuJour } from '../../lib/dates'
 import {
   ACCORDS_APPEL,
@@ -19,7 +20,6 @@ import {
   ROLES,
   SOURCES,
   TEMPERATURES,
-  TYPES_CONTACT,
   type BrouillonContact,
   type Contact,
   type ErreursContact,
@@ -30,7 +30,7 @@ type Props = {
   brouillon: BrouillonContact
   erreurs: ErreursContact
   onChange: (brouillon: BrouillonContact) => void
-  /** Version courte, pour la création : type, nom, prénom et un téléphone. */
+  /** Version courte, pour la création : prénom, nom, « C'est une société » et un téléphone. */
   court?: boolean
   /** La fiche en cours de modification : elle n'est pas proposée dans « Recommandé par ». */
   idContact?: string
@@ -48,9 +48,21 @@ function choisir<V extends string>(options: readonly { valeur: V }[], valeur: st
   return options.find((option) => option.valeur === valeur)?.valeur ?? ''
 }
 
+/** La civilité en commande segmentée : « Mme · M. · — » (« — » : non précisée). */
+const CHOIX_CIVILITE = [
+  ...CIVILITES.map((civilite) => ({
+    ...civilite,
+    annonce: civilite.valeur === 'mme' ? 'Madame' : 'Monsieur',
+  })),
+  { valeur: '' as const, libelle: '—', annonce: 'Non précisée' },
+]
+
 /**
  * Champs du formulaire d'un contact. Ne contient ni balise de formulaire ni bouton
  * d'envoi : la page qui l'utilise s'en charge. Les règles sont dans `contacts.ts`.
+ * L'identité s'ouvre sur le prénom puis le nom, dans l'ordre où l'application les affiche
+ * (revue de design n° 2, proposition 16) ; « C'est une société », cochée, ajoute la raison
+ * sociale en tête, et le prénom et le nom deviennent ceux de la personne à joindre.
  */
 export default function FormulaireContact({
   brouillon,
@@ -66,8 +78,8 @@ export default function FormulaireContact({
   const modifierChamp = (valeurs: Partial<BrouillonContact>) =>
     onChange({ ...brouillon, ...valeurs })
 
-  // En création, le clavier s'ouvre tout de suite sur le nom. Le léger délai laisse la
-  // fenêtre modale finir de s'ouvrir : sans lui, elle reprendrait la main.
+  // En création, le clavier s'ouvre tout de suite sur le premier champ. Le léger délai laisse
+  // la fenêtre modale finir de s'ouvrir : sans lui, elle reprendrait la main.
   const premierChamp = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!court) return
@@ -75,28 +87,58 @@ export default function FormulaireContact({
     return () => window.clearTimeout(attente)
   }, [court])
 
-  const champType = (
-    <ChampChoix
-      libelle="Type"
-      options={TYPES_CONTACT}
-      value={brouillon.type}
-      onChange={(evenement) =>
-        modifierChamp({ type: choisir(TYPES_CONTACT, evenement.target.value) || 'personne' })
-      }
-    />
+  // Cocher « C'est une société » fait apparaître la raison sociale en tête : le curseur y va,
+  // une fois le champ affiché.
+  const raisonSociale = useRef<HTMLDivElement>(null)
+
+  const caseSociete = (
+    <label className="flex min-h-11 items-center gap-3 self-start text-base text-encre">
+      <input
+        type="checkbox"
+        className="size-5 accent-accent"
+        checked={societe}
+        onChange={(evenement) => {
+          const coche = evenement.target.checked
+          modifierChamp({ type: coche ? 'societe' : 'personne' })
+          if (coche) {
+            window.setTimeout(() => raisonSociale.current?.querySelector('input')?.focus())
+          }
+        }}
+      />
+      C'est une société
+    </label>
+  )
+
+  const champCivilite = (
+    <div className="flex flex-col gap-1">
+      {/* Le groupe porte déjà ce nom pour les lecteurs d'écran. */}
+      <p aria-hidden="true" className="text-sm font-medium text-encre">
+        Civilité
+      </p>
+      <div className="max-w-xs">
+        <ChoixSegmente
+          libelle="Civilité"
+          options={CHOIX_CIVILITE}
+          valeur={brouillon.civilite}
+          onChange={(civilite) => modifierChamp({ civilite })}
+        />
+      </div>
+    </div>
   )
 
   const champRaisonSociale = societe && (
-    <ChampSaisie
-      libelle="Nom de la société"
-      value={brouillon.raison_sociale}
-      onChange={(evenement) => modifierChamp({ raison_sociale: evenement.target.value })}
-      erreur={erreurs.raison_sociale}
-      maxLength={LONGUEURS_MAX.raison_sociale}
-      autoComplete="off"
-      autoCapitalize="words"
-      enterKeyHint="next"
-    />
+    <div ref={raisonSociale}>
+      <ChampSaisie
+        libelle="Nom de la société"
+        value={brouillon.raison_sociale}
+        onChange={(evenement) => modifierChamp({ raison_sociale: evenement.target.value })}
+        erreur={erreurs.raison_sociale}
+        maxLength={LONGUEURS_MAX.raison_sociale}
+        autoComplete="off"
+        autoCapitalize="words"
+        enterKeyHint="next"
+      />
+    </div>
   )
 
   const champNom = (
@@ -144,12 +186,12 @@ export default function FormulaireContact({
   if (court) {
     return (
       <div className="flex flex-col gap-4">
-        {champType}
         <div ref={premierChamp} className="flex flex-col gap-4">
           {champRaisonSociale}
-          {!societe && champNom}
+          {champPrenom}
         </div>
-        {!societe && champPrenom}
+        {champNom}
+        {caseSociete}
         {champsTelephone}
         <p className="text-sm text-encre-douce">
           Le reste (courriel, adresse, rôles, source…) se complète ensuite sur la fiche.
@@ -169,19 +211,15 @@ export default function FormulaireContact({
     <div className="flex flex-col gap-4">
       <Carte titre="Identité">
         <div className="grid gap-4 md:grid-cols-2">
-          {champType}
-          {champRaisonSociale}
-          <ChampChoix
-            libelle="Civilité"
-            optionVide="Non précisée"
-            options={CIVILITES}
-            value={brouillon.civilite}
-            onChange={(evenement) =>
-              modifierChamp({ civilite: choisir(CIVILITES, evenement.target.value) })
-            }
-          />
-          {champNom}
+          {champRaisonSociale !== false && (
+            <div className="md:col-span-2">{champRaisonSociale}</div>
+          )}
           {champPrenom}
+          {champNom}
+          <div className="flex flex-col gap-4 md:col-span-2">
+            {caseSociete}
+            {champCivilite}
+          </div>
         </div>
       </Carte>
 
