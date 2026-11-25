@@ -71,6 +71,7 @@ export default function LigneContact({
         )
       }
       vers={`/contacts/${contact.id}`}
+      titreSurDeuxLignes
       chevronDesTablette
       etat={etat}
     />

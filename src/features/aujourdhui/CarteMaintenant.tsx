@@ -73,7 +73,7 @@ function TitreVersFiche({
   onOuvrir: () => void
 }) {
   const classes =
-    'group block w-full rounded-lg text-left text-2xl leading-tight font-bold tracking-tight break-words hover:bg-inverse-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+    'group -my-[7px] block w-full rounded-lg py-[7px] text-left text-2xl leading-tight font-bold tracking-tight break-words hover:bg-inverse-creux focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
   // Le dernier mot reste collé au chevron : le chevron ne passe jamais seul à la ligne.
   const coupure = texte.trimEnd().lastIndexOf(' ')
   const debut = coupure === -1 ? '' : texte.slice(0, coupure + 1)

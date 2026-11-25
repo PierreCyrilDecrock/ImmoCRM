@@ -42,7 +42,7 @@ describe('preparerDemande', () => {
       recue_le: '2026-11-17T13:30:00.000Z',
       notes: '',
     })
-    expect(appel).toEqual({ titre: 'Qualifier la demande de Alex Spécimen', echeance: AUJOURDHUI })
+    expect(appel).toEqual({ titre: "Qualifier la demande d'Alex Spécimen", echeance: AUJOURDHUI })
   })
 
   it('note l’accord pour être appelé quand la personne demande à être rappelée', () => {

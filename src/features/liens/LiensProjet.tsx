@@ -7,6 +7,7 @@ import BoutonAppel from '../aujourdhui/BoutonAppel'
 import { lienItineraire, type Cartes } from '../aujourdhui/journee'
 import { adresseBien, type Bien } from '../biens/biens'
 import { nomComplet, type Contact } from '../contacts/contacts'
+import { CLASSES_LIEN } from '../contacts/coordonnees'
 
 type Props = {
   /** « Vendeur et bien », « Acquéreur et demande ». */
@@ -23,9 +24,6 @@ type Props = {
   /** Sous la liste (la recherche d'un co-acquéreur). */
   apres?: ReactNode
 }
-
-const CLASSES_LIEN =
-  'font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-accent'
 
 /**
  * Le contact et le bien liés à un projet (étape D.7), dans le profil de sa fiche : le nom

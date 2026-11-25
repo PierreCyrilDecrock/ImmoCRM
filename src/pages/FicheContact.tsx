@@ -26,6 +26,7 @@ import {
   type AppelSansAccord,
 } from '../features/contacts/consentement'
 import {
+  deNom,
   lireContact,
   nomAvecCivilite,
   nomComplet,
@@ -135,16 +136,20 @@ export default function FicheContact() {
     let actif = true
     async function charger() {
       const client = exigerSupabase()
-      const resultat = await lireContact(client, id)
+      // Les appels sans accord et les biens ne demandent que l'identifiant : lus en même temps
+      // que la fiche, ils n'ajoutent pas d'aller-retour (recette D.8). Un échec de leur part
+      // n'empêche pas d'afficher la fiche.
+      const [resultat, historique, possedes] = await Promise.all([
+        lireContact(client, id),
+        listerAppelsSansAccord(client, id),
+        listerBiensDuContact(client, id),
+      ])
       if (!resultat.ok) return { phase: 'erreur', message: resultat.erreur.message } as const
       const contact = resultat.donnees
-      // Ce qui suit est lu ensemble ; un échec n'empêche pas d'afficher la fiche.
-      const [origine, reprise, historique, possedes] = await Promise.all([
+      const [origine, reprise] = await Promise.all([
         contact.recommande_par_id === null ? null : lireContact(client, contact.recommande_par_id),
         // Fiche fusionnée dans une autre : on affichera le lien vers celle qui a tout repris.
         contact.fusionne_dans_id === null ? null : lireContact(client, contact.fusionne_dans_id),
-        listerAppelsSansAccord(client, contact.id),
-        listerBiensDuContact(client, contact.id),
       ])
       return {
         phase: 'pret',
@@ -435,7 +440,7 @@ export default function FicheContact() {
       >
         {messages}
         <div className={GRILLE_FICHE}>
-          <ProfilFiche libelle={`Profil de ${nomComplet(contact)}`}>
+          <ProfilFiche libelle={`Profil ${deNom(nomComplet(contact))}`}>
             <IdentiteContact contact={contact} taille="grande" dernierEchange={ligneDernier} />
             {temperature}
             <ActionsContact

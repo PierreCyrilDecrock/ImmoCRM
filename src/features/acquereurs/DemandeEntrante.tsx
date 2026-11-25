@@ -13,7 +13,7 @@ import { dateDuJour, heureDuMoment } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import { adresseBien, type Bien } from '../biens/biens'
 import SelecteurBien from '../biens/SelecteurBien'
-import { nomComplet, resumeContact, type Contact } from '../contacts/contacts'
+import { deNom, nomComplet, resumeContact, type Contact } from '../contacts/contacts'
 import { chercherDoublons } from '../contacts/doublons'
 import SelecteurContact from '../contacts/SelecteurContact'
 import AutreCreation from '../saisie/AutreCreation'
@@ -120,8 +120,8 @@ export default function DemandeEntrante({
     notifier(
       'succes',
       appel === null
-        ? `Demande de ${nomComplet(contact)} enregistrée`
-        : `Demande de ${nomComplet(contact)} enregistrée. Appel de qualification prévu aujourd'hui.`,
+        ? `Demande ${deNom(nomComplet(contact))} enregistrée`
+        : `Demande ${deNom(nomComplet(contact))} enregistrée. Appel de qualification prévu aujourd'hui.`,
     )
     void naviguer(`/pipelines/acquereurs/${resultat.donnees.projet.id}`)
   }

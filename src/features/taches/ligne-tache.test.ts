@@ -7,6 +7,7 @@ import {
   detailLigneTache,
   jourAffiche,
   jourDeLaVue,
+  titreSansNom,
 } from './ligne-tache'
 import { tacheEssai } from './tache-essai'
 
@@ -160,5 +161,47 @@ describe('detailLigneTache', () => {
       { aujourdhui: AUJOURDHUI, masquer: 'contact' },
     )
     expect(detail.autres).toEqual(['Relance'])
+  })
+
+  it('ne répète pas le contact déjà nommé dans le titre, et donne alors le motif', () => {
+    const detail = detailLigneTache(
+      {
+        tache: tacheEssai({
+          titre: 'Relancer Camille FICTIF',
+          motif: 'Retour sur l’avis de valeur',
+          echeance: AUJOURDHUI,
+          categorie: 'relance',
+        }),
+        contact,
+        bien: null,
+      },
+      { aujourdhui: AUJOURDHUI },
+    )
+    expect(detail.autres).toEqual(['Retour sur l’avis de valeur'])
+  })
+
+  it('garde le contact quand le titre ne le nomme pas', () => {
+    const detail = detailLigneTache(
+      {
+        tache: tacheEssai({ titre: 'Envoyer le mandat', echeance: AUJOURDHUI }),
+        contact,
+        bien: null,
+      },
+      { aujourdhui: AUJOURDHUI },
+    )
+    expect(detail.autres).toEqual(['Camille Fictif'])
+  })
+})
+
+describe('titreSansNom', () => {
+  it('retire le nom cité, sans tenir compte des majuscules', () => {
+    expect(titreSansNom('Relancer Camille FICTIF', 'Camille Fictif')).toBe('Relancer')
+    expect(titreSansNom('Appeler Camille Fictif, puis écrire', 'Camille Fictif')).toBe(
+      'Appeler, puis écrire',
+    )
+  })
+  it('rend null quand le titre ne nomme pas le contact', () => {
+    expect(titreSansNom('Envoyer le mandat', 'Camille Fictif')).toBeNull()
+    expect(titreSansNom('Envoyer le mandat', ' ')).toBeNull()
   })
 })

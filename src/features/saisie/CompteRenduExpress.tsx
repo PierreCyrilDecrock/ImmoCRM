@@ -8,7 +8,12 @@ import Liste from '../../components/Liste'
 import Message from '../../components/Message'
 import { useNotifications } from '../../components/notifications-contexte'
 import Pastille from '../../components/Pastille'
-import { dateDuJour, formaterJourCourt, heureDuMoment } from '../../lib/dates'
+import {
+  dateDuJour,
+  formaterJourCourt,
+  heureDuMoment,
+  phraseProchaineAction,
+} from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import ChampsCompteRenduVisite from '../activites/ChampsCompteRenduVisite'
 import {
@@ -18,6 +23,7 @@ import {
   TYPES_ACTIVITE,
 } from '../activites/activites'
 import {
+  deNom,
   libelleTemperature,
   lireContact,
   nomComplet,
@@ -131,12 +137,12 @@ export default function CompteRenduExpress({ contact: depart, onFermer, onEnregi
       setEchec(resultat.message)
       return
     }
-    const qui = contact === null ? '' : ` de ${nomComplet(contact)}`
+    const qui = contact === null ? '' : ` ${deNom(nomComplet(contact))}`
     notifier(
       'succes',
       resultat.tache === null
         ? `Ajouté au journal${qui}.`
-        : `Ajouté au journal${qui}. Prochaine action : ${formaterJourCourt(resultat.tache.echeance, aujourdhui)}.`,
+        : `Ajouté au journal${qui}. ${phraseProchaineAction(resultat.tache.echeance, aujourdhui)}`,
     )
     onEnregistre()
     onFermer()

@@ -107,6 +107,7 @@ export default function SectionProjetsVendeurs(props: Props) {
                           : nomComplet(contact)
                     }
                     // L'étape d'un projet en cours est dans la frise dessous : pas deux fois.
+                    detailSurDeuxLignes
                     detail={
                       dansLePipeline && projet.etat === 'actif'
                         ? undefined

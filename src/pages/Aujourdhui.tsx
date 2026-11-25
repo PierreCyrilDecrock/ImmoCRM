@@ -315,9 +315,15 @@ export default function Aujourdhui() {
           )}
           {(ligneFin !== null || avancement?.anneau === true) && (
             <p aria-hidden="true" className="text-sm text-encre-douce">
+              {/* Chaque morceau passe à la ligne d'un bloc : jamais « faits. » seul (recette D.8). */}
               {[ligneFin, avancement?.anneau === true ? avancement.phrase : null]
                 .filter((morceau) => morceau !== null)
-                .join(' ')}
+                .flatMap((morceau, rang) => [
+                  rang > 0 ? ' ' : null,
+                  <span key={morceau} className="inline-block">
+                    {morceau}
+                  </span>,
+                ])}
             </p>
           )}
           {/* L'avancement, annoncé quand il change. */}

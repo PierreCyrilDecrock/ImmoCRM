@@ -10,7 +10,7 @@ import { useNotifications } from '../../components/notifications-contexte'
 import Pastille from '../../components/Pastille'
 import ChampsCompteRenduVisite from '../activites/ChampsCompteRenduVisite'
 import { REACTIONS } from '../acquereurs/biens-proposes'
-import { formaterJourCourt } from '../../lib/dates'
+import { phraseProchaineAction } from '../../lib/dates'
 import { exigerSupabase } from '../../lib/supabase'
 import {
   iconeTypeActivite,
@@ -176,10 +176,10 @@ export default function BoucleRelance({
       brouillon.mode === 'aucune'
         ? `C'est noté. ${nom} n'a plus de prochaine action.`
         : brouillon.mode === 'planifier'
-          ? `C'est noté. Prochaine action : ${formaterJourCourt(brouillon.echeance, aujourdhui)}.`
+          ? `C'est noté. ${phraseProchaineAction(brouillon.echeance, aujourdhui)}`
           : suite === null
             ? "C'est noté."
-            : `C'est noté. Prochaine action : ${formaterJourCourt(suite.echeance, aujourdhui)}.`,
+            : `C'est noté. ${phraseProchaineAction(suite.echeance, aujourdhui)}`,
     )
     onChangement()
     onFermer()

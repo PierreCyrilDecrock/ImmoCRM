@@ -61,29 +61,30 @@ export default function LigneAlerte({ alerte, aujourdhui, onPlanifier }: Props) 
     const etape = vendeur ? libelleEtape(projet.etape) : libelleEtapeAcquereur(projet.etape)
     const jours = joursDepuis(projet.calmeDepuis, aujourdhui)
     const nom = projet.contact === null ? 'Contact introuvable' : nomComplet(projet.contact)
+    // Règle 1 (recette D.8) : un seul geste visible, le rond Appeler ; la ligne ouvre le projet.
     return (
-      <li className="flex items-start gap-3 py-3">
-        <Icone nom="pipelines" className="mt-1 size-6 text-encre-douce" />
-        <div className="min-w-0 flex-1">
-          <p className="text-base font-semibold break-words text-encre">
-            {vendeur ? 'Vente' : 'Achat'} · {nom}
-          </p>
-          <p className="text-sm break-words text-encre-douce">
-            {[etape, projet.bien === null ? null : adresseBien(projet.bien)]
-              .filter((morceau) => morceau !== null && morceau !== '')
-              .join(' · ')}
-          </p>
-          <p className="text-sm font-semibold text-alerte">Sans activité depuis {jours} jours</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {projet.contact !== null && <BoutonAppel contact={projet.contact} />}
-            <LienBouton
-              icone="pipelines"
-              vers={`/pipelines/${vendeur ? 'vendeurs' : 'acquereurs'}/${projet.projetId}`}
-            >
-              Ouvrir le projet
-            </LienBouton>
-          </div>
-        </div>
+      <li className="flex items-center gap-2 pr-1">
+        <Link
+          to={`/pipelines/${vendeur ? 'vendeurs' : 'acquereurs'}/${projet.projetId}`}
+          className="flex min-h-16 min-w-0 flex-1 items-start gap-3 rounded-lg py-2 pr-1 pl-2 text-left hover:bg-creux focus-visible:outline-2 focus-visible:outline-accent"
+        >
+          <Icone nom="pipelines" className="mt-0.5 size-6 shrink-0 text-encre-douce" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-base font-semibold break-words text-encre">
+              {vendeur ? 'Vente' : 'Achat'} · {nom}
+            </span>
+            <span className="block text-sm break-words text-encre-douce">
+              {[etape, projet.bien === null ? null : adresseBien(projet.bien)]
+                .filter((morceau) => morceau !== null && morceau !== '')
+                .join(' · ')}
+            </span>
+            <span className="block text-sm font-semibold text-alerte">
+              Sans activité depuis {jours} jours
+            </span>
+            <span className="sr-only">, ouvrir le projet</span>
+          </span>
+        </Link>
+        {projet.contact !== null && <BoutonAppel contact={projet.contact} rond />}
       </li>
     )
   }
@@ -99,7 +100,7 @@ export default function LigneAlerte({ alerte, aujourdhui, onPlanifier }: Props) 
       >
         <InitialesRole initiales={initialesDe(nom)} teinte={teinteRole(contact)} role={role} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-semibold text-encre">{nom}</span>
+          <span className="line-clamp-2 text-base font-semibold break-words text-encre">{nom}</span>
           <span className="sr-only">, </span>
           <span className="block truncate text-sm text-encre-douce">
             {detailSansActionAccueil(contact, aujourdhui, alerte.jamaisContacte)}

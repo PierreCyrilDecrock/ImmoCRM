@@ -13,6 +13,7 @@ import {
   listerEtiquettes,
   MAX_ETIQUETTES,
   nomAvecCivilite,
+  deNom,
   nomComplet,
   nomDeListe,
   preparerContact,
@@ -450,5 +451,17 @@ describe('accès aux données', () => {
     const { client } = fauxClient({ data: 0, error: null })
     const resultat = await supprimerContactDefinitivement(client, 'abc')
     expect(resultat).toMatchObject({ ok: false, erreur: { genre: 'introuvable' } })
+  })
+})
+
+describe('deNom', () => {
+  it('élide devant une voyelle, accentuée ou non, et devant un h', () => {
+    expect(deNom('Alix Demandeur')).toBe("d'Alix Demandeur")
+    expect(deNom('Élie Fictif')).toBe("d'Élie Fictif")
+    expect(deNom('Hugo Imaginaire')).toBe("d'Hugo Imaginaire")
+  })
+  it('garde « de » devant une consonne', () => {
+    expect(deNom('Camille Fictif')).toBe('de Camille Fictif')
+    expect(deNom('SCI des Essais')).toBe('de SCI des Essais')
   })
 })

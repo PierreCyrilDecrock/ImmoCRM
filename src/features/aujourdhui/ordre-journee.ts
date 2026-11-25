@@ -2,6 +2,7 @@ import { depuisQuand, ecartJours, formaterHeure } from '../../lib/dates'
 import { libelleTypeActivite, libelleResultatAppel, type Activite } from '../activites/activites'
 import type { Contact } from '../contacts/contacts'
 import { libelleJour } from '../taches/echeances'
+import { titreSansNom } from '../taches/ligne-tache'
 import type { Tache } from '../taches/taches'
 
 /**
@@ -295,4 +296,17 @@ export function echeanceADroite(
 ): string {
   if (tache.echeance < aujourdhui) return libelleJour(tache.echeance, aujourdhui)
   return formaterHeure(tache.heure)
+}
+
+/**
+ * Ce qu'une relance écrit sous le nom du contact (recette D.8, règle 4) : le titre, sauf s'il
+ * répète ce nom (« Relancer Léa Fausse », titre proposé par défaut) ; alors le motif s'il y en
+ * a un, sinon le titre sans le nom (« Relancer », « Rappeler après la visite »).
+ */
+export function motifRelance(tache: Pick<Tache, 'titre' | 'motif'>, nom: string): string {
+  const sansNom = titreSansNom(tache.titre, nom)
+  if (sansNom === null) return tache.titre
+  const motif = tache.motif.trim()
+  if (motif !== '') return motif
+  return sansNom === '' ? tache.titre : sansNom
 }

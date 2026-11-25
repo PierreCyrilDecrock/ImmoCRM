@@ -30,7 +30,7 @@ export default function CompteursJournee({ compteurs, onAller }: Props) {
           </span>
           {compte.libelle}
           <span className="sr-only">
-            {compte.alerte ? ', dont en retard' : ''} : aller à {compte.destination}
+            {compte.alerte ? ', certains en retard' : ''} : aller à {compte.destination}
           </span>
         </button>
       ))}

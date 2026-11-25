@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { NomIcone } from '../../components/Icone'
-import { formaterJourCourt } from '../../lib/dates'
+import { phraseProchaineAction } from '../../lib/dates'
 import {
   COMPTE_RENDU_VISITE_VIDE,
   INTERETS_VISITE,
@@ -11,7 +11,7 @@ import {
   type ResultatAppel,
   type TypeActivite,
 } from '../activites/activites'
-import { nomComplet, type Contact } from '../contacts/contacts'
+import { deNom, nomComplet, type Contact } from '../contacts/contacts'
 import {
   bouclerTache,
   brouillonBoucle,
@@ -301,11 +301,9 @@ export function messageEchange(
   aujourdhui: string,
 ): string {
   const debut =
-    contact === null ? 'Ajouté au journal.' : `Ajouté au journal de ${nomComplet(contact)}.`
+    contact === null ? 'Ajouté au journal.' : `Ajouté au journal ${deNom(nomComplet(contact))}.`
   if (echeance === null) return debut
-  const jour = formaterJourCourt(echeance, aujourdhui)
-  // « mer. 25 nov. » finit déjà par un point.
-  return `${debut} Prochaine action : ${jour}${jour.endsWith('.') ? '' : '.'}`
+  return `${debut} ${phraseProchaineAction(echeance, aujourdhui)}`
 }
 
 // ---------------------------------------------------------------------------

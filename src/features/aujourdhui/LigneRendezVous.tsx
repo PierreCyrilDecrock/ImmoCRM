@@ -4,7 +4,7 @@ import Bouton from '../../components/Bouton'
 import LienBouton from '../../components/LienBouton'
 import { VISIBLE_AU_SURVOL } from '../../components/survol'
 import { formaterHeure } from '../../lib/dates'
-import { nomComplet } from '../contacts/contacts'
+import { deNom, nomComplet } from '../contacts/contacts'
 import type { TacheAffichee } from '../taches/taches'
 import CaseTache from '../taches/CaseTache'
 import { adresseRendezVous, lienItineraire, type Cartes } from './journee'
@@ -86,7 +86,9 @@ export default function LigneRendezVous({
       <span className="sr-only">
         {heure}, {passe ? 'terminé : ' : ''}
       </span>
-      <span className={`block truncate text-base font-medium ${couleur}`}>{tache.titre}</span>
+      <span className={`line-clamp-3 text-base font-medium break-words ${couleur}`}>
+        {tache.titre}
+      </span>
       {detail !== '' && <span className="block truncate text-sm text-encre-douce">{detail}</span>}
       {ciDessus && <span className="sr-only"> (dans la carte ci-dessus)</span>}
     </>
@@ -161,7 +163,7 @@ export default function LigneRendezVous({
               aria-label={
                 bien !== null
                   ? 'Ouvrir la fiche du bien'
-                  : `Ouvrir la fiche de ${contact === null ? 'ce contact' : nomComplet(contact)}`
+                  : `Ouvrir la fiche ${contact === null ? 'de ce contact' : deNom(nomComplet(contact))}`
               }
             >
               Fiche

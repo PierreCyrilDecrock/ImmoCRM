@@ -14,6 +14,7 @@ import {
   formaterDuree,
   formaterHeure,
   formaterJourCourt,
+  phraseProchaineAction,
   formaterJourSemaine,
   formaterJourLong,
   heureDeFin,
@@ -277,5 +278,18 @@ describe('jourEnMots', () => {
   it('écrit la date d’un jour passé, et rien pour une date illisible', () => {
     expect(jourEnMots('2026-11-23', MARDI)).toBe('lun. 23 nov.')
     expect(jourEnMots('pas une date', MARDI)).toBe('')
+  })
+})
+
+describe('phraseProchaineAction', () => {
+  it('ne double pas le point d’une abréviation', () => {
+    expect(phraseProchaineAction('2026-11-27', '2026-11-25')).toBe(
+      'Prochaine action : ven. 27 nov.',
+    )
+  })
+  it('termine par un point une date qui n’en a pas', () => {
+    expect(phraseProchaineAction('2027-05-04', '2026-11-25')).toBe(
+      'Prochaine action : mar. 4 mai 2027.',
+    )
   })
 })

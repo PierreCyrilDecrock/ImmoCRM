@@ -133,7 +133,7 @@ export default function LigneTache({
         >
           <span className="flex items-start gap-1.5">
             <span
-              className={`line-clamp-2 min-w-0 text-base font-medium break-words ${aFaire ? 'text-encre' : 'text-encre-douce line-through'}`}
+              className={`line-clamp-3 min-w-0 text-base font-medium break-words ${aFaire ? 'text-encre' : 'text-encre-douce line-through'}`}
             >
               {tache.titre}
             </span>

@@ -16,6 +16,11 @@ type Props = {
    */
   detail?: ReactNode
   /**
+   * La seconde ligne passe sur deux lignes au lieu d'être coupée, quand elle porte une
+   * information à lire en entière (l'état d'un projet, la description d'une page ; recette D.8).
+   */
+  detailSurDeuxLignes?: boolean
+  /**
    * Élément court à droite de la seconde ligne, sur sa ligne (la pastille du statut d'un
    * bien). Il ne se coupe jamais : c'est le détail qui cède la place.
    */
@@ -63,6 +68,7 @@ export default function LigneListe({
   titre,
   titreSurDeuxLignes = false,
   detail,
+  detailSurDeuxLignes = false,
   finDetail,
   sousDetail,
   icone,
@@ -105,7 +111,11 @@ export default function LigneListe({
         )}
         {detail !== undefined &&
           (finDetail === undefined ? (
-            <span className="block truncate text-sm text-encre-douce">{detail}</span>
+            <span
+              className={`block text-sm text-encre-douce ${detailSurDeuxLignes ? 'line-clamp-2 break-words' : 'truncate'}`}
+            >
+              {detail}
+            </span>
           ) : (
             <span className="mt-0.5 flex items-center gap-2">
               <span className="min-w-0 flex-1 truncate text-sm text-encre-douce">{detail}</span>
