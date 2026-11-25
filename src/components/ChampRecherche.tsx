@@ -32,7 +32,7 @@ export default function ChampRecherche({
   ...champ
 }: Props) {
   const classes = compact
-    ? `${CLASSES_CHAMP.replace('text-base', 'text-[0.8125rem]')} pr-12 pl-8`
+    ? `${CLASSES_CHAMP.replace('text-base', 'text-petit')} pr-12 pl-8`
     : `${CLASSES_CHAMP} pr-11 pl-10`
   return (
     <div className="relative">
@@ -59,7 +59,7 @@ export default function ChampRecherche({
         // Déjà dit aux lecteurs d'écran par `aria-keyshortcuts` sur le champ.
         <kbd
           aria-hidden="true"
-          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md font-sans font-medium text-encre-douce ring-1 ring-bord-fort ${compact ? 'right-2 px-1 py-px text-[0.6875rem]' : 'right-2.5 px-1.5 py-0.5 text-xs'}`}
+          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md font-sans font-medium text-encre-douce ring-1 ring-bord-fort ${compact ? 'right-2 px-1 py-px text-mini' : 'right-2.5 px-1.5 py-0.5 text-xs'}`}
         >
           {rappel}
         </kbd>

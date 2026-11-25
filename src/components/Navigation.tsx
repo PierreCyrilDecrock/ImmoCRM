@@ -65,7 +65,7 @@ export default function Navigation({
                   aria-label={
                     pastille === undefined ? undefined : `${entree.libelle}, ${pastille.annonce}`
                   }
-                  className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.625rem] tracking-tighter min-[360px]:text-[0.6875rem] min-[360px]:tracking-tight focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:min-h-16 md:rounded-xl md:text-xs lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-[0.9375rem] lg:tracking-normal ${
+                  className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-micro tracking-tighter min-[360px]:text-mini min-[360px]:tracking-tight focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:min-h-16 md:rounded-xl md:text-xs lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-moyen lg:tracking-normal ${
                     estActive
                       ? 'font-semibold text-encre md:bg-surface md:shadow-xs md:ring-1 md:ring-bord'
                       : 'font-medium text-encre-douce hover:text-encre md:hover:bg-creux'
@@ -84,7 +84,7 @@ export default function Navigation({
                       // dessin, posé en absolu : la barre du bas garde sa hauteur.
                       <span
                         aria-hidden="true"
-                        className="absolute -top-1.5 -right-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-danger px-1 text-[0.6875rem] leading-none font-semibold text-sur-plein tabular-nums ring-2 ring-surface md:-top-2 md:-right-3 md:h-5 md:min-w-5 md:ring-fond lg:hidden"
+                        className="absolute -top-1.5 -right-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-danger px-1 text-mini leading-none font-semibold text-sur-plein tabular-nums ring-2 ring-surface md:-top-2 md:-right-3 md:h-5 md:min-w-5 md:ring-fond lg:hidden"
                       >
                         {pastille.texte}
                       </span>

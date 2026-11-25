@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { enregistrerUnique, lister, type Ligne, type Resultat } from '../../lib/donnees'
+import { lireApparenceCompte, versColonne, type ApparenceCompte } from '../apparence/themes'
 import { DELAIS_PAR_DEFAUT, delaisLisibles, type DelaisRelance } from '../relances/delais'
 
 /** Les réglages modifiables par l'utilisateur. */
@@ -129,4 +130,30 @@ export async function enregistrerReglages(
   const resultat = await enregistrerUnique(client, 'reglages', valeurs, 'user_id')
   if (!resultat.ok) return resultat
   return { ok: true, donnees: depuisLigne(resultat.donnees) }
+}
+
+/**
+ * Lit les thèmes du compte (page Apparence, colonne `apparence`) ; aucun thème créé si rien
+ * n'est enregistré.
+ */
+export async function lireApparence(client: SupabaseClient): Promise<Resultat<ApparenceCompte>> {
+  const resultat = await lister(client, 'reglages', { limite: 1 })
+  if (!resultat.ok) return resultat
+  const ligne = resultat.donnees[0]
+  return { ok: true, donnees: lireApparenceCompte(ligne?.apparence) }
+}
+
+/** Enregistre les thèmes du compte (la ligne des réglages est créée au besoin). */
+export async function enregistrerApparence(
+  client: SupabaseClient,
+  apparence: ApparenceCompte,
+): Promise<Resultat<ApparenceCompte>> {
+  const resultat = await enregistrerUnique(
+    client,
+    'reglages',
+    { apparence: versColonne(apparence) },
+    'user_id',
+  )
+  if (!resultat.ok) return resultat
+  return { ok: true, donnees: lireApparenceCompte(resultat.donnees.apparence) }
 }

@@ -15,7 +15,7 @@ export default function PastilleRetard({ texte, annonce }: Props) {
       <span
         aria-hidden="true"
         title={annonce}
-        className="shrink-0 rounded-full bg-danger-doux px-2 py-0.5 text-[0.8125rem] font-semibold whitespace-nowrap text-danger tabular-nums"
+        className="shrink-0 rounded-full bg-danger-doux px-2 py-0.5 text-petit font-semibold whitespace-nowrap text-danger tabular-nums"
       >
         {texte}
       </span>

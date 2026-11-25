@@ -356,7 +356,7 @@ export default function FicheProjetAcquereur() {
         {pastille !== null && <Etiquette genre={pastille.genre}>{pastille.texte}</Etiquette>}
         <span>{enTete.surtitre}</span>
       </p>
-      <h1 className="text-[1.375rem] leading-tight font-bold tracking-tight break-words text-encre md:text-[1.75rem]">
+      <h1 className="text-titre-fiche leading-tight font-bold tracking-tight break-words text-encre md:text-titre">
         {enTete.titre}
       </h1>
     </div>

@@ -18,7 +18,7 @@ const COULEURS: Record<GenreEtiquette, string> = {
 export default function Etiquette({ genre = 'neutre', children }: Props) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.8125rem] font-semibold ${COULEURS[genre]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-petit font-semibold ${COULEURS[genre]}`}
     >
       {children}
     </span>

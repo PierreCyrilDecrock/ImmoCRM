@@ -3,6 +3,7 @@ import EtatEnregistrement from './components/EtatEnregistrement'
 import FournisseurNotifications from './components/FournisseurNotifications'
 import MiseEnPage from './components/MiseEnPage'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import FournisseurApparence from './features/apparence/FournisseurApparence'
 import FournisseurSession from './features/connexion/FournisseurSession'
 import { useSession } from './features/connexion/session-contexte'
 import BarreRecherche from './features/recherche/BarreRecherche'
@@ -13,6 +14,7 @@ import SaisieRapide from './features/saisie/SaisieRapide'
 import { pastilleRetards } from './features/taches/retards'
 import { useTachesEnRetard } from './features/taches/suivi-retards'
 import { erreurConfigSupabase, supabase } from './lib/supabase'
+import Apparence from './pages/Apparence'
 import Aujourdhui from './pages/Aujourdhui'
 import Biens from './pages/Biens'
 import Chargement from './pages/Chargement'
@@ -28,6 +30,7 @@ import Journal from './pages/Journal'
 import FusionContacts from './pages/FusionContacts'
 import ModifierBien from './pages/ModifierBien'
 import ModifierContact from './pages/ModifierContact'
+import ModifierTheme from './pages/ModifierTheme'
 import MotDePasseOublie from './pages/MotDePasseOublie'
 import NouveauMotDePasse from './pages/NouveauMotDePasse'
 import Pipelines from './pages/Pipelines'
@@ -109,6 +112,9 @@ function Pages() {
           <Route path="/plus" element={<Plus />} />
           <Route path="/plus/journal" element={<Journal />} />
           <Route path="/plus/reglages" element={<Reglages />} />
+          <Route path="/plus/apparence" element={<Apparence />} />
+          <Route path="/plus/apparence/themes/nouveau" element={<ModifierTheme />} />
+          <Route path="/plus/apparence/themes/:id" element={<ModifierTheme />} />
           <Route path="/plus/composants" element={<Composants />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -131,7 +137,9 @@ export default function App() {
       ) : (
         <FournisseurSession client={supabase}>
           <FournisseurNotifications>
-            <Pages />
+            <FournisseurApparence>
+              <Pages />
+            </FournisseurApparence>
           </FournisseurNotifications>
         </FournisseurSession>
       )}

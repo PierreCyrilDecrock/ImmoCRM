@@ -295,7 +295,7 @@ export default function Aujourdhui() {
       }
       enTete={
         <div className="flex min-h-11 items-center justify-between gap-3">
-          <h1 className="min-w-0 text-[1.75rem] leading-tight font-bold tracking-tight break-words text-encre md:text-4xl">
+          <h1 className="min-w-0 text-titre leading-tight font-bold tracking-tight break-words text-encre md:text-4xl">
             {titre}
           </h1>
           {avancement?.anneau === true && <AnneauProgression progression={avancement} />}

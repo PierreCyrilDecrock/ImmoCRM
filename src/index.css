@@ -8,7 +8,9 @@
 /*
  * Couleurs du système de design (voir docs/design.md), version 3 : fond gris chaud, cartes
  * blanches, encre presque noire, un seul bleu vif pour l'action.
- * Chaque couleur a une valeur claire et une valeur sombre ; le thème suit le réglage de l'appareil.
+ * Chaque couleur a une valeur claire et une valeur sombre ; le mode suit le réglage de l'appareil,
+ * ou celui choisi dans la page Apparence. Un thème créé dans cette page se pose par-dessus
+ * (feuille « immocrm-theme », src/features/apparence/appliquer.ts).
  * Dans les composants, on utilise les noms (bg-fond, text-encre, border-bord…), jamais une couleur en dur.
  * Contrastes vérifiés : texte courant au moins 4,5:1 sur son fond, contours des champs au moins 3:1.
  */
@@ -40,8 +42,21 @@
   --bord-inverse: #0e0f12;
 }
 
+/*
+ * Mode sombre : il suit le réglage de l'appareil, sauf si la page Apparence impose un mode
+ * sur cet appareil (attribut `data-mode` de <html>, posé par src/features/apparence/appliquer.ts).
+ * Les mêmes valeurs servent deux fois : en « auto » quand l'appareil est en sombre, et quand
+ * le mode sombre est imposé. Les valeurs sont aussi recopiées dans
+ * src/features/apparence/couleurs.ts (PALETTE_ORIGINE) : un test vérifie qu'elles concordent.
+ */
+:root[data-mode='clair'] {
+  color-scheme: light;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-mode='clair']) {
+    color-scheme: dark;
+
     --fond: #0d0e11;
     --surface: #17181c;
     --creux: #24252b;
@@ -66,6 +81,34 @@
     /* En sombre, un filet plus clair détache la carte du fond. */
     --bord-inverse: #4a4c54;
   }
+}
+
+:root[data-mode='sombre'] {
+  color-scheme: dark;
+
+  --fond: #0d0e11;
+  --surface: #17181c;
+  --creux: #24252b;
+  --bord: #2a2c33;
+  --bord-fort: #6b6e76;
+  --encre: #f2f2f0;
+  --encre-douce: #a8abb3;
+  --accent: #8c8aff;
+  --accent-fort: #b4b3ff;
+  --accent-doux: #23224a;
+  --sur-plein: #0d0e11;
+  --danger: #ff8a78;
+  --danger-doux: #3a1a16;
+  --succes: #4fd08c;
+  --succes-doux: #14301f;
+  --alerte: #f2c25b;
+  --alerte-doux: #352914;
+  --inverse: #2a2b31;
+  --inverse-creux: #3a3b42;
+  --sur-inverse: #f2f2f0;
+  --sur-inverse-doux: #b9bcc4;
+  /* En sombre, un filet plus clair détache la carte du fond. */
+  --bord-inverse: #4a4c54;
 }
 
 @theme inline {
@@ -105,6 +148,17 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
   --radius-3xl: 1.75rem;
+
+  /*
+   * Tailles de texte propres au projet, en plus de celles de Tailwind (text-xs… text-4xl) :
+   * elles suivent la « Taille du texte » d'un thème comme les autres (page Apparence).
+   */
+  --text-micro: 0.625rem;
+  --text-mini: 0.6875rem;
+  --text-petit: 0.8125rem;
+  --text-moyen: 0.9375rem;
+  --text-titre-fiche: 1.375rem;
+  --text-titre: 1.75rem;
 
   /* Une feuille qui monte du bas de l'écran (reports d'une tâche sur téléphone). */
   --animate-monter: monter 160ms ease-out;
@@ -171,4 +225,35 @@ input[type='date']::-webkit-date-and-time-value,
 input[type='time']::-webkit-date-and-time-value {
   text-align: left;
   min-height: 1.5em;
+}
+
+/*
+ * Zoom de la page Apparence : il change la taille du texte de <html> (toutes les tailles sont
+ * en rem). À 90 %, les zones à toucher gardent leurs 44 px (règle commune de l'interface) ;
+ * en dessous, elles rétrécissent aussi : ces niveaux visent l'ordinateur et la souris.
+ */
+:root[data-zoom='90'] .min-h-11 {
+  min-height: 44px;
+}
+:root[data-zoom='90'] .size-11 {
+  width: 44px;
+  height: 44px;
+}
+:root[data-zoom='90'] .h-11 {
+  height: 44px;
+}
+:root[data-zoom='90'] .min-w-11 {
+  min-width: 44px;
+}
+
+/*
+ * Sur un écran tactile, un champ de saisie garde 16 px au moins, quels que soient la taille
+ * du texte et le zoom : en dessous, l'iPhone agrandit l'écran à chaque saisie.
+ */
+@media (pointer: coarse) {
+  input:not([type='checkbox'], [type='radio'], [type='range'], [type='color']),
+  textarea,
+  select {
+    font-size: max(16px, var(--text-base));
+  }
 }

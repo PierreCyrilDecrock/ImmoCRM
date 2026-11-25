@@ -9,7 +9,7 @@ import { useSession } from '../features/connexion/session-contexte'
 import { libelleVersion, VERSION } from '../lib/version'
 
 /**
- * Page « Plus » : le journal, les réglages, le compte et la déconnexion. La page du
+ * Page « Plus » : le journal, l'apparence, les réglages, le compte et la déconnexion. La page du
  * développeur, « Composants de l'interface », n'est pas dans ce menu : elle s'ouvre à son
  * adresse, `#/plus/composants`.
  */
@@ -33,6 +33,13 @@ export default function Plus() {
           detailSurDeuxLignes
           detail="Appels, messages, visites et notes, du plus récent au plus ancien"
           vers="/plus/journal"
+        />
+        <LigneListe
+          icone="palette"
+          titre="Apparence"
+          detailSurDeuxLignes
+          detail="Mode clair ou sombre, zoom ; thèmes : couleurs, police, taille, arrondis"
+          vers="/plus/apparence"
         />
         <LigneListe
           icone="reglages"

@@ -14,7 +14,7 @@ Pour voir tous les composants à l'écran : la page **« Composants de l'interfa
 - **Texte de saisie en 16 px** (`text-base`) : en dessous, l'iPhone zoome sur le champ.
 - **Tout en français**, sans jargon, messages d'erreur compris.
 - **Une absence se dit calmement, et une seule fois** (règle 10, étape F.4). Rouge et orange sont réservés à un vrai retard ou à un vrai risque ; « rien de prévu » s'écrit en gris, au bon endroit, avec le seul geste qui y remédie. Si un bloc de l'écran dit déjà l'absence et porte le bouton, les autres se taisent (`SectionTaches` avec `vide="masquer"`).
-- **Clair et sombre** suivent le réglage de l'appareil, sans réglage dans l'application.
+- **Clair et sombre** suivent le réglage de l'appareil, sauf si la page **Apparence** impose un mode sur cet appareil (voir « Apparence : mode, zoom et thèmes »).
 - **Contrastes vérifiés** dans les deux thèmes : texte courant au moins 4,5:1 sur son fond, contours des champs au moins 3:1. Une couleur qui distingue deux états diffère aussi en clarté, pas seulement en teinte.
 - **Le clavier se voit.** Tout élément atteint avec Tab porte un contour bleu (règle commune dans `src/index.css`) ; la souris et le doigt ne l'affichent pas. Les champs (`CLASSES_CHAMP`) le portent aussi par `focus-within` : une case de date reçoit le focus dans son sous-champ (le jour), pas sur elle-même (recette D.8).
 - **Un titre ou un nom ne se coupe pas.** Dans une ligne de liste, le titre (rendez-vous, nom d'un contact, motif d'une relance) passe sur deux lignes au besoin (`line-clamp-2`, trois pour le titre d'une tâche) ; seule la ligne de détail grise (adresse, contact, déjà écrits en entier sur la fiche) se termine par « … », et ce qui sert à décider (heure, retard, prix) y vient en tête (règle 11, recette D.8).
@@ -33,6 +33,8 @@ L'application occupe exactement l'écran : le bandeau « Connexion perdue » (si
 ## Couleurs
 
 Les couleurs sont des noms, définis dans `src/index.css` avec une valeur claire et une valeur sombre. **Ne jamais écrire une couleur en dur** (`bg-white`, `text-slate-700`…) : le thème sombre ne suivrait pas.
+
+Ces valeurs sont celles du thème « Standard ». Un thème créé dans la page Apparence change cinq d'entre elles (`accent`, `fond`, `surface`, `encre`, `inverse`) et les autres s'en déduisent ; `danger`, `succes` et `alerte` ne changent jamais. Un composant n'a donc rien à faire pour suivre un thème, pourvu qu'il utilise les noms ci-dessous.
 
 Repères : fond `#f6f6f3` (sombre `#0d0e11`), surface `#ffffff` (`#17181c`), encre `#0e0f12` (`#f2f2f0`), accent `#3d3af5` (`#8c8aff`). Les autres valeurs sont dans `src/index.css`.
 
@@ -61,7 +63,7 @@ Un bloc sur fond `inverse` porte aussi la classe `zone-inverse` (règle de `src/
 
 ## Arrondis et ombres
 
-Les arrondis de Tailwind sont agrandis dans `src/index.css` (bloc `@theme`), pour que tous les écrans suivent :
+Les arrondis de Tailwind sont agrandis dans `src/index.css` (bloc `@theme`), pour que tous les écrans suivent. Ce sont ceux du niveau « Doux » ; un thème peut choisir un autre des cinq niveaux (Carrés, Nets, Doux, Ronds, Très ronds) et toutes les classes ci-dessous suivent :
 
 | Classe | Taille | Usage |
 | --- | --- | --- |
@@ -75,11 +77,13 @@ Les cartes se détachent par un **contour d'un pixel** (`ring-1 ring-bord`), pas
 
 ## Typographie
 
-Police **Inter**, servie avec le site (paquet `@fontsource-variable/inter`, importé dans `src/index.css`) : aucun appel à un service extérieur, le même rendu sur iPhone, Android et ordinateur. Si elle manque, la police du système prend le relais.
+Police **Inter**, servie avec le site (paquet `@fontsource-variable/inter`, importé dans `src/index.css`) : aucun appel à un service extérieur, le même rendu sur iPhone, Android et ordinateur. Si elle manque, la police du système prend le relais. Un thème peut choisir Atkinson Hyperlegible, Lexend ou Literata, servies de la même façon et chargées seulement quand on s'en sert ; toutes les classes `font-sans` suivent.
+
+**Une taille de texte s'écrit toujours par son nom**, jamais en valeur (`text-[1.75rem]`) : seules les tailles nommées suivent la « Taille du texte » d'un thème. Aux tailles de Tailwind (`text-xs` à `text-4xl`) s'ajoutent six noms propres au projet, définis dans `src/index.css` : `text-micro` (10 px), `text-mini` (11 px), `text-petit` (13 px), `text-moyen` (15 px), `text-titre-fiche` (22 px) et `text-titre` (28 px). Une nouvelle taille s'ajoute à la fois dans `src/index.css` et dans `TAILLES_TEXTE` (`src/features/apparence/themes.ts`).
 
 | Usage | Classes |
 | --- | --- |
-| Titre de page | `text-[1.75rem] font-bold tracking-tight` (`md:text-4xl`) — fourni par `Page` |
+| Titre de page | `text-titre font-bold tracking-tight` (`md:text-4xl`) — fourni par `Page` |
 | Titre de carte ou de section | `text-lg font-semibold tracking-tight` — fourni par `Carte` |
 | Texte courant, saisie, boutons | `text-base` |
 | Texte secondaire, aide, erreur de champ | `text-sm` |
@@ -152,7 +156,9 @@ Ajouter une page : créer `src/pages/MaPage.tsx` qui renvoie un `<Page titre="�
 | `Pastille` | Une pastille à toucher, allumée en noir quand elle est choisie : un choix en un geste (type d'activité, résultat d'un appel, température, raccourci de date). À grouper dans `GroupePastilles` (sa légende visible) ; un `div role="group"` avec `aria-label` seulement pour une suite du même groupe (les autres types). Avec `deplie` à la place de `choisie`, elle ouvre un choix de plus (« Autre », « Autre contact ») : même style que les autres, avec son dessin (chevron, loupe), jamais en bleu ; `aria-expanded`, fond gris quand le choix est ouvert (étape E.6). **En filtre** (étape F.5), une rangée de pastilles qui défile de côté, avec sa légende : `FiltreTypes` (`src/features/activites/`), le type de l'historique des fiches et du journal (« Tout 5 », « Appels 3 »). | `choisie` ou `deplie`, `onClick`, contenu |
 | `ChampEtiquettes` | Étiquettes libres : on écrit, on valide par « Entrée », une virgule ou « Ajouter » ; on touche une étiquette pour la retirer. | `libelle`, `etiquettes`, `onChange`, `ajouter` (règle de nettoyage et de doublon), `aide?` |
 | `Onglets` | Vues d'une même liste (À faire, Semaine…) : une commande segmentée (capsule grise, l'onglet choisi en blanc), avec un compteur facultatif. Sur téléphone, la capsule défile de côté. **Onglets coupés** (étape E.7, règle 8) : tant que des onglets dépassent, leur rangée s'efface en fondu de 40 px sur le bord droit, et sur le bord gauche après défilement (`useSuitesCachees`, `masqueFondu`, `defilement.ts`). Le fondu est un masque (`mask-image`), pas un dégradé posé par-dessus : il laisse voir le fond, donc suit le thème clair ou sombre sans couleur à choisir. L'onglet choisi n'est jamais sous le fondu : la rangée seule défile pour le dégager (`positionPourMontrer`, sans `scrollIntoView`, qui ferait aussi défiler la page), et tant qu'elle déborde, une marge de 40 px suit le dernier onglet. Des libellés courts limitent le débordement : « Semaine » (Tâches), « Acquéreurs » (fiche Bien). Ce qu'un libellé court tait se dit dans `precision` (étape F.1) : lue avec le nom de l'onglet (« Semaine, jusqu'à dimanche ») et montrée en info-bulle au survol. Deux autres formes (étape E.5) : `soulignee`, des onglets de page (texte de 16 px, l'actif en gras souligné d'un trait d'encre sur le filet du groupe : Vendeurs / Acquéreurs) ; `pastilles`, un second niveau plus petit dessous (pastilles de 30 px dessinées dans une zone de 44 px, texte de 13 px, l'active en encre pleine, les autres blanches cerclées : En cours, À recontacter, Perdus, Gagnés). | `libelle`, `options` (`{ valeur, libelle, compteur?, precision? }`), `valeur`, `onChange`, `panneau?` (identifiant du panneau commandé, voir `OngletsFiche`), `forme?` (`segmentee`, `soulignee`, `pastilles`) |
+| `ChoixIllustre` | Un choix parmi quelques valeurs illustrées, en colonnes de même largeur (page Apparence : taille du texte, arrondis). Chaque dessin tient dans une bande de même hauteur, posé sur sa base ; chaque libellé commence à la même hauteur et tient sur deux lignes au plus, coupées à l'endroit voulu par un « \n » (« Très\npetite »). Le choix allumé est blanc dans la capsule grise, comme `ChoixSegmente`. Ce sont de vrais boutons radio cachés : les flèches du clavier passent d'un choix à l'autre. | `libelle`, `options` (`{ valeur, libelle, illustration }`), `valeur`, `onChange` |
 | `ChoixSegmente` | Un choix parmi quelques valeurs, enregistré d'un toucher (la température) : même capsule que `Onglets`, lue comme des boutons radio ; les flèches du clavier passent d'un choix à l'autre. Il remplace une liste déroulante courte (étape F.5) : la civilité du formulaire Contact (« Mme · M. · — »), la période du journal (« 7 j · 30 j · 3 mois · Tout »). Un libellé abrégé se dit en entier dans `annonce` (« 7 derniers jours », « Non précisée »), lu par les lecteurs d'écran et montré en info-bulle. Pas de légende visible : la page en écrit une au-dessus si le choix n'est pas évident (« Civilité »). | `libelle`, `options` (`{ valeur, libelle, annonce? }`), `valeur` (`null` : aucun allumé), `onChange`, `desactive?` |
+| `Volet` | Une partie qui se replie d'un toucher sur son titre, pour garder l'aperçu en vue pendant les réglages (éditeur de thème : Police, Taille du texte, Arrondis). En-tête de 56 px : un chevron qui tourne, le titre et, dessous en gris, le choix en cours (visible même replié) ; à droite, un petit geste toujours visible (« Rétablir »). Un filet sépare deux volets. Le bouton porte `aria-expanded`. | `titre`, `resume?`, `ouvert`, `onBasculer`, `action?`, `children` |
 | `MenuActions` | Le bouton « … » et son menu, pour les actions rares d'une fiche. Le menu s'ouvre par-dessus la page (une colonne qui défile ne le coupe pas), sous le bouton ou au-dessus s'il manque de place (`placerMenu`, `src/lib/placement.ts`), et suit le bouton si la page défile. Flèches, Entrée, Échap ; un toucher à côté le referme. Ce comportement est dans le crochet `useMenuFlottant` (`src/components/menu-flottant.ts`), que reprend la forme repliée de `ReportsRapides`. Une action destructrice est en rouge, à la fin. | `libelle`, `elements` (`{ libelle, icone, onChoisir, danger?, desactive? }`) |
 | `LienAction` | Grosse touche qui ouvre une autre application du téléphone (`tel:`, `sms:`, `mailto:`, cartes). Avec `onClick` (et sans `href`), c'est un bouton de l'application (« Consigner »). Sans l'un ni l'autre, elle reste visible mais grisée. Dans un groupe, une seule est `principal` (Appeler, en bleu) ; les autres sont `secondaire` (blanches). | `libelle`, `icone`, `href?`, `onClick?`, `variante?`, `nouvelOnglet?`, `annonce?` (ce qu'entend un lecteur d'écran à la place du libellé : « Appel bloqué : … ») |
 | `LienBouton` | Lien à l'allure d'un petit bouton (44 px), pour les gestes d'une ligne de liste : ouvrir une fiche (`vers`), appeler ou lancer l'itinéraire (`href`, avec `nouvelOnglet` pour les cartes). Avec `dessinSeul`, un rond de 44 px : le dessin seul, le texte lu par les lecteurs d'écran et montré en bulle au survol (Appeler d'une relance, Itinéraire de l'agenda). | `icone`, `vers?` ou `href?`, `variante?` (`secondaire`, `discret`, `principal` : bleu plein, `inverse` : sur fond encre), `nouvelOnglet?`, `dessinSeul?`, `onClick?` |
@@ -330,6 +336,28 @@ La page « Composants de l'interface » montre des lignes de contact (dont un co
 ### Dessins
 
 `<Icone nom="…" />` : petits dessins au trait, de la couleur du texte voisin. Noms disponibles : `aujourdhui`, `contacts`, `biens`, `pipelines`, `taches`, `plus`, `reglages`, `palette`, `chevron`, `retour`, `fermer`, `ajouter`, `succes`, `erreur`, `info`, `horsLigne`, `vide`, `telephone`, `sms`, `courriel`, `modifier`, `archiver`, `recherche`, `filtrer`, `fusionner`, `photo`, `galerie`, `supprimer`, `horloge`, `repeter`, `lieu`, `journal`, `note`, `document`, `estimation`, `poignee`, `itineraire`, `alerte`, `nouveaute`, `copier`, `calendrier`. Pour en ajouter un, compléter `src/components/Icone.tsx`. Un dessin seul dans un bouton exige un `aria-label`.
+
+## Apparence : mode, zoom et thèmes
+
+La page **Apparence** (menu Plus, `src/pages/Apparence.tsx` ; éditeur `src/pages/ModifierTheme.tsx` ; logique dans `src/features/apparence/`) règle deux choses distinctes.
+
+**Sur cet appareil** (mémoire du navigateur, `appareil.ts`), jamais dans la base :
+
+- **Mode** Auto, Clair ou Sombre. Auto suit le réglage de l'appareil ; Clair et Sombre posent `data-mode` sur `<html>`, que `src/index.css` respecte. La couleur de la barre du navigateur (`theme-color`) suit.
+- **Zoom** de 50 à 125 %, par crans (50, 67, 75, 80, 90, 100, 110, 125), comme un navigateur. Il change la taille du texte de `<html>` : toutes les tailles étant en rem, texte, marges et boutons suivent ensemble. À 90 %, les zones à toucher gardent 44 px (`data-zoom`, règles en fin de `src/index.css`) ; en dessous, elles rétrécissent aussi, ce que la page annonce (ordinateur et souris). Les seuils de taille d'écran (`md:`, `lg:`) ne bougent pas.
+
+**Le thème du compte** (colonne `reglages.apparence`, partagée entre les appareils ; `themes.ts`) : « Standard », toujours là et non modifiable, et les thèmes créés. Un thème réunit :
+
+- **5 couleurs par mode** (clair et sombre) : couleur d'action (`accent`), fond (`fond`), cartes et listes (`surface`), texte (`encre`), carte « Maintenant » (`inverse`). Ce sont les cinq couleurs qui font le style (fond gris chaud, cartes blanches, encre presque noire, un seul bleu). Les autres se calculent (`paletteDuMode`, `couleurs.ts`) : survol, filets, contour des champs, texte gris, fond doux de l'accent, texte posé sur l'accent ou sur la carte « Maintenant » (blanc ou presque noir, le plus lisible). **Rouge, vert et orange ne changent jamais** : ils gardent leur sens partout (règle 10).
+- **Police** : Inter (origine), Atkinson Hyperlegible, Lexend ou Literata.
+- **Taille du texte** : Très petite (14 px), Petite (15 px), Normale (16 px, origine), Grande (18 px), Très grande (20 px). Toutes les tailles nommées sont multipliées d'autant. Sur un écran tactile, un champ de saisie garde 16 px au moins (sinon l'iPhone zoome).
+- **Arrondis** : Carrés, Nets, Doux (origine), Ronds, Très ronds. Les pastilles et étiquettes (`rounded-full`) restent rondes.
+
+Le thème se pose par une feuille de style ajoutée après celle du site (`feuilleDuTheme`, `appliquer.ts`) ; elle n'écrit que ce qui diffère de l'origine, et rien pour « Standard ». Le dernier thème est gardé sur l'appareil pour s'afficher dès le démarrage (`main.tsx`), avant la lecture des réglages.
+
+**Éditeur de thème.** L'aperçu (`ApercuTheme` : la carte « Maintenant », deux contacts, deux pastilles, le bouton bleu ; données inventées) reçoit les variables du brouillon et reste en vue (collé en haut au téléphone, dans sa colonne sur ordinateur) ; son choix Clair / Sombre dit aussi quelles couleurs on règle. Police (quatre cartes, chacune dans sa police), Taille du texte et Arrondis (`ChoixIllustre`) sont dans des `Volet` repliables, avec « Rétablir » quand le réglage diffère de l'origine. Chaque couleur a son sélecteur (`input type="color"`), son code, la couleur d'origine et « Rétablir », et sa **lisibilité** : le plus faible contraste parmi ceux qui en dépendent, 4,5:1 au moins. Sous ce seuil, dans l'un ou l'autre mode, « Enregistrer » est bloqué et un message dit quoi corriger. Une couleur d'action proche du rouge, de l'orange ou du vert reçoit un conseil, sans blocage. Un thème qu'on vient de créer est mis en service à l'enregistrement.
+
+Exception à « jamais de couleur en dur » : une couleur qui **est une donnée** (les pastilles d'un thème, une nuance calculée) se pose en `style`, avec un commentaire.
 
 ## Corrections de design (phase E)
 
