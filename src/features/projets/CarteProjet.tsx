@@ -1,13 +1,13 @@
 import type { PointerEvent } from 'react'
 import CartePipeline from '../../components/CartePipeline'
 import { formaterJourCourt } from '../../lib/dates'
-import { actionPipeline, titresCarteVendeur } from './carte-pipeline'
 import {
-  ancienneteEtape,
-  etapeQuiTraine,
-  libelleTypeMandat,
-  type ProjetVendeur,
-} from './pipeline-vendeur'
+  actionPipeline,
+  ligneAnciennete,
+  titresCarteVendeur,
+  valeurVendeur,
+} from './carte-pipeline'
+import { libelleTypeMandat, type ProjetVendeur } from './pipeline-vendeur'
 import type { ProjetVendeurAffiche } from './projets-vendeurs'
 
 type Props = {
@@ -26,15 +26,12 @@ function ligneEtape(projet: ProjetVendeur, aujourdhui: string) {
       alerte: false,
     }
   }
-  return {
-    texte: ancienneteEtape(projet.etape_le, aujourdhui),
-    alerte: etapeQuiTraine(projet.etape_le, aujourdhui),
-  }
+  return ligneAnciennete(projet.etape_le, aujourdhui)
 }
 
 /**
- * Carte d'un projet vendeur : le bien (adresse courte) en titre, le vendeur dessous,
- * l'ancienneté dans l'étape et la suite. Deux projets du même vendeur se distinguent par
+ * Carte d'un projet vendeur : le bien (adresse courte) en titre, le vendeur dessous, ce que
+ * vaut le projet (estimation ou prix espéré), l'ancienneté dans l'étape et la suite. Deux projets du même vendeur se distinguent par
  * leur adresse.
  */
 export default function CarteProjet({ affiche, aujourdhui, onSaisir, estompee = false }: Props) {
@@ -45,6 +42,7 @@ export default function CarteProjet({ affiche, aujourdhui, onSaisir, estompee = 
       vers={`/pipelines/vendeurs/${projet.id}`}
       titre={titre}
       sousTitre={sousTitre}
+      valeur={valeurVendeur(projet)}
       details={[]}
       etape={ligneEtape(projet, aujourdhui)}
       action={actionPipeline(affiche, aujourdhui)}

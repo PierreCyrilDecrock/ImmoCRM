@@ -1,6 +1,6 @@
 # ImmoCRM — Revue de design n° 2, du 24 novembre 2026
 
-Deuxième revue de l'interface, faite une fois la phase E terminée (les 19 corrections de la [première revue](revue-design.md) en place), avec le même regard de designer produit. Elle a relevé **16 propositions**. La phase F du [plan de développement](plan-developpement.md) les réalise en six étapes (F.1 à F.6), avant la recette de l'interface (D.8), qui les vérifie avec le reste.
+Deuxième revue de l'interface, faite une fois la phase E terminée (les 19 corrections de la [première revue](revue-design.md) en place), avec le même regard de designer produit. Elle a relevé **16 propositions**. La phase F du [plan de développement](plan-developpement.md) les a réalisées en six étapes (F.1 à F.6, terminées le 25 novembre 2026), avant la recette de l'interface (D.8), qui les vérifie avec le reste. Les adaptations faites en chemin sont notées sous chaque proposition (« Adapté »).
 
 Les captures « avant » et les maquettes « après » sont dans l'artefact « Revue d'interface ImmoCRM n° 2 » (privé). Si une session a besoin de les voir, collez-lui son lien.
 
@@ -95,6 +95,7 @@ Elles prolongent les huit règles de la [première revue](revue-design.md#les-r�
 - **Constat.** Aucune carte ne dit ce que vaut le projet (prix espéré, estimation, budget). « Relance · mar. 24 nov. » est aujourd'hui, mais il faut le reconnaître. Devant chaque relance, une case carrée cochée : le dessin qui faisait croire « déjà fait » sur les fiches (correction 5 de la première revue). « Depuis 40 jours » passe en orange sans dire pourquoi.
 - **Décision.** Une ligne de valeur : « 300 000 € espérés » (vendeur), « Estimé 410 – 440 k€ » dès l'avis de valeur, « Budget 200 – 300 k€ » (acquéreur), « Prix à connaître » en gris sinon. Les dates proches en mots : « aujourd'hui », « demain », le jour de la semaine jusqu'à six jours. Devant la relance, l'horloge, en rouge si elle est en retard. L'ancienneté en orange porte sa raison (« Plus de 30 jours à cette étape », lue et en info-bulle). Sur ordinateur, le total de chaque colonne sous son titre (« 2 · 720 k€ »).
 - **Où.** `CartePipeline.tsx`, `carte-pipeline.ts`, `TableauPipeline.tsx`.
+- **Adapté (F.6).** Un acquéreur sans budget garde « Budget à préciser », en gris : « Prix à connaître » ne dit rien d'un acheteur. Le budget n'est plus écrit en sous-titre de la carte d'achat : la ligne de valeur le dit (règle 4). Le total d'une colonne de vendeurs additionne le montant que montre chaque carte, le haut de l'estimation dès qu'elle existe, sinon le prix espéré : la colonne et ses cartes disent la même chose. Au-delà de six jours, « Relance ven. 4 déc. » ; pour une tâche du projet, le jour en tête (« Jeudi · Envoyer l'avis de valeur »). Le total est réservé à l'ordinateur ; la tablette garde le nombre de projets.
 
 ### 9. Contacts : la température garde sa place
 
@@ -119,6 +120,7 @@ Elles prolongent les huit règles de la [première revue](revue-design.md#les-r�
 - **Constat.** « Créer », dans la colonne de gauche, est bleu plein sur tous les écrans, en plus du bouton bleu de la page (« Ajouter », « Projet vendeur », « Appeler » sur les fiches). La règle 2 n'est donc tenue nulle part sur ordinateur.
 - **Décision.** « Créer » devient un bouton blanc bordé, avec son « + » et la touche N : il fait partie du cadre. Le bouton de la page garde le bleu.
 - **Où.** `BoutonCreer.tsx`, `Navigation.tsx`.
+- **Fait (F.6).** Vérifié écran par écran à 1440 px : aucun ne garde deux boutons bleus au repos. Restent en bleu des repères qui ne sont pas des actions : le segment de l'étape en cours dans la frise des fiches Projet et la puce de température « froid » des contacts.
 
 ### 13. L'historique se filtre par pastilles
 

@@ -20,6 +20,7 @@ import {
   instantDeParis,
   formaterJourEtSemaine,
   jourDeSemaine,
+  jourEnMots,
   minutesDuJour,
   numeroSemaine,
 } from './dates'
@@ -254,5 +255,27 @@ describe('depuisLeMoment', () => {
 
   it('ne dit rien d’un moment illisible', () => {
     expect(depuisLeMoment('jamais', '2026-11-22')).toBe('')
+  })
+})
+
+describe('jourEnMots', () => {
+  // Mardi 24 novembre 2026.
+  const MARDI = '2026-11-24'
+
+  it('dit aujourd’hui et demain en mots', () => {
+    expect(jourEnMots(MARDI, MARDI)).toBe('aujourd’hui')
+    expect(jourEnMots('2026-11-25', MARDI)).toBe('demain')
+  })
+
+  it('donne le nom du jour jusqu’à six jours, la date au-delà', () => {
+    expect(jourEnMots('2026-11-26', MARDI)).toBe('jeudi')
+    expect(jourEnMots('2026-11-30', MARDI)).toBe('lundi')
+    expect(jourEnMots('2026-12-01', MARDI)).toBe('mar. 1 déc.')
+    expect(jourEnMots('2027-01-04', MARDI)).toBe('lun. 4 janv. 2027')
+  })
+
+  it('écrit la date d’un jour passé, et rien pour une date illisible', () => {
+    expect(jourEnMots('2026-11-23', MARDI)).toBe('lun. 23 nov.')
+    expect(jourEnMots('pas une date', MARDI)).toBe('')
   })
 })

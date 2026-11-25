@@ -14,6 +14,11 @@ export type ColonnePipeline<E extends string, P> = {
   etape: E
   libelle: string
   critere: string
+  /**
+   * Sur ordinateur, sous le titre, à la place du nombre : « 2 · 720 k€ » (`totalColonne`),
+   * et son annonce en entier. Sans total, le nombre seul.
+   */
+  total?: { texte: string; annonce: string }
   projets: P[]
 }
 
@@ -227,7 +232,7 @@ export default function TableauPipeline<E extends string, P>({
         ref={tableau}
         className={`hidden gap-3 overflow-x-auto pb-2 md:flex ${glisse !== null ? 'cursor-grabbing select-none' : ''}`}
       >
-        {colonnes.map(({ etape, libelle, critere, projets }) => {
+        {colonnes.map(({ etape, libelle, critere, total, projets }) => {
           const cible = glisse !== null && survol === etape && etapeDe(glisse.projet) !== etape
           return (
             <section
@@ -241,8 +246,19 @@ export default function TableauPipeline<E extends string, P>({
               <header className="px-1 pt-1">
                 <h2 className="flex items-baseline justify-between gap-2 text-base font-semibold text-encre">
                   {libelle}
-                  <span className="text-sm font-normal text-encre-douce">{projets.length}</span>
+                  <span
+                    className={`text-sm font-normal text-encre-douce tabular-nums ${total === undefined ? '' : 'lg:hidden'}`}
+                  >
+                    {projets.length}
+                  </span>
                 </h2>
+                {/* Ordinateur : le total sous le titre, « 2 · 720 k€ ». */}
+                {total !== undefined && (
+                  <p className="hidden text-sm font-medium text-encre tabular-nums lg:block">
+                    <span aria-hidden="true">{total.texte}</span>
+                    <span className="sr-only">{total.annonce}</span>
+                  </p>
+                )}
                 <p className="text-xs text-encre-douce">{critere}</p>
               </header>
               {projets.map((projet) => (

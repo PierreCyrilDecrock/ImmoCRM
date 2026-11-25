@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import TableauPipeline from '../../components/TableauPipeline'
 import { memoriserParcours } from '../../lib/parcours'
 import { nomComplet } from '../contacts/contacts'
+import { montantAcquereur, totalColonne } from '../projets/carte-pipeline'
 import CarteProjetAcquereur from './CarteProjetAcquereur'
 import {
   estEtapeAcquereur,
@@ -30,7 +31,9 @@ export default function TableauPipelineAcquereur({
       libelle: etape,
       critere: '',
     }
-    return { etape, libelle, critere, projets: dansEtape }
+    // Sur ordinateur, sous le titre : « 2 · 720 k€ », la somme des budgets maximum.
+    const total = totalColonne(dansEtape.map((affiche) => montantAcquereur(affiche.projet)))
+    return { etape, libelle, critere, total, projets: dansEtape }
   })
   // Chaque colonne est gardée pour l'onglet : la fiche d'un projet passe au précédent ou au
   // suivant de sa colonne, dans l'ordre affiché.

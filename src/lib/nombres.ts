@@ -17,6 +17,37 @@ export function formaterPrix(euros: number): string {
   return `${formaterNombre(euros)} €`
 }
 
+/** Un montant arrondi pour un repère : le nombre et son unité (€, k€ ou M€). */
+function montantArrondi(euros: number): { nombre: string; unite: string } {
+  const entier = Math.round(euros)
+  if (entier < 1000) return { nombre: formaterNombre(entier), unite: '€' }
+  const milliers = Math.round(entier / 1000)
+  if (milliers < 1000) return { nombre: formaterNombre(milliers), unite: 'k€' }
+  return { nombre: formaterDecimal(entier / 1_000_000), unite: 'M€' }
+}
+
+/**
+ * Un montant court, pour une carte ou un total : « 850 € », « 415 k€ », « 1,25 M€ ». Une
+ * espace insécable avant l'unité : elle ne passe jamais seule à la ligne.
+ */
+export function montantCourt(euros: number): string {
+  const { nombre, unite } = montantArrondi(euros)
+  return `${nombre}\u00a0${unite}`
+}
+
+/**
+ * Une fourchette courte, l'unité écrite une fois : « 410 – 440 k€ » ; « 850 k€ – 1,2 M€ »
+ * si les deux bouts n'ont pas la même unité ; un seul montant si les deux sont égaux.
+ */
+export function fourchetteCourte(bas: number, haut: number): string {
+  const [petit, grand] = bas <= haut ? [bas, haut] : [haut, bas]
+  const debut = montantArrondi(petit)
+  const fin = montantArrondi(grand)
+  if (debut.unite !== fin.unite) return `${montantCourt(petit)} – ${montantCourt(grand)}`
+  if (debut.nombre === fin.nombre) return montantCourt(grand)
+  return `${debut.nombre} – ${fin.nombre}\u00a0${fin.unite}`
+}
+
 const DECIMAL = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 })
 
 /** Écrit un nombre avec au plus deux décimales, à la française : « 85,5 ». */
